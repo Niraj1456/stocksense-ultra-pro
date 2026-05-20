@@ -26,11 +26,28 @@ async function fetchStockData(symbol) {
     const quote = result.indicators?.quote?.[0];
     const price = meta.regularMarketPrice || 0;
 
-    // FIXED: Get yesterday's close from the CHART DATA (second-to-last close)
-    // meta.previousClose is often undefined for .NS stocks
-    // meta.chartPreviousClose is the close at the START of the range, not yesterday
-    const closes = quote?.close?.filter(v => v != null) || [];
-    const yesterdayClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose || price);
+    // Timestamp-Aware previous close calculation prioritizes official meta.previousClose
+    let yesterdayClose = (meta.previousClose && meta.previousClose > 0) ? meta.previousClose : null;
+    if (!yesterdayClose) {
+      const timestamps = result.timestamp || [];
+      const lastChartTs = timestamps.length > 0 ? timestamps[timestamps.length - 1] * 1000 : 0;
+      const lastChartDate = new Date(lastChartTs);
+      const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const isSameDay = lastChartDate.getFullYear() === todayIST.getFullYear()
+        && lastChartDate.getMonth() === todayIST.getMonth()
+        && lastChartDate.getDate() === todayIST.getDate();
+
+      const closes = quote?.close?.filter(v => v != null) || [];
+      if (isSameDay && closes.length >= 2) {
+        // Chart includes today's candle → second-to-last is yesterday
+        yesterdayClose = closes[closes.length - 2];
+      } else if (closes.length >= 1) {
+        // Chart's last candle is yesterday → THAT is yesterday's close
+        yesterdayClose = closes[closes.length - 1];
+      } else {
+        yesterdayClose = meta.chartPreviousClose || price;
+      }
+    }
     
     const chg = yesterdayClose > 0 ? (price - yesterdayClose) : 0;
     const pct = yesterdayClose > 0 ? ((chg / yesterdayClose) * 100) : 0;

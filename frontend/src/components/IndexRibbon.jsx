@@ -20,7 +20,7 @@ export default function IndexRibbon({ selectedStock, onSelect }) {
           const d = await res.json();
           const meta = d.chart.result[0].meta;
           const price = meta.regularMarketPrice || 0;
-          const prev = meta.previousClose || meta.chartPreviousClose || price;
+          const prev = (meta.previousClose && meta.previousClose > 0) ? meta.previousClose : (meta.chartPreviousClose || price);
           const chg = prev > 0 ? (price - prev) : 0;
           const pct = prev > 0 ? ((chg / prev) * 100) : 0;
           setIndexData(prev => ({

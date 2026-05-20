@@ -855,35 +855,24 @@ export default function App() {
         //
         // Solution: Compare the chart's last timestamp to today's date (IST).
         // ═══════════════════════════════════════════════════════════════
-        const timestamps = result.timestamp || [];
-        const lastChartTs = timestamps.length > 0 ? timestamps[timestamps.length - 1] * 1000 : 0;
-        const lastChartDate = new Date(lastChartTs);
-        const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-        const isSameDay = lastChartDate.getFullYear() === todayIST.getFullYear()
-          && lastChartDate.getMonth() === todayIST.getMonth()
-          && lastChartDate.getDate() === todayIST.getDate();
+        let prevClose = (meta.previousClose && meta.previousClose > 0) ? meta.previousClose : null;
+        if (!prevClose) {
+          const timestamps = result.timestamp || [];
+          const lastChartTs = timestamps.length > 0 ? timestamps[timestamps.length - 1] * 1000 : 0;
+          const lastChartDate = new Date(lastChartTs);
+          const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+          const isSameDay = lastChartDate.getFullYear() === todayIST.getFullYear()
+            && lastChartDate.getMonth() === todayIST.getMonth()
+            && lastChartDate.getDate() === todayIST.getDate();
 
-        let prevClose;
-        if (isSameDay && closes.length >= 2) {
-          // Chart includes today's candle → second-to-last is yesterday
-          prevClose = closes[closes.length - 2];
-        } else if (!isSameDay && closes.length >= 1) {
-          // Chart's last candle is yesterday → THAT is yesterday's close
-          // meta.regularMarketPrice is today's live/closing price
-          prevClose = closes[closes.length - 1];
-        } else {
-          // Fallback to Yahoo meta fields
-          prevClose = meta.previousClose || meta.chartPreviousClose || currentPrice;
-        }
-
-        // Cross-validate: if meta.previousClose exists and is close to our
-        // calculated prevClose, use it (it's more precise). If they diverge
-        // wildly (>5%), trust meta.previousClose as it's the official value.
-        if (meta.previousClose && meta.previousClose > 0) {
-          const drift = Math.abs(prevClose - meta.previousClose) / meta.previousClose;
-          if (drift > 0.05) {
-            // Our chart-based prevClose diverges >5% from official → trust official
-            prevClose = meta.previousClose;
+          if (isSameDay && closes.length >= 2) {
+            // Chart includes today's candle → second-to-last is yesterday
+            prevClose = closes[closes.length - 2];
+          } else if (closes.length >= 1) {
+            // Chart's last candle is yesterday → THAT is yesterday's close
+            prevClose = closes[closes.length - 1];
+          } else {
+            prevClose = meta.chartPreviousClose || currentPrice;
           }
         }
 
