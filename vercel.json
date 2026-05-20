@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "framework": null,
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/yahoo/:path*",
+      "destination": "/api/yahoo-proxy"
+    },
+    {
+      "source": "/api/nse/:path*",
+      "destination": "/api/nse-proxy"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

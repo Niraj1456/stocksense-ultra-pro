@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: stocksense-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Core Market Data: Angel One SmartAPI
+      - key: ANGEL_API_KEY
+        sync: false
+      - key: ANGEL_CLIENT_ID
+        sync: false
+      - key: ANGEL_PIN
+        sync: false
+      - key: ANGEL_TOTP_SECRET
+        sync: false
+      # Alternative Data: Alpha Vantage (Sentiment, Sector, Earnings)
+      - key: ALPHA_VANTAGE_KEY
+        sync: false
+      # Alternative Data: Financial Modeling Prep (Fundamentals, DCF, Insider)
+      - key: FMP_API_KEY
+        sync: false
+      # AI Orchestrator
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

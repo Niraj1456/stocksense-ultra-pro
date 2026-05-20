@@ -1,0 +1,41 @@
+{
+  "name": "stocksense-ultra-pro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stocksense Ultra Pro backend",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@google/genai": "^2.2.0",
+    "axios": "^1.12.1",
+    "bull": "^4.16.5",
+    "candlestick": "^1.2.0",
+    "cheerio": "^1.1.2",
+    "compromise": "^14.14.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "fuse.js": "^7.1.0",
+    "google-trends-api": "^4.9.2",
+    "ioredis": "^5.7.0",
+    "mathjs": "^14.8.2",
+    "node-cron": "^4.2.1",
+    "otplib": "^13.4.0",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.16.3",
+    "puppeteer": "^24.18.0",
+    "rss-parser": "^3.13.0",
+    "smartapi-javascript": "^1.0.27",
+    "socket.io": "^4.8.1",
+    "supertrend": "^1.0.2",
+    "technicalindicators": "^3.1.0",
+    "totp-generator": "^2.0.1",
+    "winston": "^3.18.3",
+    "yahoo-finance2": "^2.14.0"
+  }
+}

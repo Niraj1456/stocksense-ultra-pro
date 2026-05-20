@@ -1,0 +1,89 @@
+﻿
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ  STOCKSENSE ULTRA PRO v3.0 ΓÇö FULL REAL-DATA BENCHMARK                        Γòæ
+Γòæ  Yahoo Finance (RSI/ATR/RVOL/Momentum) + NSE India (PCR/L2) ΓÇö ZERO SIMULATIONΓòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  RELIANCE      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.8% Score:55.37 PCR:1 L2:0.0% RSI:56.86 RVOL:1.16x
+  TCS           [PCR:fail] [L2:fail] Γ£à DOWN   Act:-4.6% Score:36.4 PCR:1 L2:0.0% RSI:22.47 RVOL:1.55x
+  HDFCBANK      [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+0.7% Score:44.57 PCR:1 L2:0.0% RSI:30.43 RVOL:1.14x
+  INFY          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.9% Score:54.46 PCR:1 L2:0.0% RSI:25.63 RVOL:1.24x
+  TATACONSUM    [PCR:fail] [L2:fail] Γ£à DOWN   Act:-3.1% Score:30.94 PCR:1 L2:0.0% RSI:74.19 RVOL:1.33x
+  SBIN          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.5% Score:51.35 PCR:1 L2:0.0% RSI:21.86 RVOL:1.38x
+  CIPLA         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+9.3% Score:50.54 PCR:1 L2:0.0% RSI:64.3 RVOL:0.78x
+  VEDL          [PCR:fail] [L2:fail] Γ£à UP     Act:+9.6% Score:69.17 PCR:1 L2:0.0% RSI:15.24 RVOL:1.34x
+  BHARTIARTL    [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+10.1% Score:44.77 PCR:1 L2:0.0% RSI:35.91 RVOL:1.32x
+  SUNPHARMA     [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+1.8% Score:30.95 PCR:1 L2:0.0% RSI:78.51 RVOL:0.54x
+  M&M           [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-5.0% Score:45.13 PCR:1 L2:0.0% RSI:49.91 RVOL:0.81x
+  KOTAKBANK     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+2.8% Score:45.06 PCR:1 L2:0.0% RSI:48.81 RVOL:0.6x
+  AXISBANK      [PCR:fail] [L2:fail] Γ£à DOWN   Act:-2.7% Score:41.37 PCR:1 L2:0.0% RSI:25.44 RVOL:0.78x
+  TATAMOTORS    ΓÜá Yahoo Error: Yahoo failed after retries: RATE_LIMITED
+  TATASTEEL     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.1% Score:55.17 PCR:1 L2:0.0% RSI:50.13 RVOL:1.16x
+  ULTRACEMCO    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.6% Score:55 PCR:1 L2:0.0% RSI:44.78 RVOL:0.99x
+  ADANIENT      [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+7.6% Score:30.98 PCR:1 L2:0.0% RSI:79.7 RVOL:0.55x
+  ONGC          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+5.8% Score:55.41 PCR:1 L2:0.0% RSI:47.96 RVOL:3.19x
+  HINDALCO      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+2.9% Score:55.14 PCR:1 L2:0.0% RSI:50.59 RVOL:0.85x
+  POWERGRID     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.6% Score:54.56 PCR:1 L2:0.0% RSI:31.98 RVOL:0.74x
+  BAJFINANCE    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.6% Score:55.09 PCR:1 L2:0.0% RSI:48.9 RVOL:0.87x
+  HINDUNILVR    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.3% Score:55.04 PCR:1 L2:0.0% RSI:49.56 RVOL:0.43x
+  ITC           [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+1.4% Score:54.95 PCR:1 L2:0.0% RSI:44.4 RVOL:0.82x
+  LT            [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.6% Score:54.76 PCR:1 L2:0.0% RSI:38.72 RVOL:0.71x
+  MARUTI        [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.5% Score:45.08 PCR:1 L2:0.0% RSI:50.46 RVOL:0.53x
+  WIPRO         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.3% Score:54.55 PCR:1 L2:0.0% RSI:30.18 RVOL:1.05x
+  HCLTECH       [PCR:fail] [L2:fail] Γ£à DOWN   Act:-4.0% Score:39 PCR:1 L2:0.0% RSI:13.51 RVOL:0.68x
+  ASIANPAINT    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+1.9% Score:55.18 PCR:1 L2:0.0% RSI:53.1 RVOL:0.53x
+  TITAN         [PCR:fail] [L2:fail] Γ£à DOWN   Act:-0.9% Score:39.69 PCR:1 L2:0.0% RSI:33.11 RVOL:1.35x
+  BAJAJFINSV    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.3% Score:49.81 PCR:1 L2:0.0% RSI:38.63 RVOL:0.97x
+  JSWSTEEL      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+2.4% Score:54.92 PCR:1 L2:0.0% RSI:43.8 RVOL:0.79x
+  NTPC          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.2% Score:55.05 PCR:1 L2:0.0% RSI:47.03 RVOL:1.01x
+  GRASIM        [PCR:fail] [L2:fail] Γ£à DOWN   Act:-1.4% Score:26.1 PCR:1 L2:0.0% RSI:83.38 RVOL:0.56x
+  TECHM         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.9% Score:54.89 PCR:1 L2:0.0% RSI:43.46 RVOL:0.61x
+  DIVISLAB      [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+1.8% Score:36.16 PCR:1 L2:0.0% RSI:84.94 RVOL:0.7x
+  DRREDDY       [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+4.0% Score:55.36 PCR:1 L2:0.0% RSI:59.17 RVOL:0.64x
+  HEROMOTOCO    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-5.2% Score:45.04 PCR:1 L2:0.0% RSI:48.29 RVOL:0.53x
+  APOLLOHOSP    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.8% Score:50.65 PCR:1 L2:0.0% RSI:66.42 RVOL:0.96x
+  INDUSINDBK    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.3% Score:50.56 PCR:1 L2:0.0% RSI:65.92 RVOL:0.49x
+  BAJAJ-AUTO    [PCR:fail] [L2:fail] Γ£à DOWN   Act:-3.7% Score:40.74 PCR:1 L2:0.0% RSI:69.82 RVOL:0.88x
+  LTIM          ΓÜá Yahoo Error: Yahoo failed after retries: RATE_LIMITED
+  EICHERMOT     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.0% Score:45.03 PCR:1 L2:0.0% RSI:47.95 RVOL:0.65x
+  COALINDIA     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.5% Score:50.47 PCR:1 L2:0.0% RSI:63.58 RVOL:0.49x
+  BRITANNIA     [PCR:fail] [L2:fail] Γ£à DOWN   Act:-0.6% Score:41.49 PCR:1 L2:0.0% RSI:27.57 RVOL:1.12x
+  NESTLEIND     [PCR:fail] [L2:fail] Γ£à DOWN   Act:-3.4% Score:26.1 PCR:1 L2:0.0% RSI:84.41 RVOL:0.38x
+  BPCL          [PCR:fail] [L2:fail] Γ£à DOWN   Act:-4.6% Score:44.58 PCR:1 L2:0.0% RSI:32.2 RVOL:0.83x
+  SHREECEM      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.9% Score:54.97 PCR:1 L2:0.0% RSI:45.68 RVOL:0.63x
+  HDFCLIFE      [PCR:fail] [L2:fail] Γ¥î UP     Act:-2.9% Score:60.2 PCR:1 L2:0.0% RSI:54.37 RVOL:0.39x
+  ADANIPORTS    [PCR:fail] [L2:fail] Γ¥î DOWN   Act:+1.2% Score:31.02 PCR:1 L2:0.0% RSI:79.5 RVOL:0.85x
+  TATAPOWER     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-6.7% Score:55.04 PCR:1 L2:0.0% RSI:47.95 RVOL:0.74x
+  TVSMOTOR      [PCR:fail] [L2:fail] Γ£à DOWN   Act:-8.9% Score:44.92 PCR:1 L2:0.0% RSI:41.43 RVOL:1.1x
+  ZOMATO        ΓÜá Yahoo Error: Yahoo failed after retries: RATE_LIMITED
+  HAL           [PCR:fail] [L2:fail] Γ£à DOWN   Act:-9.0% Score:31 PCR:1 L2:0.0% RSI:76.29 RVOL:1.36x
+  BEL           [PCR:fail] [L2:fail] Γ£à DOWN   Act:-1.2% Score:41.5 PCR:1 L2:0.0% RSI:27.35 RVOL:1.24x
+  SIEMENS       [PCR:fail] [L2:fail] Γ£à DOWN   Act:-2.0% Score:39.83 PCR:1 L2:0.0% RSI:41.64 RVOL:0.62x
+  PFC           [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.2% Score:59.7 PCR:1 L2:0.0% RSI:36.8 RVOL:0.55x
+  RECLTD        [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-5.1% Score:49.17 PCR:1 L2:0.0% RSI:19.66 RVOL:0.6x
+  GAIL          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.4% Score:55.26 PCR:1 L2:0.0% RSI:54.32 RVOL:0.96x
+  BHEL          [PCR:fail] [L2:fail] Γ£à DOWN   Act:-1.5% Score:26.1 PCR:1 L2:0.0% RSI:83.05 RVOL:0.65x
+  IRFC          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-5.3% Score:55.03 PCR:1 L2:0.0% RSI:48.02 RVOL:0.65x
+  RVNL          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-6.3% Score:54.97 PCR:1 L2:0.0% RSI:46.86 RVOL:0.51x
+  JINDALSTEL    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.0% Score:54.65 PCR:1 L2:0.0% RSI:34.81 RVOL:0.79x
+  NMDC          [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+3.9% Score:54.89 PCR:1 L2:0.0% RSI:43.72 RVOL:0.58x
+  AMBUJACEM     [PCR:fail] [L2:fail] Γ£à DOWN   Act:-1.4% Score:44.78 PCR:1 L2:0.0% RSI:38.46 RVOL:0.9x
+  DABUR         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.6% Score:55.45 PCR:1 L2:0.0% RSI:60.68 RVOL:0.83x
+  GODREJCP      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+0.3% Score:46.51 PCR:1 L2:0.0% RSI:25.8 RVOL:1.67x
+  MARICO        [PCR:fail] [L2:fail] Γ£à DOWN   Act:-1.0% Score:26.29 PCR:1 L2:0.0% RSI:87.85 RVOL:0.98x
+  COLPAL        [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+0.6% Score:55.21 PCR:1 L2:0.0% RSI:54.53 RVOL:0.59x
+  PIDILITIND    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:+0.9% Score:55.43 PCR:1 L2:0.0% RSI:56.49 RVOL:1.49x
+  HAVELLS       [PCR:fail] [L2:fail] Γ£à DOWN   Act:-2.9% Score:44.59 PCR:1 L2:0.0% RSI:33.54 RVOL:0.65x
+  VOLTAS        [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.1% Score:54.55 PCR:1 L2:0.0% RSI:30.85 RVOL:0.88x
+  TRENT         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.6% Score:59.68 PCR:1 L2:0.0% RSI:35.74 RVOL:0.65x
+  CHOLAFIN      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-5.9% Score:55.24 PCR:1 L2:0.0% RSI:54.83 RVOL:0.73x
+  SHRIRAMFIN    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.3% Score:49.78 PCR:1 L2:0.0% RSI:35.38 RVOL:1.37x
+  MUTHOOTFIN    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-4.3% Score:54.7 PCR:1 L2:0.0% RSI:35.17 RVOL:1.04x
+  PNB           [PCR:fail] [L2:fail] Γ£à DOWN   Act:-4.9% Score:41.28 PCR:1 L2:0.0% RSI:22.93 RVOL:0.71x
+  BANKBARODA    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.2% Score:54.48 PCR:1 L2:0.0% RSI:27.59 RVOL:0.93x
+  CANBK         [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.5% Score:49.29 PCR:1 L2:0.0% RSI:19.77 RVOL:1.35x
+  UNIONBANK     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-3.0% Score:59.14 PCR:1 L2:0.0% RSI:17.89 RVOL:0.6x
+  IDFCFIRSTB    [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-2.4% Score:55.24 PCR:1 L2:0.0% RSI:54.71 RVOL:0.73x
+  INDIGO        [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.6% Score:49.68 PCR:1 L2:0.0% RSI:32.46 RVOL:1.34x
+  MOTHERSON     [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-1.2% Score:55.38 PCR:1 L2:0.0% RSI:57.65 RVOL:0.97x
+  BOSCHLTD      [PCR:fail] [L2:fail] Γ¥î NEUTRAL Act:-0.4% Score:54.97 PCR:1 L2:0.0% RSI:46.58 RVOL:0.4x
