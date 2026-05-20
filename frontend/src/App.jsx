@@ -156,20 +156,28 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const isRanging = adx <= 20;
   let rsiSignal = 0;
   if (isTrending) {
-    // Trending: extreme RSI less reliable for reversal
-    rsiSignal = rsi > 65 ? -1 : (rsi < 35 ? (momentum > 0 ? 1 : -1) : 0);
+    // Trending: RSI extremes = trend exhaustion → mean-revert signal
+    if (rsi > 70) rsiSignal = -1;
+    else if (rsi > 60) rsiSignal = -0.5;
+    else if (rsi < 30) rsiSignal = (momentum > 0 ? 1 : -0.5); // Oversold + rising momentum = buy
+    else if (rsi < 40) rsiSignal = (momentum > 0 ? 0.5 : -0.5);
   } else if (isRanging) {
-    // Ranging: RSI mean-reversion is strong
-    rsiSignal = rsi > 60 ? -1 : (rsi < 40 ? 1 : 0);
+    // Ranging: RSI mean-reversion is the dominant signal
+    if (rsi > 65) rsiSignal = -1;
+    else if (rsi > 55) rsiSignal = -0.5;
+    else if (rsi < 35) rsiSignal = 1;
+    else if (rsi < 45) rsiSignal = 0.5;
   } else {
-    rsiSignal = rsi > 55 ? 1 : (rsi < 45 ? -1 : 0);
+    // Transitional ADX (20-25): mild signals only
+    if (rsi > 60) rsiSignal = 0.5;
+    else if (rsi < 40) rsiSignal = -0.5;
   }
-  // Volatility-adjusted extremes
+  // Volatility-adjusted extremes: override with strong signals at extremes
   if (atrTrend < 0) {
     if (rsi < 25) rsiSignal = 1;
     if (rsi > 75) rsiSignal = -1;
   }
-  // RSI divergence detection
+  // RSI divergence detection (most reliable reversal signal)
   const rsiDivergence = (rsi < 35 && momentum > 0) ? 1 : (rsi > 65 && momentum < 0) ? -1 : 0;
   if (rsiDivergence !== 0) rsiSignal = rsiDivergence;
 
@@ -200,19 +208,25 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const isBullish = biasSum >= 0;
 
   // --- SHAP WEIGHTS (1-DAY PREDICTION) ---
-  // Intraday-dominant: RSI, ATR headroom, L2, PCR have highest impact
-  // Multi-day context (momentum, MTF, EMA) reduced — they set bias, not next-day precision
+  // Balanced weighting: no single factor should dominate beyond ±10
+  // RSI signal is now fractional (-1 to +1) so effective range is ±10
   const baseScore = 50;
-  const shapRsi = rsiSignal * 14;           // RSI is king for 1-day mean-reversion
-  const shapPcr = pcrSignal * (hasOC ? 9 : 4);  // Real PCR is highly predictive intraday
-  const shapAtr = isExhausted ? -18 : Math.round(atrHeadroomPct * 0.14); // ATR headroom critical for 1-day
-  const shapL2 = l2Signal * (hasL2 ? 9 : 2);    // L2 order flow is pure intraday signal
-  const shapMom = momSignal * 6;            // 5-day momentum: directional context only
+  const shapRsi = Math.round(rsiSignal * 10);   // RSI: ±10 max (was ±14, too dominant)
+  const shapPcr = pcrSignal * (hasOC ? 8 : 3);  // Real PCR: ±8 (was ±9)
+  const shapAtr = isExhausted ? -18 : Math.round(Math.min(atrHeadroomPct * 0.12, 12)); // ATR: +12 max (was uncapped)
+  const shapL2 = l2Signal * (hasL2 ? 8 : 2);    // L2 order flow: ±8 (was ±9)
+  const shapMom = momSignal * 6;                 // 5-day momentum: ±6
   const shapVeto = isVetoed ? -15 : (vetoFailCount === 1 ? -5 : 5);
-  const shapEma = emaTrendSignal * 5;       // EMA structure: context, not next-day driver
-  const shapMtf = mtfSignal * 3;            // MTF: weakest for 1-day, still useful as filter
+  const shapEma = emaTrendSignal * 5;            // EMA structure: ±5
+  const shapMtf = mtfSignal * 3;                 // MTF: ±3
 
-  let finalScore = Math.round(baseScore + shapRsi + shapPcr + shapAtr + shapL2 + shapMom + shapVeto + shapEma + shapMtf);
+  // Signal consensus bonus: if 3+ real data factors agree, add conviction
+  const realSignals = [rsiSignal > 0 ? 1 : (rsiSignal < 0 ? -1 : 0), momSignal, l2Signal, emaTrendSignal, pcrSignal];
+  const bullCount = realSignals.filter(s => s > 0).length;
+  const bearCount = realSignals.filter(s => s < 0).length;
+  const consensusBonus = bullCount >= 4 ? 4 : (bearCount >= 4 ? -4 : 0);
+
+  let finalScore = Math.round(baseScore + shapRsi + shapPcr + shapAtr + shapL2 + shapMom + shapVeto + shapEma + shapMtf + consensusBonus);
   finalScore = Math.max(5, Math.min(95, finalScore));
 
   // Dynamic ATR Predictor — matches backend scoreEngine logic
@@ -818,11 +832,47 @@ export default function App() {
         // mtfAlignment: +3 all bullish, -3 all bearish, 0 mixed
         const mtfAlignment = realMomentum + mom10 + mom20;
 
-        // FIX: Use chart data's second-to-last close for reliable previousClose
-        // meta.previousClose is often undefined/stale for .NS stocks
-        const prevClose = closes.length >= 2
-          ? closes[closes.length - 2]
-          : (meta.previousClose || meta.chartPreviousClose || currentPrice);
+        // ═══════════════════════════════════════════════════════════════
+        // RELIABLE PREVIOUS CLOSE — Timestamp-Aware Algorithm
+        // ═══════════════════════════════════════════════════════════════
+        // Problem: With range=1mo&interval=1d, the last candle may or may not
+        // include today's data. If it does, closes[last] ≈ currentPrice and
+        // closes[last-1] = yesterday's close. If it doesn't, closes[last] IS
+        // yesterday's close and meta.regularMarketPrice is today's live price.
+        //
+        // Solution: Compare the chart's last timestamp to today's date (IST).
+        // ═══════════════════════════════════════════════════════════════
+        const timestamps = result.timestamp || [];
+        const lastChartTs = timestamps.length > 0 ? timestamps[timestamps.length - 1] * 1000 : 0;
+        const lastChartDate = new Date(lastChartTs);
+        const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const isSameDay = lastChartDate.getFullYear() === todayIST.getFullYear()
+          && lastChartDate.getMonth() === todayIST.getMonth()
+          && lastChartDate.getDate() === todayIST.getDate();
+
+        let prevClose;
+        if (isSameDay && closes.length >= 2) {
+          // Chart includes today's candle → second-to-last is yesterday
+          prevClose = closes[closes.length - 2];
+        } else if (!isSameDay && closes.length >= 1) {
+          // Chart's last candle is yesterday → THAT is yesterday's close
+          // meta.regularMarketPrice is today's live/closing price
+          prevClose = closes[closes.length - 1];
+        } else {
+          // Fallback to Yahoo meta fields
+          prevClose = meta.previousClose || meta.chartPreviousClose || currentPrice;
+        }
+
+        // Cross-validate: if meta.previousClose exists and is close to our
+        // calculated prevClose, use it (it's more precise). If they diverge
+        // wildly (>5%), trust meta.previousClose as it's the official value.
+        if (meta.previousClose && meta.previousClose > 0) {
+          const drift = Math.abs(prevClose - meta.previousClose) / meta.previousClose;
+          if (drift > 0.05) {
+            // Our chart-based prevClose diverges >5% from official → trust official
+            prevClose = meta.previousClose;
+          }
+        }
 
         const change = (prevClose && prevClose > 0) ? (currentPrice - prevClose) : 0;
         const changePct = (prevClose && prevClose > 0) ? ((change / prevClose) * 100) : 0;
