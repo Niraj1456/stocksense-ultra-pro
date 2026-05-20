@@ -220,13 +220,26 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const shapEma = emaTrendSignal * 5;            // EMA structure: ±5
   const shapMtf = mtfSignal * 3;                 // MTF: ±3
 
+  // ADX trend conviction weighting: ±4
+  const trendDirection = biasSum > 0 ? 1 : (biasSum < 0 ? -1 : 0);
+  let shapAdx = 0;
+  if (adx > 30) {
+    shapAdx = trendDirection * 4; // Very strong trend conviction boost
+  } else if (adx > 25) {
+    shapAdx = trendDirection * 2; // Strong trend conviction boost
+  } else if (adx < 15) {
+    shapAdx = -trendDirection * 4; // Complete lack of trend: heavily suppress trend setup conviction
+  } else if (adx <= 20) {
+    shapAdx = -trendDirection * 2; // Sideways/ranging: suppress trend setup conviction
+  }
+
   // Signal consensus bonus: if 3+ real data factors agree, add conviction
   const realSignals = [rsiSignal > 0 ? 1 : (rsiSignal < 0 ? -1 : 0), momSignal, l2Signal, emaTrendSignal, pcrSignal];
   const bullCount = realSignals.filter(s => s > 0).length;
   const bearCount = realSignals.filter(s => s < 0).length;
   const consensusBonus = bullCount >= 4 ? 4 : (bearCount >= 4 ? -4 : 0);
 
-  let finalScore = Math.round(baseScore + shapRsi + shapPcr + shapAtr + shapL2 + shapMom + shapVeto + shapEma + shapMtf + consensusBonus);
+  let finalScore = Math.round(baseScore + shapRsi + shapPcr + shapAtr + shapL2 + shapMom + shapVeto + shapEma + shapMtf + shapAdx + consensusBonus);
   finalScore = Math.max(5, Math.min(95, finalScore));
 
   // Dynamic ATR Predictor — matches backend scoreEngine logic
@@ -494,7 +507,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
       { layer: "Layer 18 (ATR Predictor)", weight: "YAHOO LIVE", points: `${shapAtr > 0 ? '+' : ''}${shapAtr}`, reason: `Vol regime: ${volRegime}. Clustering: ${volCluster}. ATR ROC: ${atrRoc.toFixed(1)}%. ${atrHeadroomPct.toFixed(0)}% headroom.` },
       { layer: "EMA Trend Analysis", weight: ema20 ? "YAHOO LIVE" : "N/A", points: `${shapEma > 0 ? '+' : ''}${shapEma}`, reason: ema20 && ema50 ? `EMA20: ${ema20.toFixed(0)}, EMA50: ${ema50.toFixed(0)}. ${ema20 > ema50 ? 'Golden Cross (Bullish structure).' : 'Death Cross (Bearish structure).'}` : 'Insufficient data for EMA.' },
       { layer: "Multi-TF Momentum", weight: "YAHOO LIVE", points: `${shapMtf > 0 ? '+' : ''}${shapMtf}`, reason: `5d/10d/20d alignment: ${mtfAlignment > 0 ? '+' : ''}${mtfAlignment}/3. ${Math.abs(mtfAlignment) >= 2 ? 'Strong trend agreement.' : 'Timeframes disagree — mixed signals.'}` },
-      { layer: "ADX Trend Strength", weight: "YAHOO LIVE", points: '+0', reason: `ADX at ${adx.toFixed(1)}. ${adx > 25 ? 'Trending market — directional signals reliable.' : adx <= 20 ? 'Ranging market — mean-reversion favored.' : 'Transitional — moderate conviction.'}` }
+      { layer: "ADX Trend Strength", weight: "YAHOO LIVE", points: `${shapAdx > 0 ? '+' : ''}${shapAdx}`, reason: `ADX at ${adx.toFixed(1)}. ${adx > 25 ? 'Trending market — directional signals reliable.' : adx <= 20 ? 'Ranging market — mean-reversion favored.' : 'Transitional — moderate conviction.'}` }
     ],
     layers: [
       { title: "Layer 13: System Veto Filters", badge: isVetoed ? "TRADE BLOCKED" : "ALL CLEAR", class: isVetoed ? "badge-negative" : "badge-positive", data: [{ l: "RVOL (Real)", v: `${rvol}x ${rvolPass ? '✅' : '❌'}` }, { l: "Momentum", v: `${momentum > 0 ? 'UP' : momentum < 0 ? 'DOWN' : 'FLAT'} ${mtfPass ? '✅' : '❌'}` }, { l: "ATR Trend", v: `${atrTrend > 0 ? 'Expanding' : atrTrend < 0 ? 'Contracting' : 'Stable'} ${indexAlignPass ? '✅' : '❌'}` }] },
@@ -676,8 +689,8 @@ export default function App() {
         else if (selectedStock === "NIFTY PHARMA") yfSymbol = "^CNXPHARMA";
         else yfSymbol = `${selectedStock.replace(/\s+/g, '')}.NS`; // Sanitize spaces for flawless fetching
 
-        // Using 1mo range with 1d interval to calculate exactly 30-days of historical ATR data
-        const targetUrl = `/api/yahoo/v8/finance/chart/${yfSymbol}?range=1mo&interval=1d`;
+        // Using 3mo range with 1d interval to calculate 50-day EMA, 28-day ADX, and Multi-TF momentum
+        const targetUrl = `/api/yahoo/v8/finance/chart/${yfSymbol}?range=3mo&interval=1d`;
 
         const response = await fetch(targetUrl);
         const yfData = await response.json();
@@ -696,8 +709,6 @@ export default function App() {
 
         // 30-Day ATR Calculation Engine
         const quote = result.indicators?.quote?.[0];
-        let totalTR = 0;
-        let trCount = 0;
         const closes = [];
         const volumes = [];
         const trValues = [];
@@ -710,13 +721,15 @@ export default function App() {
               const l = quote.low[i];
               const pc = quote.close[i - 1];
               const tr = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
-              totalTR += tr;
               trValues.push(tr);
-              trCount++;
             }
           }
         }
-        const atrValue = trCount > 0 ? (totalTR / trCount) : 0;
+        // Calculate stable 20-day ATR from the most recent 20 candles to maintain standard calibration
+        const recentTrValues = trValues.slice(-20);
+        const atrValue = recentTrValues.length > 0 
+          ? (recentTrValues.reduce((a, b) => a + b, 0) / recentTrValues.length) 
+          : 0;
         const atrPct = currentPrice > 0 ? (atrValue / currentPrice) * 100 : 1.5;
 
         // --- REAL RSI CALCULATION (14-period) ---
