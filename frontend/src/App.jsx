@@ -838,7 +838,11 @@ export default function App() {
 
       // 2. Also try Express backend for additional layer analysis
       const targetMode = mode === "LONG_TERM" ? "LT" : "ST";
-      const response = await fetch(`http://localhost:3000/api/analyze/${selectedStock}/${targetMode}`, {
+      const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:3000'
+          : 'https://stocksense-backend.onrender.com');
+      const response = await fetch(`${backendBaseUrl}/api/analyze/${selectedStock}/${targetMode}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       }).catch(() => null);
