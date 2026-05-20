@@ -1395,3 +1395,377 @@ body {
   margin-top: 0.05rem;
 }
 
+/* ==========================================================================
+   ELITE UI/UX PREMIUM WORKSTATION DESIGN SYSTEM ADDITIONS
+   ========================================================================== */
+
+/* ===== Breathing rating-based glows ===== */
+@keyframes breathing-glow-buy {
+  0% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.1), inset 0 0 2px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(16, 185, 129, 0.45), inset 0 0 10px rgba(16, 185, 129, 0.35);
+    border-color: rgba(16, 185, 129, 0.75);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.1), inset 0 0 2px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+}
+
+@keyframes breathing-glow-neutral {
+  0% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.1), inset 0 0 2px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(245, 158, 11, 0.45), inset 0 0 10px rgba(245, 158, 11, 0.35);
+    border-color: rgba(245, 158, 11, 0.75);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.1), inset 0 0 2px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+}
+
+@keyframes breathing-glow-avoid {
+  0% {
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.1), inset 0 0 2px rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(244, 63, 94, 0.45), inset 0 0 10px rgba(244, 63, 94, 0.35);
+    border-color: rgba(244, 63, 94, 0.75);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.1), inset 0 0 2px rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.25);
+  }
+}
+
+.glow-buy {
+  animation: breathing-glow-buy 3s infinite ease-in-out;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+.glow-neutral {
+  animation: breathing-glow-neutral 3s infinite ease-in-out;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+.glow-avoid {
+  animation: breathing-glow-avoid 3s infinite ease-in-out;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+/* ===== State-of-the-Art Glassmorphic structures ===== */
+.glass-panel-premium {
+  background: rgba(15, 18, 26, 0.4) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.app-container:not(.dark) .glass-panel-premium {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04) !important;
+}
+
+/* ===== Rapid-Recognition Status Grid ===== */
+.status-grid-container {
+  margin-top: 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.85rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.status-grid-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-grid-active-badge {
+  font-size: 0.52rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+}
+
+.status-node {
+  height: 14px;
+  border-radius: 3px;
+  position: relative;
+  cursor: help;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+}
+
+.status-node.positive {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+  border-color: #10b981;
+}
+
+.status-node.negative {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+  border-color: #f43f5e;
+}
+
+.status-node.neutral {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+}
+
+.status-node.offline {
+  background: var(--bg-primary);
+  opacity: 0.3;
+  border-style: dashed;
+}
+
+.status-node:hover {
+  transform: scale(1.2) translateY(-1px);
+  z-index: 10;
+  filter: brightness(1.15);
+}
+
+/* ===== Expandable Math Reasoning Blocks ===== */
+.shap-bar-node-clickable {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.shap-bar-node-clickable:hover {
+  background: var(--bg-hover);
+}
+
+.math-reasoning-block {
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin-top: 0.4rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.math-formula-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.math-formula-code {
+  display: block;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.math-reasoning-desc {
+  color: var(--text-secondary);
+}
+
+/* ===== Premium Interactive Order Book Imbalance Fill ===== */
+.imbalance-bar-premium {
+  height: 14px !important;
+  border-radius: 7px !important;
+  overflow: hidden;
+  display: flex;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.imbalance-bid-fill-glowing {
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.imbalance-ask-fill-glowing {
+  background: linear-gradient(90deg, #f43f5e 0%, #e11d48 100%) !important;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===== GARCH Volatility Heartbeat Pulse ===== */
+.garch-pulse-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.garch-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+
+@keyframes pulse-expansion {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  50% { transform: scale(1.2); box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+@keyframes pulse-normal {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-compression {
+  0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { transform: scale(1.03); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0); }
+  100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.garch-pulse-dot.expansion {
+  background: #f43f5e;
+  animation: pulse-expansion 1.2s infinite ease-in-out;
+}
+
+.garch-pulse-dot.normal {
+  background: #10b981;
+  animation: pulse-normal 2.2s infinite ease-in-out;
+}
+
+.garch-pulse-dot.compression {
+  background: #6366f1;
+  animation: pulse-compression 3.5s infinite ease-in-out;
+}
+
+/* ===== Watchlist and Sidebar status indicator dot ===== */
+.status-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.4rem;
+}
+
+@keyframes status-pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes status-pulse-amber {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes status-pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+.status-indicator-dot.green {
+  background-color: #10b981;
+  animation: status-pulse-green 2s infinite;
+}
+
+.status-indicator-dot.amber {
+  background-color: #f59e0b;
+  animation: status-pulse-amber 2s infinite;
+}
+
+.status-indicator-dot.red {
+  background-color: #f43f5e;
+  animation: status-pulse-red 2s infinite;
+}
+
+.sidebar-card-premium {
+  background: rgba(15, 18, 26, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-row-premium {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem;
+  margin-bottom: 0.35rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-row-premium:hover {
+  background: var(--bg-hover);
+  border-color: rgba(16, 185, 129, 0.15);
+  transform: translateX(2px);
+}
+
+.app-container:not(.dark) .sidebar-card-premium {
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 4px 20px rgba(31, 38, 135, 0.02) !important;
+}
+
+.app-container:not(.dark) .sidebar-row-premium {
+  background: rgba(0, 0, 0, 0.01);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+

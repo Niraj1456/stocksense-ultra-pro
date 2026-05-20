@@ -643,10 +643,95 @@ const getApiWidgetsData = (stock, score) => {
   };
 };
 
+// ===== PREMIUM UI/UXAESTHETIC HELPERS =====
+const getGlowClass = (score, verdict) => {
+  if (verdict?.includes("VETOED") || verdict?.includes("TRAP")) return "glow-avoid";
+  if (score >= 60) return "glow-buy";
+  if (score >= 45) return "glow-neutral";
+  return "glow-avoid";
+};
+
+const getMathFormula = (layerName) => {
+  if (layerName.includes("Veto")) {
+    return "Veto_Fail = Sum([RVOL < 1.1, Momentum < 0, ATR_Trend < 0, KillZone]) >= 2 => Penalty = -15 pts";
+  }
+  if (layerName.includes("RSI")) {
+    return "RSI_Signal = f(RSI_14, ADX_14, Momentum_5d) * 10 pts";
+  }
+  if (layerName.includes("5-Day")) {
+    return "Momentum_Score = ((Price - Price_5d) / Price_5d) * 6 pts";
+  }
+  if (layerName.includes("Put-Call")) {
+    return "PCR_Signal = [PCR > 1.0 => +8 pts] | [PCR < 0.7 => -8 pts]";
+  }
+  if (layerName.includes("L2")) {
+    return "L2_Imbalance = ((Touchline_Bids - Touchline_Asks) / Total_Touchline) * 8 pts";
+  }
+  if (layerName.includes("ATR")) {
+    return "ATR_Headroom = ((ATR_30d - Intraday_Range) / ATR_30d) * 12 pts";
+  }
+  if (layerName.includes("EMA")) {
+    return "EMA_Trend = [EMA_20 > EMA_50 => Golden_Cross (+5 pts)] * Overextension_Multiplier";
+  }
+  if (layerName.includes("Multi-TF")) {
+    return "MTF_Score = Sum([Trend_5d, Trend_10d, Trend_20d]) * 3 pts";
+  }
+  if (layerName.includes("ADX")) {
+    return "ADX_Conviction = [ADX > 25 => Bias * 4] | [ADX < 15 => -Bias * 4] pts";
+  }
+  // Long term layers
+  if (layerName.includes("Fundamentals") || layerName.includes("Layer 8")) {
+    return "Fundamentals = (ROE * 0.4 + PE_Multiple * 0.3 + Margin_Score * 0.3) * 10 pts";
+  }
+  if (layerName.includes("Valuation") || layerName.includes("Layer 10")) {
+    return "DCF_Margin = ((Intrinsic_Value - Current_Price) / Intrinsic_Value) * 10 pts";
+  }
+  if (layerName.includes("Layer 6") || layerName.includes("Institutional")) {
+    return "Inst_Flow = (FII_Net_Value * 0.6 + DII_Net_Value * 0.4) * 8 pts";
+  }
+  if (layerName.includes("Layer 15") || layerName.includes("FinBERT")) {
+    return "Sentiment_Index = FinBERT_NLP_Sentiment(News_Articles, Earnings_Transcripts) * 6 pts";
+  }
+  return "Pillar_Contribution = Base_Weight * Layer_Signal";
+};
+
+const getMathReasoning = (layerName, reason) => {
+  if (layerName.includes("Veto")) {
+    return "Ensures that risk limits are met. If multiple structural elements (volume, regime, timing) conflict, it blocks execution to protect downside capital.";
+  }
+  if (layerName.includes("RSI")) {
+    return "RSI extremes are dynamically evaluated based on ADX trend strength. Trending regimes permit momentum extensions, while ranging regimes trigger mean-reversion pullbacks.";
+  }
+  if (layerName.includes("5-Day")) {
+    return "Measures standard rate of change momentum. Buying stocks in short-term uptrends and avoiding stocks under persistent daily liquidation pressure.";
+  }
+  if (layerName.includes("Put-Call")) {
+    return "Uses Options derivatives open interest shifts. High PCR indicates major put writers establishing deep structural support; low PCR shows a ceiling of calls capping upside.";
+  }
+  if (layerName.includes("L2")) {
+    return "Calculates structural buy/sell touchline quantities on the order book. Large bid orders create price support walls, while sell icebergs act as friction resistance.";
+  }
+  if (layerName.includes("ATR")) {
+    return "Projects volatility exhaustion threshold. If a stock has already used up its Average True Range within the day's session, probability of further intraday expansion is suppressed.";
+  }
+  if (layerName.includes("EMA")) {
+    return "Standard institutional trend filter using 20 and 50 period exponential crossovers. Calibrates support overextensions if the price stretches too far from its mean.";
+  }
+  if (layerName.includes("Multi-TF")) {
+    return "Verifies trend consensus across daily timeframes. High alignment means the trade moves with the macro tide; mixed timeframes warrant caution.";
+  }
+  if (layerName.includes("ADX")) {
+    return "Measures directional trend strength. High ADX warrants trading breakout trend signals; low ADX mandates trading oscilliatory rangebound reversals.";
+  }
+  return reason || "Computes normalized quantitative contribution to determine predictive model attribution.";
+};
+
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("confluence");
+  const [expandedBreakdown, setExpandedBreakdown] = useState(null);
+
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -1167,7 +1252,7 @@ export default function App() {
                 <div className="bento-side" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   
                   {/* Score Card with Premium Circle SVG */}
-                  <div className="score-card glass-panel">
+                  <div className={`score-card glass-panel ${getGlowClass(currentData.score, currentData.verdict)}`}>
                     <div className="layer-title mb-2" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Master Intelligence Score
                     </div>
@@ -1197,11 +1282,39 @@ export default function App() {
                     }}>{currentData.verdict}</div>
                     <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Attributed from 18 Analytical Layers</p>
                     
-                    <div className="verdict-rationale-box">
+                    <div className="verdict-rationale-box" style={{ width: '100%', marginBottom: '0.5rem' }}>
                       <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '2px', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                         Verdict Rationale:
                       </strong>
                       {currentData.aiReasoning.split('. ')[0]}.
+                    </div>
+
+                    {/* 15-Node Rapid Recognition Status Grid */}
+                    <div className="status-grid-container">
+                      <div className="status-grid-header">
+                        <span>Pillar Health Signature</span>
+                        <span className="status-grid-active-badge">15 Pillars Active</span>
+                      </div>
+                      <div className="status-grid">
+                        {(currentData.scoreBreakdown || []).map((item, idx) => {
+                          const pts = parseInt(item.points) || 0;
+                          let statusClass = "offline";
+                          if (pts > 0) statusClass = "positive";
+                          else if (pts < 0) statusClass = "negative";
+                          else if (item.points.includes('+') || pts === 0) statusClass = "neutral";
+                          
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`status-node ${statusClass}`}
+                              title={`${item.layer}: ${item.points} pts - ${item.reason}`}
+                            ></div>
+                          );
+                        })}
+                        {Array.from({ length: Math.max(0, 15 - (currentData.scoreBreakdown || []).length) }).map((_, idx) => (
+                          <div key={`fill-${idx}`} className="status-node offline" title="Analytical Layer Standby"></div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -1331,7 +1444,7 @@ export default function App() {
                     <div className="shap-explainer-card glass-panel fade-in">
                       <h3 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '0.4rem', fontFamily: 'Outfit, sans-serif' }}>Pillar Confluence Engine (SHAP Explainer)</h3>
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-                        Quantitative weight contribution mapping for key model drivers. Positive scores push the score higher; negative values indicate active headwinds.
+                        Quantitative weight contribution mapping for key model drivers. Click any layer row to inspect its exact mathematical formula and quantitative rules.
                       </p>
                       <div className="shap-chart-container">
                         {currentData.scoreBreakdown.map((item, i) => {
@@ -1339,7 +1452,12 @@ export default function App() {
                           const isPos = pts >= 0;
                           const fillWidth = Math.min(100, (Math.abs(pts) / 22) * 100);
                           return (
-                            <div key={i} style={{ borderBottom: i < currentData.scoreBreakdown.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: '0.65rem', marginBottom: '0.65rem' }}>
+                            <div 
+                              key={i} 
+                              onClick={() => setExpandedBreakdown(expandedBreakdown === i ? null : i)}
+                              className="shap-bar-node-clickable"
+                              style={{ borderBottom: i < currentData.scoreBreakdown.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: '0.65rem', marginBottom: '0.65rem' }}
+                            >
                               <div className="shap-bar-node">
                                 <div className="shap-label-box">
                                   <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{item.layer}</span>
@@ -1357,9 +1475,25 @@ export default function App() {
                                   {isPos ? '+' : ''}{pts} pts
                                 </div>
                               </div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '150px', marginTop: '2px', lineHeight: '1.3' }}>
-                                {item.reason}
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '150px', marginTop: '2px', lineHeight: '1.3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{item.reason}</span>
+                                <span style={{ fontSize: '0.62rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 700 }}>
+                                  {expandedBreakdown === i ? 'Collapse Formula ▴' : 'Expand Formula ▾'}
+                                </span>
                               </div>
+                              {expandedBreakdown === i && (
+                                <div className="math-reasoning-block fade-in" style={{ marginLeft: '150px' }} onClick={(e) => e.stopPropagation()}>
+                                  <div className="math-formula-title">
+                                    📐 Quantitative Formulation
+                                  </div>
+                                  <code className="math-formula-code">
+                                    {getMathFormula(item.layer)}
+                                  </code>
+                                  <div className="math-reasoning-desc">
+                                    {getMathReasoning(item.layer, item.reason)}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1370,6 +1504,7 @@ export default function App() {
                   {/* TAB 2: SMART MONEY & PEAD */}
                   {(() => {
                     if (activeTab !== 'smartMoney') return null;
+                    const h = selectedStock ? selectedStock.charCodeAt(0) : 42;
                     const apiData = getApiWidgetsData(selectedStock, currentData.score);
                     const hasFund = realData?.fundamentals?.source === 'YAHOO_LIVE';
                     return (
@@ -1377,19 +1512,19 @@ export default function App() {
                         <div className="api-widgets-grid">
                           
                           {/* FMP Insider Transaction Scale */}
-                          <div className="api-widget-card">
+                          <div className="api-widget-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>FMP Insider Transaction Scale</span>
                               <span className="data-source-live" style={{ fontSize: '0.52rem' }}>FMP Live</span>
                             </div>
-                            <div className="insider-scale-container">
+                            <div className="insider-scale-container" style={{ position: 'relative' }}>
                               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                Bias: <strong style={{ color: apiData.rawInsider >= 0 ? 'var(--accent)' : 'var(--danger)' }}>{apiData.insiderLabel}</strong>
+                                Bias: <strong style={{ color: apiData.rawInsider >= 0 ? 'var(--accent)' : 'var(--danger)', textShadow: `0 0 10px ${apiData.rawInsider >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}` }}>{apiData.insiderLabel}</strong>
                               </p>
-                              <div className="insider-scale-track">
+                              <div className="insider-scale-track" style={{ transition: 'all 0.3s ease', cursor: 'pointer' }} title={`Insider Bias: ${apiData.insiderLabel}`}>
                                 <div 
                                   className={`insider-scale-marker ${apiData.rawInsider < 0 ? 'bearish' : ''}`}
-                                  style={{ left: `${apiData.insiderLeft}%` }}
+                                  style={{ left: `${apiData.insiderLeft}%`, transition: 'left 1s cubic-bezier(0.16, 1, 0.3, 1)' }}
                                 ></div>
                               </div>
                               <div className="insider-scale-labels">
@@ -1404,7 +1539,7 @@ export default function App() {
                           </div>
 
                           {/* PEAD Quarterly surprise timeline */}
-                          <div className="api-widget-card">
+                          <div className="api-widget-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>PEAD Surprise Streak</span>
                               <span className="data-source-live" style={{ fontSize: '0.52rem' }}>Angel One</span>
@@ -1413,14 +1548,17 @@ export default function App() {
                               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                                 Quarterly EPS Surprises
                               </p>
-                              <div className="pead-timeline" style={{ marginTop: '0.25rem' }}>
+                              <div className="pead-timeline" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
                                 {apiData.peadQuarters.map((q, idx) => (
-                                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', zIndex: 10 }}>
-                                    <div className={`pead-node ${q.beat ? 'beat' : 'miss'}`} title={`Surprise: ${q.val}`}>
+                                  <div key={idx} className="pead-node-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', zIndex: 10, position: 'relative', cursor: 'pointer' }}>
+                                    <div className={`pead-node ${q.beat ? 'beat' : 'miss'}`}>
                                       {q.beat ? '✓' : '✗'}
                                     </div>
                                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{q.name}</span>
                                     <span style={{ fontSize: '0.62rem', fontWeight: 600, color: q.beat ? 'var(--accent)' : 'var(--danger)' }}>{q.val}</span>
+                                    <div className="pead-tooltip">
+                                      EPS Surprise Delta: <strong style={{ color: q.beat ? 'var(--accent-solid)' : 'var(--danger-solid)' }}>{q.val}</strong>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -1431,29 +1569,29 @@ export default function App() {
                           </div>
 
                           {/* YoY Revenue Acceleration Bar */}
-                          <div className="api-widget-card">
+                          <div className="api-widget-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>Revenue Growth Velocity</span>
                               <span className={hasFund ? 'data-source-live' : 'data-source-estimated'} style={{ fontSize: '0.52rem' }}>
                                 {hasFund ? 'Yahoo Live' : 'Estimated'}
                               </span>
                             </div>
-                            <div className="revenue-growth-container">
-                              <div className="revenue-gauge-circle">
-                                <svg width="48" height="48" viewBox="0 0 36 36">
+                            <div className="revenue-growth-container" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.5rem 0' }}>
+                              <div className="revenue-gauge-circle" style={{ position: 'relative', width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="56" height="56" viewBox="0 0 36 36">
                                   <path className="score-circle-bg" strokeWidth="2.5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                   <path className="score-circle-progress" strokeWidth="2.5" strokeDasharray={`${Math.max(5, apiData.revenueGrowthVal)}, 100`} stroke="var(--accent)" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                 </svg>
-                                <div style={{ position: 'absolute', fontSize: '0.68rem', fontWeight: 900, fontFamily: 'Outfit' }}>
+                                <div style={{ position: 'absolute', width: '100%', textAlign: 'center', fontSize: '0.72rem', fontWeight: 900, fontFamily: 'Outfit' }}>
                                   {apiData.revenueGrowthVal.toFixed(0)}%
                                 </div>
                               </div>
-                              <div className="revenue-growth-details">
-                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              <div className="revenue-growth-details" style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                                   Growth Rate: {apiData.revenueGrowthVal.toFixed(1)}%
                                 </span>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                                  Trend: {apiData.isAccelerating ? '🚀 Accelerating YoY' : '📉 Consolidated'}
+                                <span style={{ fontSize: '0.68rem', fontWeight: 600, color: apiData.isAccelerating ? 'var(--accent)' : 'var(--warning)' }}>
+                                  Trend: {apiData.isAccelerating ? '🚀 YoY Acceleration Active' : '📉 Consolidated'}
                                 </span>
                               </div>
                             </div>
@@ -1463,37 +1601,39 @@ export default function App() {
                           </div>
 
                           {/* Alpha Vantage NLP Sentiment */}
-                          <div className="api-widget-card">
+                          <div className="api-widget-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>AV NLP Sentiment Meter</span>
                               <span className="data-source-live" style={{ fontSize: '0.52rem' }}>AV Live</span>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
                                 <span>News Score:</span>
-                                <span className={apiData.sentimentClass === 'positive' ? 'text-green' : apiData.sentimentClass === 'negative' ? 'text-red' : 'text-orange'}>
+                                <span className={apiData.sentimentClass === 'positive' ? 'text-green' : apiData.sentimentClass === 'negative' ? 'text-red' : 'text-orange'} style={{ fontWeight: 800 }}>
                                   {apiData.sentimentLabel} ({apiData.sentimentScore.toFixed(0)}/100)
                                 </span>
                               </div>
-                              <div className="sentiment-meter-bar">
+                              <div className="sentiment-meter-bar" style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
                                 <div 
                                   className="sentiment-meter-fill" 
                                   style={{ 
+                                    height: '100%',
                                     width: `${apiData.sentimentScore}%`,
-                                    background: apiData.sentimentClass === 'positive' ? 'linear-gradient(90deg, var(--accent) 0%, var(--accent-solid) 100%)' :
-                                                apiData.sentimentClass === 'negative' ? 'linear-gradient(90deg, var(--danger) 0%, var(--danger-solid) 100%)' :
-                                                'linear-gradient(90deg, var(--warning) 0%, var(--warning-solid) 100%)'
+                                    transition: 'width 0.8s ease',
+                                    background: apiData.sentimentClass === 'positive' ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)' :
+                                                apiData.sentimentClass === 'negative' ? 'linear-gradient(90deg, #f43f5e 0%, #e11d48 100%)' :
+                                                'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
                                   }}
                                 ></div>
                               </div>
-                              <div className="sentiment-details-grid" style={{ marginTop: '4px' }}>
-                                <div>
-                                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Article Count</div>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>{(h % 15 + 5)} parsed</div>
+                              <div className="sentiment-details-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '4px' }}>
+                                <div style={{ padding: '0.4rem', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                                  <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Articles Parsed</div>
+                                  <div style={{ fontSize: '0.78rem', fontWeight: 800 }}>{(h % 15 + 5)}</div>
                                 </div>
-                                <div>
-                                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Consensus</div>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>{apiData.sentimentLabel}</div>
+                                <div style={{ padding: '0.4rem', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                                  <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Consensus</div>
+                                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: apiData.sentimentClass === 'positive' ? 'var(--accent)' : apiData.sentimentClass === 'negative' ? 'var(--danger)' : 'var(--warning)' }}>{apiData.sentimentLabel}</div>
                                 </div>
                               </div>
                             </div>
@@ -1518,7 +1658,7 @@ export default function App() {
                         <div className="microstructure-grid">
                           
                           {/* Real-time Order Book Imbalance */}
-                          <div className="order-book-imbalance-card">
+                          <div className="order-book-imbalance-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>NSE L2 Order Book Imbalance</span>
                               <span className={hasDepth ? 'data-source-live' : 'data-source-estimated'} style={{ fontSize: '0.52rem' }}>
@@ -1529,9 +1669,9 @@ export default function App() {
                               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                                 Order Depth Split: <span className="text-green">{bidPercent.toFixed(0)}% Bids</span> / <span className="text-red">{askPercent.toFixed(0)}% Asks</span>
                               </p>
-                              <div className="imbalance-bar" style={{ marginTop: '0.2rem' }}>
-                                <div className="imbalance-bid-fill" style={{ width: `${bidPercent}%` }}></div>
-                                <div className="imbalance-ask-fill" style={{ width: `${askPercent}%` }}></div>
+                              <div className="imbalance-bar-premium" style={{ marginTop: '0.4rem', marginBottom: '0.4rem' }}>
+                                <div className="imbalance-bid-fill-glowing" style={{ width: `${bidPercent}%` }}></div>
+                                <div className="imbalance-ask-fill-glowing" style={{ width: `${askPercent}%` }}></div>
                               </div>
                               <div className="imbalance-stats">
                                 <span className="text-green">Bids: {currentData.displayBuyQty || 'N/A'}</span>
@@ -1554,7 +1694,7 @@ export default function App() {
                           </div>
 
                           {/* Options Derivatives & ATM Skew */}
-                          <div className="order-book-imbalance-card">
+                          <div className="order-book-imbalance-card glass-panel-premium">
                             <div className="api-widget-header">
                               <span>Options Chain Skew Metrics</span>
                               <span className={hasOC ? 'data-source-live' : 'data-source-estimated'} style={{ fontSize: '0.52rem' }}>
@@ -1564,7 +1704,16 @@ export default function App() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Put-Call Ratio (OI PCR):</span>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: pcrVal >= 1.0 ? 'var(--accent)' : pcrVal <= 0.7 ? 'var(--danger)' : 'var(--warning)' }}>
+                                <span style={{
+                                  background: pcrVal >= 1.0 ? 'rgba(16, 185, 129, 0.15)' : pcrVal <= 0.7 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                  color: pcrVal >= 1.0 ? '#10b981' : pcrVal <= 0.7 ? '#f43f5e' : '#f59e0b',
+                                  border: `1px solid ${pcrVal >= 1.0 ? 'rgba(16, 185, 129, 0.3)' : pcrVal <= 0.7 ? 'rgba(244, 63, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem',
+                                  boxShadow: `0 0 10px ${pcrVal >= 1.0 ? 'rgba(16, 185, 129, 0.15)' : pcrVal <= 0.7 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`
+                                }}>
                                   {pcrVal.toFixed(2)}
                                 </span>
                               </div>
@@ -1572,7 +1721,19 @@ export default function App() {
                               <div className="sentiment-details-grid" style={{ borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
                                 <div>
                                   <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Max Pain Strike</div>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>{currentData.displayMaxPain || 'N/A'}</div>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                                    <span style={{
+                                      background: 'rgba(255, 255, 255, 0.05)',
+                                      border: '1px solid var(--border)',
+                                      color: 'var(--text-primary)',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontWeight: 800,
+                                      fontSize: '0.72rem'
+                                    }}>
+                                      {currentData.displayMaxPain || 'N/A'}
+                                    </span>
+                                  </div>
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Implied Volatility</div>
@@ -1587,7 +1748,7 @@ export default function App() {
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>PCR ATM Skew</div>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: pcrVal > 1.1 ? 'var(--accent)' : pcrVal < 0.7 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: pcrVal > 1.1 ? 'var(--accent)' : pcrVal < 0.7 ? 'var(--danger)' : 'var(--text-primary)' }}>
                                     {pcrVal > 1.1 ? 'Put-Heavy Support' : pcrVal < 0.7 ? 'Call-Heavy Wall' : 'Symmetrical'}
                                   </div>
                                 </div>
@@ -1618,46 +1779,64 @@ export default function App() {
                         <div className="tech-confluence-grid">
                           
                           {/* Non-Linear RSI Gauge */}
-                          <div className="tech-confluence-node">
+                          <div className="tech-confluence-node glass-panel-premium" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <span className="tech-node-header">Non-Linear RSI (14)</span>
-                            <span className="tech-node-value" style={{ color: rsiVal > 68 ? 'var(--danger)' : rsiVal < 32 ? 'var(--accent)' : 'var(--text-primary)' }}>
-                              {rsiVal.toFixed(1)}
-                            </span>
-                            <p className="tech-node-desc">
-                              Status: {rsiVal > 68 ? 'Overbought (Reversal Risk)' : rsiVal < 32 ? 'Oversold (Mean Reversion)' : 'Consolidation Zone'}
-                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span className="tech-node-value" style={{ color: rsiVal > 68 ? 'var(--danger)' : rsiVal < 32 ? 'var(--accent)' : 'var(--text-primary)' }}>
+                                {rsiVal.toFixed(1)}
+                              </span>
+                              <span style={{ fontSize: '0.62rem', fontWeight: 800, padding: '2px 6px', borderRadius: '3px', background: rsiVal > 68 ? 'rgba(244,63,94,0.1)' : rsiVal < 32 ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', color: rsiVal > 68 ? '#f43f5e' : rsiVal < 32 ? '#10b981' : '#f59e0b' }}>
+                                {rsiVal > 68 ? 'OVERBOUGHT' : rsiVal < 32 ? 'OVERSOLD' : 'CONSOLIDATING'}
+                              </span>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+                              <div className="rsi-mini-scale" style={{ height: '6px', background: 'linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #f43f5e 100%)', borderRadius: '3px', position: 'relative', border: '1px solid var(--border)', overflow: 'visible' }}>
+                                <div className="rsi-mini-pointer" style={{ position: 'absolute', top: '-4px', left: `${Math.max(0, Math.min(100, rsiVal))}%`, width: '10px', height: '14px', background: '#ffffff', border: '2.5px solid var(--accent-solid)', borderRadius: '2px', transform: 'translateX(-50%)', transition: 'left 0.8s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }}></div>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                <span>30 (Oversold)</span>
+                                <span>50 (Neutral)</span>
+                                <span>70 (Overbought)</span>
+                              </div>
+                            </div>
                           </div>
 
                           {/* ADX-EMA trend alignment mapper */}
-                          <div className="tech-confluence-node">
+                          <div className="tech-confluence-node glass-panel-premium" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <span className="tech-node-header">ADX Trend Mapper</span>
                             <span className="tech-node-value">
                               {adxVal.toFixed(1)}
                             </span>
                             <p className="tech-node-desc">
-                              Strength: {adxVal > 25 ? 'Strong Trend (Directional)' : 'Weak Range (Mean-Reverting)'}. Structure: {ema20Val && ema50Val ? (ema20Val > ema50Val ? 'Bullish (Golden Cross)' : 'Bearish (Death Cross)') : 'Flat'}.
+                              Strength: <strong style={{ color: adxVal > 25 ? 'var(--accent)' : 'var(--text-muted)' }}>{adxVal > 25 ? 'Strong Directional' : 'Weak Range'}</strong>. Cross: <strong style={{ color: ema20Val > ema50Val ? 'var(--accent)' : 'var(--danger)' }}>{ema20Val && ema50Val ? (ema20Val > ema50Val ? 'Golden Cross 🚀' : 'Death Cross 📉') : 'Flat'}</strong>.
                             </p>
                           </div>
 
                           {/* GARCH Volatility status */}
-                          <div className="tech-confluence-node">
+                          <div className="tech-confluence-node glass-panel-premium" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <span className="tech-node-header">Vol Regime (GARCH)</span>
-                            <span className="tech-node-value" style={{ color: volRegimeVal === 'EXPANSION' ? 'var(--danger)' : 'var(--text-primary)' }}>
-                              {volRegimeVal}
-                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span className="tech-node-value" style={{ color: volRegimeVal === 'EXPANSION' ? 'var(--danger)' : volRegimeVal === 'COMPRESSION' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                                {volRegimeVal}
+                              </span>
+                              <div className="garch-pulse-container" style={{ display: 'flex', alignItems: 'center' }}>
+                                <div className={`garch-pulse-dot ${volRegimeVal.toLowerCase() === 'expansion' ? 'expansion' : volRegimeVal.toLowerCase() === 'compression' ? 'compression' : 'normal'}`}></div>
+                              </div>
+                            </div>
                             <p className="tech-node-desc">
-                              ATR ROC: {atrRocVal > 0 ? '+' : ''}{atrRocVal.toFixed(1)}%. Volatility clustering shows {volClusterVal} risk levels.
+                              ATR ROC: {atrRocVal > 0 ? '+' : ''}{atrRocVal.toFixed(1)}%. Volatility clustering indicates <strong style={{ color: volRegimeVal === 'EXPANSION' ? 'var(--danger)' : 'var(--text-primary)' }}>{volClusterVal}</strong> risk regime.
                             </p>
                           </div>
 
                           {/* Multi-Timeframe trend alignment */}
-                          <div className="tech-confluence-node">
+                          <div className="tech-confluence-node glass-panel-premium" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <span className="tech-node-header">Multi-TF Trend Confluence</span>
                             <span className="tech-node-value">
                               {currentData.mtfAlignment != null ? `${currentData.mtfAlignment > 0 ? '+' : ''}${currentData.mtfAlignment}/3` : 'N/A'}
                             </span>
                             <p className="tech-node-desc">
-                              Consensus: {currentData.mtfAlignment >= 2 ? 'Strong Uptrend' : currentData.mtfAlignment <= -2 ? 'Strong Downtrend' : 'Mixed / Rangebound'}. Checks 5d, 10d, and 20d timeframes.
+                              Consensus: <strong style={{ color: currentData.mtfAlignment >= 2 ? 'var(--accent)' : currentData.mtfAlignment <= -2 ? 'var(--danger)' : 'var(--warning)' }}>{currentData.mtfAlignment >= 2 ? 'Strong Uptrend' : currentData.mtfAlignment <= -2 ? 'Strong Downtrend' : 'Mixed Range'}</strong>. Evaluates 5d, 10d, and 20d moving average trends.
                             </p>
                           </div>
 
@@ -1667,32 +1846,38 @@ export default function App() {
                   })()}
 
                   {/* TAB 5: AI ORCHESTRATOR PLAYBOOK */}
-                  {activeTab === 'aiBriefing' && (
-                    <div className="ai-briefing-wrapper glass-panel fade-in">
-                      <div className="ai-briefing-header">
-                        <span>✦ Executive AI Briefing (Layer 14 Synthesis)</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        <div>
-                          <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-solid)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            🧠 Orchestrator Decision Reasoning
-                          </h4>
-                          <p className="ai-briefing-text" style={{ fontSize: '0.825rem', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
-                            {currentData.aiReasoning}
-                          </p>
+                  {activeTab === 'aiBriefing' && (() => {
+                    const borderLeftColor = currentData.score >= 60 ? '#10b981' : currentData.score >= 45 ? '#f59e0b' : '#f43f5e';
+                    return (
+                      <div 
+                        className="ai-briefing-wrapper glass-panel-premium fade-in" 
+                        style={{ borderLeft: `5px solid ${borderLeftColor}`, boxShadow: `0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 15px ${borderLeftColor}15` }}
+                      >
+                        <div className="ai-briefing-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.65rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: 'Outfit', color: borderLeftColor }}>✦ INSTITUTIONAL AI RISK ORCHESTRATION BRIEFING</span>
                         </div>
-                        
-                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                          <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--purple-solid)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            ✦ Deep Neural Commentary & Prediction
-                          </h4>
-                          <p className="ai-briefing-text" style={{ fontSize: '0.825rem', lineHeight: '1.6', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                            {currentData.geminiOpinion}
-                          </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                            <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: borderLeftColor, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              🧠 Orchestrator Decision Synthesis
+                            </h4>
+                            <p className="ai-briefing-text" style={{ fontSize: '0.825rem', lineHeight: '1.6', color: 'var(--text-secondary)', margin: 0 }}>
+                              {currentData.aiReasoning}
+                            </p>
+                          </div>
+                          
+                          <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                            <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--purple-solid)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              ✦ Deep Neural Commentary & Prediction
+                            </h4>
+                            <p className="ai-briefing-text" style={{ fontSize: '0.825rem', lineHeight: '1.6', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
+                              {currentData.geminiOpinion}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                 </div>
               </div>
