@@ -96,7 +96,7 @@ const getLongTermData = (stock, isBullRegime, realData = {}) => {
   };
 };
 
-const getShortTermData = (stock, currentPriceRaw, realAtr, dayRange, marketStatus, realData = {}) => {
+const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, realData = {}) => {
   const h = getHash(stock + "ST");
   const optChain = realData?.optionChain;
   const depth = realData?.marketDepth;
@@ -121,9 +121,11 @@ const getShortTermData = (stock, currentPriceRaw, realAtr, dayRange, marketStatu
   const l2Imbalance = hasL2 ? depth.l2Imbalance : (h % 40 - 20);
   const l2Badge = hasL2 ? 'NSE LIVE' : 'Estimated';
 
-  // Extract numeric price
-  const priceMatch = typeof currentPriceRaw === 'string' ? currentPriceRaw.replace(/[^0-9.]/g, '') : '';
-  const currentPrice = parseFloat(priceMatch) || 1000;
+  // Use numeric price directly (passed from Yahoo chart data)
+  // Fallback: try chart closes, then last resort 1000
+  const chartCloses = (realAtr && realAtr.closes) || [];
+  const currentPrice = (typeof numericPrice === 'number' && numericPrice > 0) ? numericPrice
+    : (chartCloses.length > 0 ? chartCloses[chartCloses.length - 1] : 1000);
 
   // Real 30-day ATR (from Yahoo Finance)
   const atrValue = (realAtr && realAtr.value > 0) ? realAtr.value : (currentPrice * 0.015);
@@ -626,7 +628,7 @@ export default function App() {
   const [selectedStock, setSelectedStock] = useState("NIFTY 50");
   const [watchlist, setWatchlist] = useState(["NIFTY 50", "NIFTY BANK", "NIFTY IT", "NIFTY AUTO", "NIFTY PHARMA"]); // Watchlist state
   const [mode, setMode] = useState("LONG_TERM"); // LONG_TERM or SHORT_TERM
-  const [livePrice, setLivePrice] = useState({ price: "Loading...", change: "", pct: "", positive: true });
+  const [livePrice, setLivePrice] = useState({ price: "Loading...", change: "", pct: "", positive: true, numericPrice: 0 });
   const [liveAtr, setLiveAtr] = useState(null); // Real 30-day ATR state
   const [dayRange, setDayRange] = useState({ high: null, low: null }); // Track current day's high/low
   const [marketStatus, setMarketStatus] = useState("UNKNOWN");
@@ -669,7 +671,6 @@ export default function App() {
         const result = yfData.chart.result[0];
         const meta = result.meta;
         const currentPrice = meta.regularMarketPrice;
-        const prevClose = meta.previousClose;
         const dayHigh = meta.regularMarketDayHigh || currentPrice;
         const dayLow = meta.regularMarketDayLow || currentPrice;
         const mState = meta.marketState || "CLOSED";
@@ -817,6 +818,12 @@ export default function App() {
         // mtfAlignment: +3 all bullish, -3 all bearish, 0 mixed
         const mtfAlignment = realMomentum + mom10 + mom20;
 
+        // FIX: Use chart data's second-to-last close for reliable previousClose
+        // meta.previousClose is often undefined/stale for .NS stocks
+        const prevClose = closes.length >= 2
+          ? closes[closes.length - 2]
+          : (meta.previousClose || meta.chartPreviousClose || currentPrice);
+
         const change = (prevClose && prevClose > 0) ? (currentPrice - prevClose) : 0;
         const changePct = (prevClose && prevClose > 0) ? ((change / prevClose) * 100) : 0;
 
@@ -826,7 +833,8 @@ export default function App() {
             price: `₹${currentPrice.toFixed(2)}`,
             change: `${change > 0 ? '+' : ''}${change.toFixed(2)}`,
             pct: `${change > 0 ? '+' : ''}${changePct.toFixed(2)}%`,
-            positive: change >= 0
+            positive: change >= 0,
+            numericPrice: currentPrice
           });
         }
       } catch (err) {
@@ -954,7 +962,7 @@ export default function App() {
   // For the active UI presentation, we merge the deterministic UI generator with any real data.
   let currentData = mode === "LONG_TERM"
     ? computeLongTerm(selectedStock, livePrice.positive, realData, liveAtr)
-    : getShortTermData(selectedStock, livePrice.price, liveAtr, dayRange, marketStatus, realData);
+    : getShortTermData(selectedStock, livePrice.numericPrice, liveAtr, dayRange, marketStatus, realData);
 
   // Example of overriding UI with real backend payload logic if it exists:
   if (backendAnalysis && backendAnalysis.ok && backendAnalysis.data) {
