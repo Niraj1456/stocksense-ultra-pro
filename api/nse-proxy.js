@@ -1,15 +1,29 @@
 export default async function handler(req, res) {
   try {
-    // Extract the NSE path: /api/nse/api/option-chain-equities?symbol=X -> /api/option-chain-equities?symbol=X
-    const fullUrl = req.url || '';
-    const nsePathMatch = fullUrl.match(/\/api\/nse\/(.*)/);
+    let originalPath = '';
+    let queryString = '';
 
-    if (!nsePathMatch) {
+    if (req.query && req.query.path) {
+      originalPath = req.query.path;
+      const { path, ...restQuery } = req.query;
+      const queryParams = new URLSearchParams(restQuery).toString();
+      queryString = queryParams ? `?${queryParams}` : '';
+    } else {
+      // Fallback: match from req.url
+      const fullUrl = req.url || '';
+      const nsePathMatch = fullUrl.match(/\/api\/nse\/(.*)/);
+      if (nsePathMatch) {
+        const parts = nsePathMatch[1].split('?');
+        originalPath = parts[0];
+        queryString = parts[1] ? `?${parts[1]}` : '';
+      }
+    }
+
+    if (!originalPath) {
       return res.status(400).json({ error: 'Invalid NSE API path' });
     }
 
-    const nsePath = nsePathMatch[1];
-    const targetUrl = `https://www.nseindia.com/${nsePath}`;
+    const targetUrl = `https://www.nseindia.com/${originalPath}${queryString}`;
 
     // Step 1: Get session cookies from NSE homepage
     const homeRes = await fetch('https://www.nseindia.com/', {

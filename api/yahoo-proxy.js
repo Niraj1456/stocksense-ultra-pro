@@ -1,17 +1,29 @@
 export default async function handler(req, res) {
   try {
-    // Vercel rewrites /api/yahoo/* to this function
-    // The original URL is preserved in req.url
-    // Extract the Yahoo path: /api/yahoo/v8/finance/chart/X.NS?range=1d -> /v8/finance/chart/X.NS?range=1d
-    const fullUrl = req.url || '';
-    const yahooPathMatch = fullUrl.match(/\/api\/yahoo\/(.*)/);
+    let originalPath = '';
+    let queryString = '';
 
-    if (!yahooPathMatch) {
+    if (req.query && req.query.path) {
+      originalPath = req.query.path;
+      const { path, ...restQuery } = req.query;
+      const queryParams = new URLSearchParams(restQuery).toString();
+      queryString = queryParams ? `?${queryParams}` : '';
+    } else {
+      // Fallback: match from req.url
+      const fullUrl = req.url || '';
+      const yahooPathMatch = fullUrl.match(/\/api\/yahoo\/(.*)/);
+      if (yahooPathMatch) {
+        const parts = yahooPathMatch[1].split('?');
+        originalPath = parts[0];
+        queryString = parts[1] ? `?${parts[1]}` : '';
+      }
+    }
+
+    if (!originalPath) {
       return res.status(400).json({ error: 'Invalid Yahoo API path' });
     }
 
-    const yahooPath = yahooPathMatch[1];
-    const targetUrl = `https://query1.finance.yahoo.com/${yahooPath}`;
+    const targetUrl = `https://query1.finance.yahoo.com/${originalPath}${queryString}`;
 
     const response = await fetch(targetUrl, {
       headers: {

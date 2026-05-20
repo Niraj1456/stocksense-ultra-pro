@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/yahoo/:path*",
-      "destination": "/api/yahoo-proxy"
+      "destination": "/api/yahoo-proxy?path=:path*"
     },
     {
       "source": "/api/nse/:path*",
-      "destination": "/api/nse-proxy"
+      "destination": "/api/nse-proxy?path=:path*"
     },
     {
       "source": "/(.*)",
