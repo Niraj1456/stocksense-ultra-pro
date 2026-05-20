@@ -9,24 +9,21 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: "10000"
       # Core Market Data: Angel One SmartAPI
       - key: ANGEL_API_KEY
-        sync: false
+        value: RtVN8ga2
       - key: ANGEL_CLIENT_ID
-        sync: false
+        value: AAAX164101
       - key: ANGEL_PIN
-        sync: false
+        value: "0808"
       - key: ANGEL_TOTP_SECRET
-        sync: false
-      # Alternative Data: Alpha Vantage (Sentiment, Sector, Earnings)
+        value: PFO2GKO22I4NZMTZ5G6TBFM6IU
+      # Alternative Data APIs
       - key: ALPHA_VANTAGE_KEY
-        sync: false
-      # Alternative Data: Financial Modeling Prep (Fundamentals, DCF, Insider)
+        value: 3A1S2PQ8RLS76HVQ
       - key: FMP_API_KEY
-        sync: false
+        value: gLL0tSazwanMMmROWDx15xTDg2VQBRvl
       # AI Orchestrator
-      - key: ANTHROPIC_API_KEY
-        sync: false
       - key: GEMINI_API_KEY
-        sync: false
+        value: AIzaSyAreW72dC6ro9QF5Q9EQ_oTqDvZNogc4e4
