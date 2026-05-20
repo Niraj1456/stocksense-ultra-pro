@@ -1,23 +1,38 @@
-# Stocksense Ultra Pro (Backend)
+# StockSense Ultra Pro — Institutional-Grade Analytical Terminal
 
-## Setup
+StockSense Ultra Pro is an advanced, high-density market intelligence and systematic decision-support terminal designed for institutional-grade accuracy.
+
+## 🚀 Key Elevated Features
+
+- **11-Pillar / 17-Layer Analytical Engine**: Fuses Angel One SmartAPI, Alpha Vantage API, and Financial Modeling Prep (FMP) APIs to process technical indicators, mean-reversion metrics, trend strength, volume vetoes, and market regimes.
+- **🎨 Premium Visual Revamp**: A beautiful, terminal-like dashboard featuring **Outfit** and **Inter** typography, custom HSL styling, glassmorphic bento-grid components, and smooth interactive hover feedback.
+- **🌗 Dual-Theme Support**: Toggle seamlessly between *Deep Velvet Dark Mode* (for low-light research sessions) and *Clean Studio Light Mode* (for bright-light environments), with automatic persistence.
+- **🎯 SVG Master Score Gauge**: A highly responsive, color-coded SVG circular progress ring that dynamically tracks stock scores and highlights BUY (emerald), HOLD (amber), or AVOID (crimson) signals.
+
+## 🛠️ Setup & Local Development
+
+### 1. Backend Server Setup
 
 ```bash
 npm install
 ```
 
-Create `.env` (see `.env.example`), then run:
+Create a `.env` file (refer to `.env.example`), then launch the server:
 
 ```bash
 npm run dev
 ```
 
-Server defaults to `http://localhost:8787`.
+The backend server runs at `http://localhost:8787` by default.
 
-## Layer 1 endpoints (initial)
+### 2. Frontend Terminal Setup
 
-- `GET /health`
-- `GET /api/layer1/nse/indices` (India VIX, NIFTY 50, etc.)
-- `GET /api/layer1/nse/advances-declines`
-- `GET /api/layer1/global/quotes` (NASDAQ/Nikkei/Hang Seng, USDINR, Crude)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend terminal runs at `http://localhost:5173`.
+
 
