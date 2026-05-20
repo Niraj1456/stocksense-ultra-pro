@@ -50,7 +50,7 @@ export default function IndexRibbon({ selectedStock, onSelect }) {
             <span className="index-value">
               {d ? d.price.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}
             </span>
-            <span className="index-change" style={{ color: d?.positive ? '#00d09c' : '#eb5b3c' }}>
+            <span className="index-change" style={{ color: d?.positive ? 'var(--accent)' : 'var(--danger)' }}>
               {d ? `${d.chg >= 0 ? '+' : ''}${d.chg.toFixed(2)} (${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(2)}%)` : '—'}
             </span>
           </div>

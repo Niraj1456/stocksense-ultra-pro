@@ -37,14 +37,14 @@ export default function NewsWidget({ symbol }) {
 
   return (
     <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '1.5rem' }}>
-      <div className="layer-header" style={{ marginBottom: '1.5rem' }}>
-        <span className="layer-title" style={{ fontSize: '1.2rem', color: '#fff' }}>Global News Feed</span>
-        <span className="layer-badge badge-neutral">LIVE</span>
+      <div className="layer-header" style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="layer-title" style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>Global News Feed</span>
+        <span className="data-source-live">LIVE</span>
       </div>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {news.map(item => (
-          <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
+          <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ 
                 fontSize: '0.75rem', 

@@ -24,40 +24,22 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {watchlist.length === 0 && (
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No stocks in watchlist yet. Search and add stocks to track.</p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              No stocks in watchlist yet. Search and add stocks to track.
+            </p>
           )}
           {watchlist.map(stock => (
             <div
               key={stock}
               onClick={() => onSelect(stock)}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '0.5rem 0.6rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: stock === selectedStock ? 'var(--accent-dim)' : 'transparent',
-                transition: 'all 0.15s'
-              }}
+              className={`sidebar-item${stock === selectedStock ? ' active' : ''}`}
             >
-              <span style={{
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                color: stock === selectedStock ? 'var(--accent-solid)' : 'var(--text-primary)'
-              }}>
+              <span className="sidebar-item-name">
                 {stock}
               </span>
               <span
+                className="sidebar-item-remove"
                 onClick={(e) => { e.stopPropagation(); onToggleWatchlist(stock); }}
-                style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '0 4px',
-                  borderRadius: '4px',
-                  transition: 'color 0.15s'
-                }}
                 title="Remove from watchlist"
               >
                 ×
@@ -80,23 +62,12 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Loading volume data...</span>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {volumeStocks.map((stock, i) => (
               <div
                 key={stock.symbol}
                 onClick={() => onSelect(stock.symbol)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  padding: '0.55rem 0.4rem',
-                  cursor: 'pointer',
-                  borderBottom: i < volumeStocks.length - 1 ? '1px solid var(--border)' : 'none',
-                  borderRadius: '6px',
-                  transition: 'background 0.15s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                className="sidebar-row"
               >
                 <span style={{
                   width: '20px',
@@ -163,18 +134,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
             <div
               key={stock.symbol}
               onClick={() => onSelect(stock.symbol)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.5rem 0.4rem',
-                cursor: 'pointer',
-                borderBottom: i < surgeStocks.length - 1 ? '1px solid var(--border)' : 'none',
-                borderRadius: '6px',
-                transition: 'background 0.15s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              className="sidebar-row"
             >
               <div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -201,3 +161,4 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
     </div>
   );
 }
+

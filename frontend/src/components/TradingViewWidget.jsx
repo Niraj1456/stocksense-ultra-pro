@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, memo } from 'react';
 
-function TradingViewWidget({ symbol }) {
+function TradingViewWidget({ symbol, theme = 'dark' }) {
   const container = useRef();
 
   useEffect(() => {
@@ -44,7 +44,7 @@ function TradingViewWidget({ symbol }) {
           symbol: tvSymbol,
           interval: "D",
           timezone: "Asia/Kolkata",
-          theme: "dark",
+          theme: theme,
           style: "1",
           locale: "en",
           enable_publishing: false,
@@ -54,7 +54,7 @@ function TradingViewWidget({ symbol }) {
         });
       }
     });
-  }, [symbol]);
+  }, [symbol, theme]);
 
   return (
     <div className="tradingview-widget-container" style={{ height: "100%", width: "100%" }}>
