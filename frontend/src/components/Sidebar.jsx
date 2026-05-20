@@ -8,7 +8,17 @@ function formatVolume(v) {
   return v.toString();
 }
 
-export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWatchlist, marketData }) {
+export default function Sidebar({
+  watchlist,
+  selectedStock,
+  onSelect,
+  onToggleWatchlist,
+  marketData,
+  searchTerm,
+  onSearchChange,
+  suggestions,
+  onKeyPress
+}) {
   // Get top volume stocks from real market data
   const volumeStocks = (marketData || [])
     .filter(s => s.volume > 0)
@@ -16,11 +26,45 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
     .slice(0, 8);
 
   return (
-    <div className="sidebar" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="sidebar-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+      {/* Quick Search Terminal */}
+      <div className="sidebar-card-premium">
+        <div className="sidebar-card-title" style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span>🔍</span> Quick Search Terminal
+        </div>
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            className="search-input"
+            style={{ width: '100%', paddingLeft: '2.2rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+            placeholder="Search stock symbol (e.g. TCS)..."
+            value={searchTerm}
+            onChange={onSearchChange}
+            onKeyDown={onKeyPress}
+          />
+          <span className="search-icon" style={{ left: '12px' }}>🔍</span>
+          {suggestions.length > 0 && (
+            <div className="suggestions" style={{ position: 'absolute', width: '100%', top: 'calc(100% + 4px)', left: 0, zIndex: 150, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: '250px', overflowY: 'auto' }}>
+              {suggestions.map(s => (
+                <div 
+                  key={s} 
+                  className="suggestion-item" 
+                  onClick={() => onSelect(s)} 
+                  style={{ padding: '0.55rem 0.8rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', borderBottom: '1px solid var(--border)' }}
+                >
+                  <span style={{ fontWeight: 700 }}>{s}</span>
+                  <span style={{ color: 'var(--accent)', fontSize: '0.68rem', fontWeight: 800 }}>NSE</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Watchlist Card */}
       <div className="sidebar-card-premium">
         <div className="sidebar-card-title" style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)' }}>
-          <span style={{ color: 'var(--accent)' }}>★</span> Your Watchlist
+          <span style={{ color: 'var(--warning)' }}>★</span> Your Watchlist
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           {watchlist.length === 0 && (
@@ -38,7 +82,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                 key={stock}
                 onClick={() => onSelect(stock)}
                 className={`sidebar-row-premium${stock === selectedStock ? ' active' : ''}`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.65rem' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.65rem', border: stock === selectedStock ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.02)', background: stock === selectedStock ? 'var(--accent-dim)' : 'rgba(255, 255, 255, 0.01)' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span className={`status-indicator-dot ${dotColor}`}></span>
@@ -88,7 +132,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                   key={stock.symbol}
                   onClick={() => onSelect(stock.symbol)}
                   className={`sidebar-row-premium${stock.symbol === selectedStock ? ' active' : ''}`}
-                  style={{ display: 'flex', alignItems: 'center', padding: '0.55rem 0.65rem' }}
+                  style={{ display: 'flex', alignItems: 'center', padding: '0.55rem 0.65rem', border: stock.symbol === selectedStock ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.02)', background: stock.symbol === selectedStock ? 'var(--accent-dim)' : 'rgba(255, 255, 255, 0.01)' }}
                 >
                   <span style={{
                     width: '18px',
@@ -165,7 +209,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                     key={stock.symbol}
                     onClick={() => onSelect(stock.symbol)}
                     className={`sidebar-row-premium${stock.symbol === selectedStock ? ' active' : ''}`}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.65rem' }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.65rem', border: stock.symbol === selectedStock ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.02)', background: stock.symbol === selectedStock ? 'var(--accent-dim)' : 'rgba(255, 255, 255, 0.01)' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <span className={`status-indicator-dot ${dotColor}`}></span>
