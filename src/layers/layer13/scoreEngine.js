@@ -33,9 +33,11 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     rsi = 50, rvol = 1.0, momentum = 0, momentumPct = 0, atrTrend = 0, atrValue = 0, pcr = 1.0, l2Imbalance = 0, hasRealPCR = false, hasRealL2 = false,
     macd, ema20, ema50, ema200, peRatio, pbRatio, pegRatio, debtToEquity, roce, adx = 25,
     prevDayChangePct = 0, marketRegime = 'NEUTRAL', // FIX 2 & 4: new inputs
-    // NEW: API-powered signals from FMP + Alpha Vantage
+    // API-powered signals from FMP + Alpha Vantage
     piotroskiScore = null, altmanZone = null, dcfMoS = null,
-    sentimentPts = 0, sentimentVeto = false
+    sentimentPts = 0, sentimentVeto = false, sentimentConfidence = 'LOW',
+    // NEW: FMP insider, earnings, revenue + AV earnings proximity
+    insiderNetBuying = null, earningsSurpriseStreak = 0, revenueAcceleration = null, daysToEarnings = null
   } = indicators;
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -219,11 +221,17 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // ═══════════════════════════════════════════════════════════════════════════
   const bullSignals = [
     rsiScore > 3, trendScore > 3, volScore > 0, flowScore > 2,
-    fundScore > 1, macdScore > 2, garchScore > 0, divergenceBonus > 0
+    fundScore > 1, macdScore > 2, garchScore > 0, divergenceBonus > 0,
+    insiderNetBuying !== null && insiderNetBuying > 0.2,
+    earningsSurpriseStreak >= 2,
+    revenueAcceleration !== null && revenueAcceleration > 0.03
   ].filter(Boolean).length;
   const bearSignals = [
     rsiScore < -3, trendScore < -3, volScore < 0, flowScore < -2,
-    fundScore < -1, macdScore < -2, garchScore < 0, divergenceBonus < 0
+    fundScore < -1, macdScore < -2, garchScore < 0, divergenceBonus < 0,
+    insiderNetBuying !== null && insiderNetBuying < -0.2,
+    earningsSurpriseStreak <= -2,
+    revenueAcceleration !== null && revenueAcceleration < -0.03
   ].filter(Boolean).length;
 
   let confluenceBonus = 0;
@@ -238,9 +246,13 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // PILLAR 9: NLP SENTIMENT (±4) — powered by Alpha Vantage
   // Real NLP sentiment from financial news replaces keyword matching.
   // ═══════════════════════════════════════════════════════════════════════════
-  let sentimentScore = clamp(sentimentPts, -4, 4);
-  // Sentiment veto: strongly bearish news can suppress marginal buy signals
-  if (sentimentVeto && rsiScore + trendScore > 0) sentimentScore = -4;
+  // Apply confidence weighting: HIGH confidence gets full weight, LOW gets 50%
+  const sentimentWeight = sentimentConfidence === 'HIGH' ? 1.0 : sentimentConfidence === 'MODERATE' ? 0.75 : 0.5;
+  let sentimentScore = clamp(Math.round(sentimentPts * sentimentWeight * 1.5), -6, 6); // Expanded range ±6
+  // Sentiment veto: strongly bearish news suppresses marginal buy signals
+  if (sentimentVeto && rsiScore + trendScore > 0) sentimentScore = -6;
+  // Sentiment amplifier: strongly bullish news with confirming technicals
+  if (sentimentPts >= 3 && sentimentConfidence === 'HIGH' && rsiScore + trendScore > 0) sentimentScore = Math.max(sentimentScore, 5);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PILLAR 10: FUNDAMENTAL QUALITY (±5) — powered by FMP
@@ -269,10 +281,58 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // COMPOSITE SCORE ASSEMBLY (expanded from 8 to 11 pillars)
+  // PILLAR 12: INSIDER TRADING SIGNAL (±4) — powered by FMP
+  // Net insider buying is the strongest fundamental conviction signal.
+  // Insiders buying during dips = smart money accumulation.
+  // ═══════════════════════════════════════════════════════════════════════════
+  let insiderScore = 0;
+  if (insiderNetBuying !== null) {
+    if (insiderNetBuying > 0.5) insiderScore = 4;        // Strong net buying
+    else if (insiderNetBuying > 0.2) insiderScore = 2;   // Moderate net buying
+    else if (insiderNetBuying < -0.5) insiderScore = -4;  // Heavy insider selling
+    else if (insiderNetBuying < -0.2) insiderScore = -2;  // Moderate selling
+    // Smart money confirmation: insider buying + price dip = strongest signal
+    if (insiderNetBuying > 0.3 && rsi < 40) insiderScore = Math.min(insiderScore + 2, 4);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PILLAR 13: EARNINGS SURPRISE MOMENTUM (±4) — powered by FMP + Alpha Vantage
+  // Consecutive earnings beats predict positive price drift (PEAD effect)
+  // ═══════════════════════════════════════════════════════════════════════════
+  let earningsScore = 0;
+  if (earningsSurpriseStreak >= 3) earningsScore = 4;       // 3+ consecutive beats
+  else if (earningsSurpriseStreak >= 2) earningsScore = 2;  // 2 consecutive beats
+  else if (earningsSurpriseStreak <= -3) earningsScore = -4; // 3+ consecutive misses
+  else if (earningsSurpriseStreak <= -2) earningsScore = -3; // Consecutive misses
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PILLAR 14: EARNINGS PROXIMITY GUARD — powered by Alpha Vantage
+  // Binary event risk: suppress marginal signals when earnings are imminent.
+  // Within 3 days of earnings, directional bets are near coin-flips.
+  // ═══════════════════════════════════════════════════════════════════════════
+  let earningsProximityAdj = 0;
+  if (daysToEarnings !== null && daysToEarnings >= 0 && daysToEarnings <= 3) {
+    // Compress score toward 50 (neutral) — don't take sides before binary events
+    earningsProximityAdj = -Math.sign(rsiScore + trendScore) * 3;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PILLAR 15: REVENUE ACCELERATION (±3) — powered by FMP multi-year data
+  // Accelerating revenue growth is the strongest quality-momentum crossover.
+  // ═══════════════════════════════════════════════════════════════════════════
+  let revenueScore = 0;
+  if (revenueAcceleration !== null) {
+    if (revenueAcceleration > 0.1) revenueScore = 3;        // Revenue growth accelerating significantly
+    else if (revenueAcceleration > 0.03) revenueScore = 1;  // Mild acceleration
+    else if (revenueAcceleration < -0.1) revenueScore = -3;  // Deceleration / contraction
+    else if (revenueAcceleration < -0.03) revenueScore = -1;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMPOSITE SCORE ASSEMBLY (expanded from 11 to 15 pillars)
   // ═══════════════════════════════════════════════════════════════════════════
   const base = 50;
-  let score = base + rsiScore + trendScore + volScore + flowScore + fundScore + macdScore + garchScore + divergenceBonus + confluenceBonus + sentimentScore + qualityScore + dcfScore;
+  let score = base + rsiScore + trendScore + volScore + flowScore + fundScore + macdScore + garchScore + divergenceBonus + confluenceBonus + sentimentScore + qualityScore + dcfScore + insiderScore + earningsScore + earningsProximityAdj + revenueScore;
 
   // Add continuous precision (micro-variance) for institutional transparency
   const precisionTweak = ((rsi - 50) * 0.03) + (rvol * 0.15) + (momentumPct * 0.05);
@@ -402,13 +462,17 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     direction,
     verdict: isExhausted ? "EXHAUSTED" : getVerdict(score),
     upTarget, downTarget,
-    signals: { trend: trendScore, flow: flowScore, momEx: rsiScore, fund: fundScore, vol: volScore, macd: macdScore, sentiment: sentimentScore, quality: qualityScore, dcf: dcfScore },
+    signals: { trend: trendScore, flow: flowScore, momEx: rsiScore, fund: fundScore, vol: volScore, macd: macdScore, sentiment: sentimentScore, quality: qualityScore, dcf: dcfScore, insider: insiderScore, earnings: earningsScore, earningsProximity: earningsProximityAdj, revenue: revenueScore },
     shap: { shapTrend: trendScore, shapFlow: flowScore, shapMomEx: rsiScore, shapFund: fundScore,
             shapMacd: macdScore, shapGarch: garchScore, shapDivergence: divergenceBonus, shapConfluence: confluenceBonus,
-            shapSentiment: sentimentScore, shapQuality: qualityScore, shapDCF: dcfScore },
+            shapSentiment: sentimentScore, shapQuality: qualityScore, shapDCF: dcfScore,
+            shapInsider: insiderScore, shapEarnings: earningsScore, shapEarningsProximity: earningsProximityAdj, shapRevenue: revenueScore },
     sources: { pcr: hasRealPCR ? 'NSE_LIVE' : 'DEFAULT', l2: hasRealL2 ? 'NSE_LIVE' : 'DEFAULT',
                sentiment: sentimentPts !== 0 ? 'ALPHA_VANTAGE' : 'DEFAULT',
-               fundamentals: piotroskiScore !== null ? 'FMP' : 'YAHOO' }
+               fundamentals: piotroskiScore !== null ? 'FMP' : 'YAHOO',
+               insider: insiderNetBuying !== null ? 'FMP' : 'UNAVAILABLE',
+               earnings: earningsSurpriseStreak !== 0 ? 'FMP_AV' : 'UNAVAILABLE',
+               revenue: revenueAcceleration !== null ? 'FMP' : 'UNAVAILABLE' }
   };
 }
 

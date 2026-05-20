@@ -259,8 +259,68 @@ async function analyzeStock(symbol, mode = "ST") {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // INSIDER TRADING NET SIGNAL — powered by FMP
+  // Net insider buying = strongest fundamental conviction signal
+  // ═══════════════════════════════════════════════════════════════
+  let insiderNetBuying = null;
+  if (fmpData?.insider && Array.isArray(fmpData.insider) && fmpData.insider.length > 0) {
+    const recent = fmpData.insider.slice(0, 20);
+    let buyCount = 0, sellCount = 0;
+    for (const tx of recent) {
+      const type = (tx.transactionType || '').toLowerCase();
+      if (type.includes('purchase') || type.includes('buy') || type.includes('acquisition')) {
+        buyCount++;
+      } else if (type.includes('sale') || type.includes('sell') || type.includes('disposition')) {
+        sellCount++;
+      }
+    }
+    const total = buyCount + sellCount;
+    if (total > 0) {
+      insiderNetBuying = (buyCount - sellCount) / total; // -1 to +1 ratio
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // EARNINGS SURPRISE STREAK — powered by FMP + Alpha Vantage
+  // Consecutive beats predict positive drift; misses predict decline
+  // ═══════════════════════════════════════════════════════════════
+  let earningsSurpriseStreak = 0;
+  const surprises = fmpData?.earnings || avEarnings?.recentSurprises || [];
+  if (Array.isArray(surprises) && surprises.length >= 2) {
+    let streak = 0;
+    for (const q of surprises.slice(0, 4)) {
+      const actual = q.actualEarningResult ?? q.actualEPS ?? 0;
+      const estimated = q.estimatedEarning ?? q.estimatedEPS ?? 0;
+      if (actual > estimated) streak = streak >= 0 ? streak + 1 : 1;
+      else if (actual < estimated) streak = streak <= 0 ? streak - 1 : -1;
+      else break;
+    }
+    earningsSurpriseStreak = streak;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // REVENUE ACCELERATION — powered by FMP multi-year financials
+  // Accelerating revenue growth = strongest quality signal
+  // ═══════════════════════════════════════════════════════════════
+  let revenueAcceleration = null;
+  if (fmpData?.financials?.income?.length >= 3) {
+    const inc = fmpData.financials.income;
+    const rev0 = inc[0]?.revenue || 0;
+    const rev1 = inc[1]?.revenue || 0;
+    const rev2 = inc[2]?.revenue || 0;
+    if (rev1 > 0 && rev2 > 0) {
+      const growthLatest = (rev0 - rev1) / rev1;
+      const growthPrev = (rev1 - rev2) / rev2;
+      revenueAcceleration = growthLatest - growthPrev; // positive = accelerating
+    }
+  }
+
+  const daysToEarnings = avEarnings?.daysToEarnings ?? null;
+  const sentimentConfidence = avSentiment?.dataConfidence || 'LOW';
+
+  // ═══════════════════════════════════════════════════════════════
   // LAYER 13: Score Engine — with enriched indicators
-  // Now includes sentiment pts and DCF pts as new inputs
+  // Now includes sentiment, DCF, insider, earnings, revenue signals
   // ═══════════════════════════════════════════════════════════════
   const scoreOut = Layer13.scoreEngine({
     mode,
@@ -287,13 +347,19 @@ async function analyzeStock(symbol, mode = "ST") {
       debtToEquity: mergedFundamentals.debtToEquity,
       roce: mergedFundamentals.roce,
       adx: techOut?.data?.indicators?.adx14?.adx ?? techOut?.data?.indicators?.adx14,
-      // NEW: FMP-powered fundamentals boost
+      // FMP-powered fundamentals boost
       piotroskiScore: piotroskiOut?.data?.f_score || null,
       altmanZone: altmanOut?.data?.zone || null,
       dcfMoS: dcfOut?.data?.margin_of_safety_pct || null,
-      // NEW: Alpha Vantage sentiment
+      // Alpha Vantage sentiment
       sentimentPts: sentimentOut?.data?.pts || 0,
-      sentimentVeto: sentimentOut?.data?.vetoFlag || false
+      sentimentVeto: sentimentOut?.data?.vetoFlag || false,
+      sentimentConfidence,
+      // NEW: FMP insider, earnings, revenue signals
+      insiderNetBuying,
+      earningsSurpriseStreak,
+      revenueAcceleration,
+      daysToEarnings
     },
     inputs: {
       l1RiskBand: (vixOut?.data?.inputs?.vix_current ?? vixOut?.data?.last) <= 12 ? "LOW" : (vixOut?.data?.inputs?.vix_current ?? vixOut?.data?.last) <= 20 ? "MODERATE" : "HIGH",
