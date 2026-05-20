@@ -160,9 +160,77 @@ function correlationDrawdownPenalty({ portfolio_correlation_to_index = 0.8, port
   };
 }
 
+// MODULE 12.5 — DYNAMIC STOP LOSS CALCULATOR
+function slCalculator({ atr14, lastClose, mode = "ST" }) {
+  if (!atr14 || !lastClose) {
+    return { ok: false, error: "missing_inputs" };
+  }
+  const isLongTerm = mode === "LT";
+  const slMultiplier = isLongTerm ? 2.0 : 1.5;
+  const targetMultiplier = isLongTerm ? 3.0 : 2.0;
+
+  const slRoom = atr14 * slMultiplier;
+  const targetRoom = atr14 * targetMultiplier;
+
+  return {
+    ok: true,
+    data: {
+      sl: Number((lastClose - slRoom).toFixed(2)),
+      target: Number((lastClose + targetRoom).toFixed(2)),
+      atrMultiplier: slMultiplier
+    },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:slCalculator" }
+  };
+}
+
+// MODULE 12.6 — RISK TO REWARD PARAMETER VALIDATOR
+function rrValidator({ entry, sl, target, minRR = 1.5 }) {
+  if (!entry || !sl || !target) {
+    return { ok: false, error: "missing_inputs" };
+  }
+  const risk = Math.abs(entry - sl);
+  const reward = Math.abs(target - entry);
+  const rr = risk > 0 ? Number((reward / risk).toFixed(2)) : 0;
+
+  return {
+    ok: true,
+    data: {
+      rr,
+      valid: rr >= minRR,
+      minRR
+    },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:rrValidator" }
+  };
+}
+
+// MODULE 12.7 — FRACTIONAL POSITION SIZER
+function positionSizer({ capital = 100000, riskPct = 1, entry, sl }) {
+  if (!entry || !sl || entry === sl) {
+    return { ok: false, error: "invalid_inputs" };
+  }
+  const riskPerShare = Math.abs(entry - sl);
+  const maxRiskAmount = capital * (riskPct / 100);
+  const shares = Math.floor(maxRiskAmount / riskPerShare);
+  const allocation = Number((shares * entry).toFixed(2));
+
+  return {
+    ok: true,
+    data: {
+      shares,
+      allocation,
+      riskAmount: maxRiskAmount,
+      riskPerShare: Number(riskPerShare.toFixed(2))
+    },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:positionSizer" }
+  };
+}
+
 module.exports = {
   kellyCriterionEngine,
   volatilityTargetingEngine,
   rMultipleTrailingEngine,
-  correlationDrawdownPenalty
+  correlationDrawdownPenalty,
+  slCalculator,
+  rrValidator,
+  positionSizer
 };

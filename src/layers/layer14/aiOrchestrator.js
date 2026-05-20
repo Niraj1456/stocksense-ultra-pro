@@ -31,7 +31,36 @@ INSTRUCTIONS:
 }
 
 // MODULE 14.2 — AI ORCHESTRATOR
-async function aiOrchestrator({ symbol, mode, master_verdict, score_breakdown, veto_reasons, risk_params }) {
+async function aiOrchestrator(args) {
+  const symbol = args?.symbol;
+  const mode = args?.mode || "ST";
+
+  // Handle flexible signature mapping
+  let master_verdict = args?.master_verdict;
+  if (!master_verdict && args?.verdictData && args?.scoreData) {
+    master_verdict = {
+      verdict: args.verdictData.verdict,
+      conviction_level: args.verdictData.confidence,
+      final_score: args.scoreData.totalScore
+    };
+  }
+
+  let score_breakdown = args?.score_breakdown || args?.scoreData || {};
+
+  let veto_reasons = args?.veto_reasons;
+  if (!veto_reasons) {
+    veto_reasons = args?.scoreData?.engineResult?.vetoReasons || [];
+  }
+
+  let risk_params = args?.risk_params;
+  if (!risk_params && args?.context?.layer12) {
+    const l12 = args.context.layer12;
+    risk_params = {
+      recommended_allocation: l12.sizeOut?.data?.allocation || "Standard Kelly",
+      position_pct: l12.sizeOut?.data?.shares ? ((l12.sizeOut.data.allocation / 100000) * 100).toFixed(2) : "Optimal"
+    };
+  }
+
   if (!env.enableClaude || !env.anthropicApiKey) {
     return deterministicNlgFallback({ symbol, master_verdict, veto_reasons, risk_params });
   }

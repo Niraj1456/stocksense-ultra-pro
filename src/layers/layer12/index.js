@@ -2,13 +2,19 @@ const {
   kellyCriterionEngine,
   volatilityTargetingEngine,
   rMultipleTrailingEngine,
-  correlationDrawdownPenalty
+  correlationDrawdownPenalty,
+  slCalculator,
+  rrValidator,
+  positionSizer
 } = require("./riskExecution");
 
 module.exports = { 
   kellyCriterionEngine,
   volatilityTargetingEngine,
   rMultipleTrailingEngine,
-  correlationDrawdownPenalty
+  correlationDrawdownPenalty,
+  slCalculator,
+  rrValidator,
+  positionSizer
 };
 

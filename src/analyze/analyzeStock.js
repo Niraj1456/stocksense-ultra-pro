@@ -393,7 +393,12 @@ async function analyzeStock(symbol, mode = "ST") {
     symbol,
     mode,
     layers: context,
-    final: layer14.data
+    final: layer14.data,
+    data: {
+      masterScore: scoreOut.data?.totalScore || 50,
+      verdict: scoreOut.data?.engineResult?.verdict || verdictOut.data?.verdict || "NEUTRAL",
+      aiReasoning: layer14.data?.response_text || "Analysis complete."
+    }
   };
 }
 
