@@ -44,7 +44,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
               <span style={{
                 fontSize: '0.82rem',
                 fontWeight: 600,
-                color: stock === selectedStock ? '#059669' : 'var(--text-primary)'
+                color: stock === selectedStock ? 'var(--accent-solid)' : 'var(--text-primary)'
               }}>
                 {stock}
               </span>
@@ -123,7 +123,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                   <div style={{
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    color: stock.positive ? '#00d09c' : '#eb5b3c',
+                    color: stock.positive ? 'var(--accent)' : 'var(--danger)',
                     fontVariantNumeric: 'tabular-nums'
                   }}>
                     {stock.pct >= 0 ? '+' : ''}{stock.pct.toFixed(2)}%
@@ -180,7 +180,7 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {stock.symbol}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: stock.positive ? '#00d09c' : '#eb5b3c', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.7rem', color: stock.positive ? 'var(--accent)' : 'var(--danger)', fontWeight: 600 }}>
                   {stock.pct >= 0 ? '+' : ''}{stock.pct.toFixed(2)}%
                 </div>
               </div>
@@ -189,8 +189,8 @@ export default function Sidebar({ watchlist, selectedStock, onSelect, onToggleWa
                 borderRadius: '4px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
-                background: stock.rvol > 3 ? 'rgba(235, 91, 60, 0.1)' : 'rgba(0, 208, 156, 0.1)',
-                color: stock.rvol > 3 ? '#eb5b3c' : '#059669'
+                background: stock.rvol > 3 ? 'var(--danger-dim)' : 'var(--accent-dim)',
+                color: stock.rvol > 3 ? 'var(--danger-solid)' : 'var(--accent-solid)'
               }}>
                 {stock.rvol.toFixed(1)}x vol
               </div>

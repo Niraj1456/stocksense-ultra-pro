@@ -534,7 +534,12 @@ const MarketTimingBar = () => {
 };
 
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedStock, setSelectedStock] = useState("NIFTY 50");
   const [watchlist, setWatchlist] = useState(["NIFTY 50", "NIFTY BANK", "NIFTY IT", "NIFTY AUTO", "NIFTY PHARMA"]); // Watchlist state
@@ -891,7 +896,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${theme}`}>
       {/* === TOP NAVBAR === */}
       <nav className="navbar">
         <div className="brand">
@@ -916,6 +921,9 @@ export default function App() {
             <button key={stock} className={`watchlist-pill${stock === selectedStock && view === 'analyze' ? ' active' : ''}`} onClick={() => { selectStock(stock); setView('analyze'); }}>{stock}</button>
           ))}
         </div>
+        <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle Theme">
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </nav>
 
       {/* === SUB NAVIGATION === */}
@@ -945,11 +953,11 @@ export default function App() {
           <div className="header-section">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <button onClick={() => setView('explore')} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'inherit' }}>← Back</button>
+                <button onClick={() => setView('explore')} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'inherit' }}>← Back</button>
                 <h1 className="stock-title">{selectedStock}</h1>
-                <button onClick={() => toggleWatchlistItem(selectedStock)} style={{ background: 'none', border: '1px solid var(--border)', color: watchlist.includes(selectedStock) ? '#f59e0b' : 'var(--text-muted)', padding: '0.35rem 0.7rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'inherit' }} title="Toggle Watchlist">{watchlist.includes(selectedStock) ? '★' : '☆'}</button>
+                <button onClick={() => toggleWatchlistItem(selectedStock)} style={{ background: 'none', border: '1px solid var(--border)', color: watchlist.includes(selectedStock) ? 'var(--warning)' : 'var(--text-muted)', padding: '0.35rem 0.7rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'inherit' }} title="Toggle Watchlist">{watchlist.includes(selectedStock) ? '★' : '☆'}</button>
               </div>
-              <div className="stock-price" style={{ color: livePrice.positive ? '#00d09c' : '#eb5b3c' }}>
+              <div className="stock-price" style={{ color: livePrice.positive ? 'var(--accent)' : 'var(--danger)' }}>
                 {livePrice.price}{livePrice.pct !== "-" && <span style={{ fontSize: '0.9rem', marginLeft: '8px', fontWeight: 500 }}>{livePrice.change} ({livePrice.pct})</span>}
               </div>
             </div>
@@ -959,7 +967,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="glass-panel" style={{ height: '420px', marginBottom: '1.25rem', overflow: 'hidden', borderRadius: '12px' }}>
+          <div className="glass-panel" style={{ height: '420px', marginBottom: '1.25rem', overflow: 'hidden', borderRadius: 'var(--radius-lg)' }}>
             <TradingViewWidget key={selectedStock} symbol={selectedStock} />
           </div>
 
@@ -981,25 +989,53 @@ export default function App() {
 
           {isAnalyzed && (
             <div className="fade-in">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', padding: '0.4rem 0.8rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', padding: '0.6rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 <span>📡 Signal Generated: {signalTimestamp || 'N/A'} IST</span>
                 <span>🎯 Data: 90-Day Daily Candles</span>
               </div>
-              <div className="ai-panel"><h3 style={{ marginBottom: '0.5rem', color: '#059669', fontSize: '0.92rem', fontWeight: 600 }}>🧠 AI Verdict</h3><p style={{ lineHeight: '1.7', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{currentData.aiReasoning}</p></div>
-              <div className="gemini-panel fade-in" style={{ animationDelay: '0.3s' }}><h3 style={{ marginBottom: '0.5rem', color: 'var(--purple)', fontSize: '0.92rem', fontWeight: 600 }}>✦ Gemini 3.1 Pro (Thinking)</h3><p style={{ lineHeight: '1.7', fontSize: '0.88rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{currentData.geminiOpinion}</p></div>
+              <div className="ai-panel">
+                <h3 style={{ marginBottom: '0.5rem', color: 'var(--accent-solid)', fontSize: '0.95rem', fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>🧠 AI Verdict</h3>
+                <p style={{ lineHeight: '1.7', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{currentData.aiReasoning}</p>
+              </div>
+              <div className="gemini-panel fade-in" style={{ animationDelay: '0.2s' }}>
+                <h3 style={{ marginBottom: '0.5rem', color: 'var(--purple-solid)', fontSize: '0.95rem', fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>✦ Gemini 3.1 Pro (Thinking)</h3>
+                <p style={{ lineHeight: '1.7', fontSize: '0.88rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{currentData.geminiOpinion}</p>
+              </div>
 
               <div className="bento-grid">
                 <div className="bento-side" style={{ position: 'sticky', top: '80px', alignSelf: 'start', maxHeight: 'calc(100vh - 100px)', overflowY: 'auto', paddingRight: '8px' }}>
                   <div className="score-card glass-panel mb-2">
                     <div className="layer-title mb-2">Master Intelligence Score</div>
-                    <div className="score-circle"><span>{currentData.score}</span></div>
-                    <div className="score-verdict">{currentData.verdict}</div>
+                    <div className="score-circle">
+                      <svg className="score-circle-svg" width="140" height="140">
+                        <circle className="score-circle-bg" cx="70" cy="70" r="60" strokeWidth="10" />
+                        <circle
+                          className="score-circle-progress"
+                          cx="70"
+                          cy="70"
+                          r="60"
+                          strokeWidth="10"
+                          stroke={
+                            currentData.score >= 75 ? 'var(--accent)' :
+                            currentData.score >= 60 ? 'var(--accent)' :
+                            currentData.score >= 50 ? 'var(--warning)' : 'var(--danger)'
+                          }
+                          strokeDasharray={377}
+                          strokeDashoffset={377 - (377 * currentData.score) / 100}
+                        />
+                      </svg>
+                      <div className="score-value">{currentData.score}</div>
+                    </div>
+                    <div className="score-verdict" style={{
+                      color: currentData.score >= 60 ? 'var(--accent)' :
+                             currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                    }}>{currentData.verdict}</div>
                     <p className="data-label mb-2" style={{ fontSize: '0.75rem' }}>Compiled from 18 Layers</p>
-                    <div style={{ textAlign: 'left', marginTop: '1rem', backgroundColor: 'var(--bg-elevated)', padding: '1rem', borderRadius: '12px' }}>
+                    <div style={{ textAlign: 'left', marginTop: '1rem', backgroundColor: 'var(--bg-elevated)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
                       <h4 style={{ color: 'var(--purple)', marginBottom: '0.5rem', fontSize: '0.75rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>🧠 SHAP Values</h4>
                       {currentData.scoreBreakdown.map((item, i) => (
                         <div key={i} style={{ fontSize: '0.78rem', paddingBottom: '0.4rem', marginBottom: '0.4rem', borderBottom: i !== currentData.scoreBreakdown.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>{item.layer}</span><span style={{ color: parseInt(item.points) >= 0 ? '#059669' : '#eb5b3c', fontWeight: 700 }}>{item.points} pts</span></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontWeight: 600 }}>{item.layer}</span><span style={{ color: parseInt(item.points) >= 0 ? 'var(--accent)' : 'var(--danger)', fontWeight: 700 }}>{item.points} pts</span></div>
                           <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '2px' }}><span className={item.weight.includes('LIVE') || item.weight === 'REAL DATA' ? 'data-source-live' : 'data-source-estimated'}>{item.weight}</span> <span style={{ marginLeft: '4px' }}>{item.reason}</span></div>
                         </div>
                       ))}

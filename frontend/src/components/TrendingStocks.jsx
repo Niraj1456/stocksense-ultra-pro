@@ -101,7 +101,7 @@ function StockRow({ data, onClick, showVolume }) {
         <div className="stock-card-value">
           ₹{data.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
         </div>
-        <div className="stock-card-change" style={{ color: data.positive ? '#00d09c' : '#eb5b3c' }}>
+        <div className="stock-card-change" style={{ color: data.positive ? 'var(--accent)' : 'var(--danger)' }}>
           {data.pct >= 0 ? '+' : ''}{data.pct.toFixed(2)}%
         </div>
       </div>
