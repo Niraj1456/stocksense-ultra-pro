@@ -16,7 +16,15 @@ const STOCK_POOL = [
 
 async function fetchStockData(symbol) {
   try {
-    const yfSym = `${symbol.replace(/\s+/g, '')}.NS`;
+    let yfSym = "";
+    if (symbol === "NIFTY 50") yfSym = "^NSEI";
+    else if (symbol === "SENSEX") yfSym = "^BSESN";
+    else if (symbol === "NIFTY BANK") yfSym = "^NSEBANK";
+    else if (symbol === "NIFTY IT") yfSym = "^CNXIT";
+    else if (symbol === "NIFTY AUTO") yfSym = "^CNXAUTO";
+    else if (symbol === "NIFTY PHARMA") yfSym = "^CNXPHARMA";
+    else yfSym = `${symbol.replace(/\s+/g, '')}.NS`;
+
     const res = await fetch(`/api/yahoo/v8/finance/chart/${yfSym}?range=6d&interval=1d`);
     const d = await res.json();
     const result = d.chart?.result?.[0];
@@ -26,27 +34,53 @@ async function fetchStockData(symbol) {
     const quote = result.indicators?.quote?.[0];
     const price = meta.regularMarketPrice || 0;
 
-    // Timestamp-Aware previous close calculation prioritizes official meta.previousClose
-    let yesterdayClose = (meta.previousClose && meta.previousClose > 0) ? meta.previousClose : null;
-    if (!yesterdayClose) {
-      const timestamps = result.timestamp || [];
-      const lastChartTs = timestamps.length > 0 ? timestamps[timestamps.length - 1] * 1000 : 0;
-      const lastChartDate = new Date(lastChartTs);
-      const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-      const isSameDay = lastChartDate.getFullYear() === todayIST.getFullYear()
-        && lastChartDate.getMonth() === todayIST.getMonth()
-        && lastChartDate.getDate() === todayIST.getDate();
-
-      const closes = quote?.close?.filter(v => v != null) || [];
-      if (isSameDay && closes.length >= 2) {
-        // Chart includes today's candle → second-to-last is yesterday
-        yesterdayClose = closes[closes.length - 2];
-      } else if (closes.length >= 1) {
-        // Chart's last candle is yesterday → THAT is yesterday's close
-        yesterdayClose = closes[closes.length - 1];
-      } else {
-        yesterdayClose = meta.chartPreviousClose || price;
+    // Robust, index-aligned daily previous close calculation (prevents using historical meta.previousClose)
+    let yesterdayClose = 0;
+    if (result.timestamp && result.timestamp.length > 0 && quote && quote.close) {
+      // Find the last index in the chart that has a non-null close price
+      let lastValidIdx = -1;
+      for (let i = result.timestamp.length - 1; i >= 0; i--) {
+        if (quote.close[i] != null) {
+          lastValidIdx = i;
+          break;
+        }
       }
+
+      if (lastValidIdx !== -1) {
+        const lastTimestamp = result.timestamp[lastValidIdx];
+        
+        const getIstDateString = (dateObj) => {
+          const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
+          const istDate = new Date(utc + (3600000 * 5.5));
+          return `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
+        };
+
+        const lastCandleIst = getIstDateString(new Date(lastTimestamp * 1000));
+        const todayIst = getIstDateString(new Date());
+        const lastIsToday = lastCandleIst === todayIst;
+
+        if (lastIsToday) {
+          // Find the closest non-null candle before lastValidIdx
+          let yesterdayIdx = -1;
+          for (let i = lastValidIdx - 1; i >= 0; i--) {
+            if (quote.close[i] != null) {
+              yesterdayIdx = i;
+              break;
+            }
+          }
+          if (yesterdayIdx !== -1) {
+            yesterdayClose = quote.close[yesterdayIdx];
+          }
+        } else {
+          // The last valid candle in the chart is yesterday or older.
+          yesterdayClose = quote.close[lastValidIdx];
+        }
+      }
+    }
+
+    // Fallback to meta.chartPreviousClose (yesterday's close) or price
+    if (!yesterdayClose || yesterdayClose <= 0) {
+      yesterdayClose = meta.chartPreviousClose || price;
     }
     
     const chg = yesterdayClose > 0 ? (price - yesterdayClose) : 0;
@@ -126,7 +160,7 @@ function StockRow({ data, onClick, showVolume }) {
   );
 }
 
-export default function TrendingStocks({ onSelectStock, onDataReady }) {
+export default function TrendingStocks({ watchlist = [], onSelectStock, onDataReady }) {
   const [tab, setTab] = useState('gainers');
   const [allStocks, setAllStocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,11 +170,13 @@ export default function TrendingStocks({ onSelectStock, onDataReady }) {
 
   const fetchAllData = useCallback(async () => {
     setLoading(true);
+    // Merge STOCK_POOL and watchlist to fetch live data for all of them
+    const pool = Array.from(new Set([...STOCK_POOL, ...watchlist]));
     // Fetch in small batches to avoid overwhelming the proxy
     const results = [];
     const batchSize = 5;
-    for (let i = 0; i < STOCK_POOL.length; i += batchSize) {
-      const batch = STOCK_POOL.slice(i, i + batchSize);
+    for (let i = 0; i < pool.length; i += batchSize) {
+      const batch = pool.slice(i, i + batchSize);
       const batchResults = await Promise.all(batch.map(fetchStockData));
       results.push(...batchResults);
     }
@@ -153,7 +189,7 @@ export default function TrendingStocks({ onSelectStock, onDataReady }) {
     if (onDataReadyRef.current) {
       onDataReadyRef.current(valid);
     }
-  }, []);
+  }, [watchlist]);
 
   useEffect(() => {
     fetchAllData();
@@ -171,7 +207,8 @@ export default function TrendingStocks({ onSelectStock, onDataReady }) {
 
   const getStocks = () => {
     if (allStocks.length === 0) return [];
-    const sorted = [...allStocks];
+    // Only display stocks from the main STOCK_POOL in the explorer tabs
+    const sorted = [...allStocks].filter(s => STOCK_POOL.includes(s.symbol));
     switch (tab) {
       case 'gainers':
         return sorted.sort((a, b) => b.pct - a.pct).slice(0, 10);

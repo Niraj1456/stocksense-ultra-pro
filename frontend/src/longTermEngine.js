@@ -188,17 +188,17 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
   const delDisplay = deliveryPct != null ? deliveryPct.toFixed(1) + '%' : 'N/A';
   const dcfMargin = Math.round(valScore - 50);
 
-  const geminiOpinion = `GEMINI 3.1 PRO (THINKING): Long-term investment analysis for ${stock}. ${hasFund ? `Real fundamentals: P/E ${pe.toFixed ? pe.toFixed(1) : pe}x, ROE ${roe}%, D/E ${debtToEquity || 'N/A'}.` : 'Estimated fundamentals.'} ${hasFiiDii ? `Institutional flow: FII ${fiiNet > 0 ? 'net buying' : 'net selling'}.` : ''} Suggested timeframe: ${timeframe}. Verdict: ${verdict}.`;
+  const geminiOpinion = `GEMINI 3.1 PRO (THINKING): Long-term investment analysis for ${stock}. ${hasFund ? `Real fundamentals: P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, ROE ${roe != null ? roe + '%' : 'N/A'}, D/E ${debtToEquity != null ? debtToEquity.toFixed(1) : 'N/A'}.` : 'Estimated fundamentals.'} ${hasFiiDii ? `Institutional flow: FII ${fiiNet > 0 ? 'net buying' : 'net selling'}.` : ''} Suggested timeframe: ${timeframe}. Verdict: ${verdict}.`;
 
-  const aiReasoning = `[Regime: ${isBullRegime ? 'BULL' : 'BEAR'}] ${hasFund ? `Yahoo Finance LIVE: ROE ${roe != null ? roe + '%' : 'N/A'}, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, D/E ${debtToEquity != null ? debtToEquity : 'N/A'}.` : 'Fundamentals: awaiting Yahoo data.'} ${hasFiiDii ? `NSE FII LIVE: ${fiiNet > 0 ? 'buying' : 'selling'} ₹${Math.abs(fiiNet).toFixed(0)} Cr.` : ''} ${deliveryPct != null ? `Delivery ${delDisplay} ${deliveryPct > 50 ? '(institutional)' : '(speculative)'}.` : ''} Technical: EMA ${ema20 && ema50 ? (ema20 > ema50 ? 'Golden Cross ✅' : 'Death Cross ❌') : 'N/A'}, RSI ${rsi.toFixed(1)}, ADX ${adx.toFixed(1)}. Risk: ${riskRating}. Timeframe: ${timeframe}.`;
+  const aiReasoning = `[Regime: ${isBullRegime ? 'BULL' : 'BEAR'}] ${hasFund ? `Yahoo Finance LIVE: ROE ${roe != null ? roe + '%' : 'N/A'}, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, D/E ${debtToEquity != null ? debtToEquity.toFixed(1) : 'N/A'}.` : 'Fundamentals: awaiting Yahoo data.'} ${hasFiiDii ? `NSE FII LIVE: ${fiiNet > 0 ? 'buying' : 'selling'} ₹${Math.abs(fiiNet).toFixed(0)} Cr.` : ''} ${deliveryPct != null ? `Delivery ${delDisplay} ${deliveryPct > 50 ? '(institutional)' : '(speculative)'}.` : ''} Technical: EMA ${ema20 && ema50 ? (ema20 > ema50 ? 'Golden Cross ✅' : 'Death Cross ❌') : 'N/A'}, RSI ${rsi.toFixed(1)}, ADX ${adx.toFixed(1)}. Risk: ${riskRating}. Timeframe: ${timeframe}.`;
 
   return {
     score, verdict, geminiOpinion, aiReasoning,
     scoreBreakdown: (() => {
       const baseBreakdown = [
-        { layer: "Fundamental Quality (ROE)", weight: fundBadge, points: Math.round(fundScore * wFund * 0.6), reason: `ROE at ${roe}%. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` },
+        { layer: "Fundamental Quality (ROE)", weight: fundBadge, points: Math.round(fundScore * wFund * 0.6), reason: roe != null ? `ROE at ${roe}%. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` : `ROE not available. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` },
         { layer: "Fundamental Growth", weight: fundBadge, points: Math.round(fundScore * wFund * 0.4), reason: `Earnings growth at ${earningsGrowth != null ? earningsGrowth + '%' : '12%'}, Revenue growth at ${revenueGrowth != null ? revenueGrowth + '%' : '10%'}.` },
-        { layer: "Multiple Valuation (P/E & P/B)", weight: fundBadge, points: Math.round(valScore * wVal * 0.5), reason: `P/E at ${typeof pe === 'number' ? pe.toFixed(1) : pe}x, P/B at ${pb?.toFixed(1) || '1.8'}x.` },
+        { layer: "Multiple Valuation (P/E & P/B)", weight: fundBadge, points: Math.round(valScore * wVal * 0.5), reason: `P/E at ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, P/B at ${pb?.toFixed(1) || '1.8'}x.` },
         { layer: "DCF Margin of Safety", weight: fundBadge, points: Math.round(valScore * wVal * 0.5), reason: `DCF model indicates a margin of safety of ${dcfMargin}%.` },
         { layer: "Institutional Net Flow", weight: instBadge, points: Math.round(instScore * wInst * 0.6), reason: `FII Net: ${fiiDisplay}, DII Net: ${diiDisplay}.` },
         { layer: "Delivery & Depth Support", weight: depthBadge, points: Math.round(instScore * wInst * 0.4), reason: `Delivery volume at ${delDisplay} indicates institutional absorption.` },
@@ -229,10 +229,10 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
         {l: "Annualized Vol", v: monthlyVol != null ? monthlyVol.toFixed(1) + '%' : 'N/A'},
         {l: "1-Month Return", v: monthlyReturn != null ? (monthlyReturn > 0 ? '+' : '') + monthlyReturn.toFixed(2) + '%' : 'N/A'}
       ]},
-      { title: "Layer 8: Fundamentals", badge: roe > 15 ? "STRONG" : roe > 8 ? "FAIR" : "WEAK", class: roe > 15 ? "badge-positive" : roe > 8 ? "badge-neutral" : "badge-negative", data: [
-        {l: hasFund ? "P/E (LIVE)" : "P/E Ratio", v: typeof pe === 'number' ? pe.toFixed(1) : pe},
-        {l: hasFund ? "ROE (LIVE)" : "Return on Eq.", v: `${roe}%`},
-        {l: hasFund ? "D/E (LIVE)" : "Debt/Equity", v: debtToEquity != null ? debtToEquity.toFixed(1) : "N/A"},
+      { title: "Layer 8: Fundamentals", badge: roe != null ? (roe > 15 ? "STRONG" : roe > 8 ? "FAIR" : "WEAK") : "N/A", class: roe != null ? (roe > 15 ? "badge-positive" : roe > 8 ? "badge-neutral" : "badge-negative") : "badge-neutral", data: [
+        {l: hasFund && pe != null ? "P/E (LIVE)" : "P/E Ratio", v: pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : "N/A"},
+        {l: hasFund && roe != null ? "ROE (LIVE)" : "Return on Eq.", v: roe != null ? `${roe}%` : "N/A"},
+        {l: hasFund && debtToEquity != null ? "D/E (LIVE)" : "Debt/Equity", v: debtToEquity != null ? debtToEquity.toFixed(1) : "N/A"},
         ...(earningsGrowth != null ? [{l: "Earnings Growth", v: `${earningsGrowth}%`}] : []),
         ...(revenueGrowth != null ? [{l: "Revenue Growth", v: `${revenueGrowth}%`}] : []),
         ...(profitMargin != null ? [{l: "Profit Margin", v: `${profitMargin}%`}] : []),

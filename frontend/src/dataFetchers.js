@@ -265,7 +265,7 @@ export async function fetchFundamentals(symbol) {
 
   try {
     const yfSym = `${symbol.replace(/\s+/g, '')}.NS`;
-    const modules = 'defaultKeyStatistics,financialData,earningsTrend,summaryDetail';
+    const modules = 'defaultKeyStatistics,financialData,earningsTrend,summaryDetail,earnings';
     const res = await fetchWithRetry(`/api/yahoo/v10/finance/quoteSummary/${yfSym}?modules=${modules}`);
     const data = await res.json();
     const result = data.quoteSummary?.result?.[0];
@@ -326,6 +326,7 @@ export async function fetchFundamentals(symbol) {
       marketCap, fiftyTwoWeekHigh, fiftyTwoWeekLow,
       fundamentalScore,
       valuationScore,
+      earnings: result.earnings || null,
       source: 'YAHOO_LIVE',
       fetchedAt: new Date().toISOString(),
     };
@@ -396,14 +397,35 @@ export async function fetchFIIDII() {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 5. ALPHA VANTAGE NEWS SENTIMENT → Real News & Article Count
+// ═══════════════════════════════════════════════════════════════
+export async function fetchNewsSentiment(symbol) {
+  const cacheKey = `sentiment_${symbol}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const cleanSym = symbol.replace(/\s+/g, '').trim();
+    const res = await fetchWithRetry(`/api/yahoo/news-sentiment?symbol=${encodeURIComponent(cleanSym)}`);
+    const data = await res.json();
+    setCache(cacheKey, data, CACHE_TTL.fiiDii); // Use same TTL as fiiDii (2 min)
+    return data;
+  } catch (err) {
+    console.warn(`[NewsSentiment] ${symbol}: ${err.message}`);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MASTER FETCHER — Fetches all real data for a stock in parallel
 // ═══════════════════════════════════════════════════════════════
 export async function fetchAllRealData(symbol) {
-  const [optionChain, marketDepth, fundamentals, fiiDii] = await Promise.allSettled([
+  const [optionChain, marketDepth, fundamentals, fiiDii, newsSentiment] = await Promise.allSettled([
     fetchOptionChainPCR(symbol),
     fetchMarketDepth(symbol),
     fetchFundamentals(symbol),
     fetchFIIDII(),
+    fetchNewsSentiment(symbol),
   ]);
 
   return {
@@ -411,6 +433,7 @@ export async function fetchAllRealData(symbol) {
     marketDepth: marketDepth.status === 'fulfilled' ? marketDepth.value : null,
     fundamentals: fundamentals.status === 'fulfilled' ? fundamentals.value : null,
     fiiDii: fiiDii.status === 'fulfilled' ? fiiDii.value : null,
+    newsSentiment: newsSentiment.status === 'fulfilled' ? newsSentiment.value : null,
   };
 }
 

@@ -12,13 +12,13 @@ function TradingViewWidget({ symbol, theme = 'dark' }) {
     // BSE data is unrestricted and identical in price action.
     let tvSymbol = `BSE:${cleanSymbol}`;
   
-    // Keep Nifty indices as NSE since they aren't on BSE
-    if (symbol === "NIFTY 50") tvSymbol = "NSE:NIFTY";
+    // Keep Nifty indices as TVC (Calculations) to bypass NSE embed restrictions, SENSEX remains BSE
+    if (symbol === "NIFTY 50") tvSymbol = "TVC:NIFTY";
     else if (symbol === "SENSEX") tvSymbol = "BSE:SENSEX";
-    else if (symbol === "NIFTY BANK") tvSymbol = "NSE:BANKNIFTY";
-    else if (symbol === "NIFTY IT") tvSymbol = "NSE:CNXIT";
-    else if (symbol === "NIFTY AUTO") tvSymbol = "NSE:CNXAUTO";
-    else if (symbol === "NIFTY PHARMA") tvSymbol = "NSE:CNXPHARMA";
+    else if (symbol === "NIFTY BANK") tvSymbol = "TVC:BANKNIFTY";
+    else if (symbol === "NIFTY IT") tvSymbol = "TVC:CNXIT";
+    else if (symbol === "NIFTY AUTO") tvSymbol = "TVC:CNXAUTO";
+    else if (symbol === "NIFTY PHARMA") tvSymbol = "TVC:CNXPHARMA";
 
     let tvScriptLoadingPromise;
 

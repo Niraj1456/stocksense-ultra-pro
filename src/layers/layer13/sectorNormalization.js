@@ -58,17 +58,17 @@ function applySectorNormalization(stock, score) {
   
   // 2. Sector Headwind Penalty
   if (sectorStrength < -5 && score > 55) {
-    normalizedScore -= 5; // Bullish stock in a bearish sector (highly likely to fail breakout)
+    normalizedScore -= 4; // Bullish stock in a bearish sector (highly likely to fail breakout)
   }
   
   // 3. Shorting Tailwinds
-  if (sectorStrength < -5 && score < 45) {
-    normalizedScore -= 3; // Bearish stock in bearish sector
+  if (sectorStrength < -5 && score < 40) {
+    normalizedScore -= 2; // Bearish stock in bearish sector
   }
   
   // 4. Shorting Headwinds
-  if (sectorStrength > 5 && score < 45) {
-    normalizedScore += 5; // Bearish stock in a bullish sector (dangerous short)
+  if (sectorStrength > 5 && score < 40) {
+    normalizedScore += 4; // Bearish stock in a bullish sector (dangerous short)
   }
 
   // 5. Relative Strength Overperformance

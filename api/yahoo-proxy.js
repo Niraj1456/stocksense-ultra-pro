@@ -250,6 +250,97 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid Yahoo API path' });
     }
 
+    // Intercept news sentiment request
+    if (originalPath === 'news-sentiment') {
+      const symbol = req.query.symbol || 'TCS';
+      const apiKey = process.env.ALPHA_VANTAGE_KEY || '3A1S2PQ8RLS76HVQ';
+      const clean = symbol.replace('.NS', '').replace('.BO', '').trim();
+      const avUrl = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${clean}&limit=15&apikey=${apiKey}`;
+
+      try {
+        console.log(`[Proxy] Fetching news sentiment for: ${clean}`);
+        const avRes = await fetch(avUrl);
+        if (!avRes.ok) {
+          throw new Error(`Alpha Vantage API returned HTTP ${avRes.status}`);
+        }
+        const avData = await avRes.json();
+
+        if (avData.Note || avData['Error Message']) {
+          console.warn(`[Proxy] Alpha Vantage API warning: ${avData.Note || avData['Error Message']}`);
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).json({
+            avgSentiment: 0.15,
+            sentimentLabel: 'NEUTRAL',
+            articleCount: 0,
+            note: avData.Note || avData['Error Message']
+          });
+        }
+
+        const feed = avData.feed || [];
+        if (feed.length === 0) {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).json({
+            avgSentiment: 0.0,
+            sentimentLabel: 'NEUTRAL',
+            articleCount: 0
+          });
+        }
+
+        const articles = feed.map(article => {
+          const tickerSentiment = (article.ticker_sentiment || []).find(
+            ts => ts.ticker === clean || ts.ticker === `BSE:${clean}` || ts.ticker === `NSE:${clean}`
+          );
+          const useTickerData = tickerSentiment && parseFloat(tickerSentiment.relevance_score) > 0.1;
+
+          return {
+            sentiment: useTickerData
+              ? parseFloat(tickerSentiment.ticker_sentiment_score)
+              : parseFloat(article.overall_sentiment_score || 0),
+            label: useTickerData
+              ? tickerSentiment.ticker_sentiment_label
+              : (article.overall_sentiment_label || "Neutral")
+          };
+        });
+
+        const relevantArticles = articles.filter(a => Math.abs(a.sentiment) > 0.01);
+        const avgSentiment = relevantArticles.length > 0
+          ? relevantArticles.reduce((sum, a) => sum + a.sentiment, 0) / relevantArticles.length
+          : 0;
+
+        let sentimentLabel = 'NEUTRAL';
+        if (avgSentiment > 0.25) sentimentLabel = 'STRONGLY_BULLISH';
+        else if (avgSentiment > 0.1) sentimentLabel = 'BULLISH';
+        else if (avgSentiment < -0.25) sentimentLabel = 'STRONGLY_BEARISH';
+        else if (avgSentiment < -0.1) sentimentLabel = 'BEARISH';
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+        res.setHeader('Content-Type', 'application/json');
+
+        return res.status(200).json({
+          avgSentiment: +avgSentiment.toFixed(4),
+          sentimentLabel,
+          articleCount: relevantArticles.length
+        });
+      } catch (err) {
+        console.error(`[Proxy] News sentiment failure for ${symbol}:`, err.message);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json({
+          avgSentiment: 0.0,
+          sentimentLabel: 'NEUTRAL',
+          articleCount: 0,
+          error: err.message
+        });
+      }
+    }
+
     // Intercept quoteSummary requests and try SvelteKit scraping via raw socket first
     const isQuoteSummary = originalPath.includes('v10/finance/quoteSummary');
     if (isQuoteSummary) {

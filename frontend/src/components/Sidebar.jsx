@@ -17,7 +17,8 @@ export default function Sidebar({
   searchTerm,
   onSearchChange,
   suggestions,
-  onKeyPress
+  onKeyPress,
+  livePrice
 }) {
   // Get top volume stocks from real market data
   const volumeStocks = (marketData || [])
@@ -74,9 +75,24 @@ export default function Sidebar({
           )}
           {watchlist.map(stock => {
             const stockInfo = (marketData || []).find(s => s.symbol === stock);
-            const pct = stockInfo ? stockInfo.pct : 0;
-            const dotColor = pct > 1.5 ? 'green' : pct < -1.5 ? 'red' : 'amber';
-            
+            let displayPct = null;
+            let positive = true;
+            let dotColor = 'amber';
+
+            if (stockInfo) {
+              displayPct = (stockInfo.pct >= 0 ? '+' : '') + stockInfo.pct.toFixed(2) + '%';
+              positive = stockInfo.positive;
+              const pctVal = stockInfo.pct;
+              dotColor = pctVal > 1.5 ? 'green' : pctVal < -1.5 ? 'red' : 'amber';
+            } else if (stock === selectedStock && livePrice && livePrice.pct !== "" && livePrice.pct !== "-") {
+              displayPct = livePrice.pct;
+              positive = livePrice.positive;
+              const parsedPct = parseFloat(livePrice.pct.replace('%', ''));
+              if (!isNaN(parsedPct)) {
+                dotColor = parsedPct > 1.5 ? 'green' : parsedPct < -1.5 ? 'red' : 'amber';
+              }
+            }
+
             return (
               <div
                 key={stock}
@@ -91,9 +107,13 @@ export default function Sidebar({
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {stockInfo && (
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: stockInfo.positive ? 'var(--accent)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>
-                      {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
+                  {displayPct ? (
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: positive ? 'var(--accent)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>
+                      {displayPct}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      —
                     </span>
                   )}
                   <span
