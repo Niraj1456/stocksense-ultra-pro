@@ -173,8 +173,11 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const atrTrend = (realAtr && realAtr.atrTrend != null) ? realAtr.atrTrend : 0;
   const ema20 = (realAtr && realAtr.ema20) || null;
   const ema50 = (realAtr && realAtr.ema50) || null;
+  const ema200 = (realAtr && realAtr.ema200) || null;
   const adx = (realAtr && realAtr.adx) || 25;
   const mtfAlignment = (realAtr && realAtr.mtfAlignment != null) ? realAtr.mtfAlignment : 0;
+  const prevDayChangePct = (realAtr && realAtr.prevDayChangePct != null) ? realAtr.prevDayChangePct : 0;
+  const momentumPct = (realAtr && realAtr.momentumPct != null) ? realAtr.momentumPct : 0;
 
   // --- REAL PCR from NSE Option Chain (replaces hash simulation) ---
   const hasOC = optChain && optChain.source === 'NSE_LIVE';
@@ -210,11 +213,27 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const mtfPass = momentum >= 0;
   const indexAlignPass = atrTrend >= 0;
   const now = new Date();
-  const timeVal = now.getHours() + now.getMinutes() / 60;
+  let timeVal = now.getHours() + now.getMinutes() / 60;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour12: false,
+      hour: 'numeric',
+      minute: 'numeric'
+    }).formatToParts(now).reduce((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+    const hour = parseInt(parts.hour, 10);
+    const minute = parseInt(parts.minute, 10);
+    timeVal = hour + minute / 60;
+  } catch (e) {
+    // fallback
+  }
   let killZonePass = !(timeVal >= 11.5 && timeVal <= 13.5);
   if (isMarketClosed) killZonePass = true;
   const vetoFailCount = [!rvolPass, !mtfPass, !indexAlignPass, !killZonePass].filter(Boolean).length;
-  const isVetoed = vetoFailCount >= 2;
+  let isVetoed = vetoFailCount >= 2;
 
   // --- ADX-AWARE RSI SIGNAL ---
   const isTrending = adx > 25;
@@ -270,7 +289,6 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const pcrWeight = hasOC ? 1.5 : 0.5;
   const l2Weight = hasL2 ? 1.5 : 0.3;
   const biasSum = (rsiSignal * 2) + (momSignal * 1.5) + atrSignal + (pcrSignal * pcrWeight) + (l2Signal * l2Weight) + (emaTrendSignal * 1.5) + (mtfSignal * 1);
-  const isBullish = biasSum >= 0;
 
   // --- SHAP WEIGHTS (1-DAY PREDICTION) ---
   // Balanced weighting: no single factor should dominate beyond ±10
@@ -321,13 +339,15 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   // Oversold trend long protection (falling knife veto): RSI < 30 + ADX > 25
   if (biasSum > 0 && rsi < 30 && adx > 25) shapDirectionalGate -= 8;
 
+  // Daily change disagreement (falling knife protection): If down > 2% and setup is BUY, depress score
+  if (biasSum > 0 && prevDayChangePct < -2.0 && rsi >= 25) shapDirectionalGate -= 12;
+
   // Low RVOL penalty: any directional signal with RVOL < 0.40
   if (Math.abs(biasSum) > 2 && rvol < 0.40) {
     shapDirectionalGate += (biasSum > 0 ? -5 : 5); // push toward neutral
   }
 
   // Momentum disagreement: BUY but momentum falling, or SHORT but momentum rising
-  const momentumPct = (realAtr && realAtr.momentumPct != null) ? realAtr.momentumPct : 0;
   if (biasSum > 2 && momentumPct < -1.0 && rsi > 25) shapDirectionalGate -= 6;
   if (biasSum < -2 && momentumPct > 1.0 && rsi < 75) shapDirectionalGate += 6;
 
@@ -348,6 +368,66 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
   let finalScore = Math.round(baseScore + shapRsi + shapPcr + shapAtr + shapL2 + shapMom + shapVeto + shapEma + shapMtf + shapAdx + consensusBonus + shapDirectionalGate);
   finalScore = Math.max(5, Math.min(95, finalScore));
+
+  // Define v4.5 directional gates/vetoes locally
+  const isMacroUptrend = (ema20 && ema50) ? ema20 > ema50 : false;
+  const isLongTermUptrend = ema200 ? currentPrice > ema200 : false;
+
+  const trendVeto = (finalScore < 30) && isMacroUptrend && isLongTermUptrend;
+  const oversoldOverride = (finalScore < 30) && (rsi < 25) && (adx > 25) && isLongTermUptrend;
+  const shortNoVolume = (finalScore < 30) && (rvol < 0.5);
+  const longNoVolume = (finalScore >= 58) && (rvol < 0.40);
+  const anyDirNoVolume = (finalScore >= 58 || finalScore < 38) && (rvol < 0.35);
+  const oversoldShort = (finalScore < 38) && (rsi < 30) && !(adx > 30 && momentumPct < -3);
+  const trendingOverboughtShort = (finalScore < 38) && (rsi > 70) && (adx > 25) && (momentumPct > 0);
+  const momDisagreeLong = (finalScore >= 58) && (momentumPct < -1.0) && (rsi > 25);
+  const momDisagreeShort = (finalScore < 38) && (momentumPct > 1.0) && (rsi < 75);
+  const overboughtLong = (finalScore >= 58 && finalScore < 75) && (rsi > 60);
+  const oversoldTrendLong = (finalScore >= 58) && (rsi < 30) && (adx > 25);
+  const fallingKnifeDailyVeto = (finalScore >= 58) && (prevDayChangePct < -2.0) && (rsi >= 25);
+
+  let candleVetoLong = false;
+  let candleVetoShort = false;
+  if (histOpensGate.length >= 2 && histHighsGate.length >= 2 && histLowsGate.length >= 2 && histClosesGate.length >= 2) {
+    const lastIdx = histClosesGate.length - 1;
+    const triggerCandleHigh = histHighsGate[lastIdx];
+    const triggerCandleLow = histLowsGate[lastIdx];
+    const triggerCandleOpen = histOpensGate[lastIdx];
+    const prevCandleOpen = histOpensGate[lastIdx - 1];
+    const prevCandleClose = histClosesGate[lastIdx - 1];
+
+    const candleRange = triggerCandleHigh - triggerCandleLow;
+    const closePosition = candleRange > 0 ? (currentPrice - triggerCandleLow) / candleRange : 0.5;
+    const triggerBody = currentPrice - triggerCandleOpen;
+
+    if (finalScore >= 58 && finalScore < 80 && closePosition < 0.40) candleVetoLong = true;
+    if (finalScore < 38 && finalScore > 20 && closePosition > 0.60) candleVetoShort = true;
+
+    if (prevCandleOpen != null && prevCandleClose != null) {
+      const prevBody = prevCandleClose - prevCandleOpen;
+      const isBearishEngulfing = triggerBody < 0 && prevBody > 0 && Math.abs(triggerBody) > Math.abs(prevBody) * 1.1;
+      const isBullishEngulfing = triggerBody > 0 && prevBody < 0 && Math.abs(triggerBody) > Math.abs(prevBody) * 1.1;
+      if (finalScore >= 58 && finalScore < 80 && isBearishEngulfing) candleVetoLong = true;
+      if (finalScore < 38 && finalScore > 20 && isBullishEngulfing) candleVetoShort = true;
+    }
+  }
+
+  const isVetoTriggered = (vetoFailCount >= 2) || trendVeto || oversoldOverride || shortNoVolume || longNoVolume || anyDirNoVolume || oversoldShort || trendingOverboughtShort || momDisagreeLong || momDisagreeShort || overboughtLong || oversoldTrendLong || candleVetoLong || candleVetoShort || fallingKnifeDailyVeto;
+
+  // Compute aligned direction
+  let direction = "NEUTRAL";
+  if (isExhausted || isVetoTriggered) {
+    direction = "NEUTRAL";
+  } else if (finalScore >= 58) {
+    direction = "UP";
+  } else if (finalScore < 38) {
+    direction = "DOWN";
+  } else {
+    direction = "NEUTRAL";
+  }
+
+  const isBullish = direction === "UP";
+  isVetoed = isVetoTriggered;
 
   // Dynamic ATR Predictor — matches backend scoreEngine v4.3 logic (tightened for 80%+ hit rate)
   let baseMultiplier = 0.15 + (Math.abs(finalScore - 50) / 50) * 0.25;
@@ -505,9 +585,9 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const dnTgtStr = `₹${dnTgtPrice.toFixed(2)} (${formatPct(getPct(dnTgtPrice))})`;
   const dnSlStr = `₹${dnSlPrice.toFixed(2)} (${formatPct(getPct(dnSlPrice))})`;
 
-  const oneDayPrediction = isExhausted
-    ? "NEUTRAL (Sideways Chop)"
-    : (isBullish ? `UP (${formatPct(getPct(upTgtPrice))})` : `DOWN (${formatPct(getPct(dnTgtPrice))})`);
+  const oneDayPrediction = (direction === "NEUTRAL")
+    ? (isExhausted ? "NEUTRAL (Sideways Chop)" : "NEUTRAL (Veto Protected)")
+    : (direction === "UP" ? `UP (${formatPct(getPct(upTgtPrice))})` : `DOWN (${formatPct(getPct(dnTgtPrice))})`);
 
   // Real L2 data for display
   const displayBuyQty = hasL2 ? `${(depth.totalBuyQty / 1000).toFixed(0)}K` : 'N/A';
@@ -528,8 +608,8 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const geminiTgt = isBullish ? (upTgtPrice * 0.998).toFixed(2) : (dnTgtPrice * 1.002).toFixed(2);
   const geminiSl = isBullish ? (upSlPrice * 1.002).toFixed(2) : (dnSlPrice * 0.998).toFixed(2);
 
-  const geminiOpinion = isExhausted
-    ? `GEMINI 3.1 PRO (THINKING): The primary ATR algorithm indicates total daily exhaustion at ₹${currentDayRange.toFixed(2)}. ${hasL2 ? `Real NSE order book confirms buy/sell ratio at ${(depth.totalBuyQty / Math.max(depth.totalSellQty, 1)).toFixed(2)}x.` : ''} The probability of a breakout here is mathematically negligible. VETO the trade.`
+  const geminiOpinion = (isExhausted || isVetoTriggered)
+    ? `GEMINI 3.1 PRO (THINKING): The primary ATR/Veto algorithm indicates a protective veto is active. ${hasL2 ? `Real NSE order book confirms buy/sell ratio at ${(depth.totalBuyQty / Math.max(depth.totalSellQty, 1)).toFixed(2)}x.` : ''} The probability of a successful setup here is mathematically negligible. VETO the trade.`
     : `GEMINI 3.1 PRO (THINKING): The primary ATR algorithm projects a Base Target of ₹${isBullish ? upTgtPrice.toFixed(2) : dnTgtPrice.toFixed(2)}. ${hasOC ? `REAL NSE PCR at ${pcr} ${pcr > 1 ? 'supports bullish bias' : 'signals caution'}.` : ''} ${hasL2 ? `REAL NSE order book shows ${l2Imbalance > 0 ? 'buy-side dominance' : 'sell-side pressure'} at ${l2Imbalance.toFixed(1)}% imbalance.` : ''} I recommend ${isBullish ? 'long' : 'short'} entry at ₹${geminiTgt} with stop at ₹${geminiSl}.`;
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -601,11 +681,32 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
   return {
     score: finalScore,
-    verdict: isExhausted ? (isVetoed ? "VETOED (TRAP)" : "EXHAUSTED") : getVerdict(finalScore),
+    verdict: isVetoed ? "VETOED (TRAP)" : (isExhausted ? "EXHAUSTED" : getVerdict(finalScore)),
     geminiOpinion,
-    aiReasoning: isExhausted
-      ? (isVetoed ? `Setup explicitly VETOED by Layer 13 filters. The algorithm detected ${!rvolPass ? 'abnormally low institutional volume (RVOL < 1.5)' : !killZonePass ? 'mid-day chop (Kill Zone timing)' : !indexAlignPass ? 'heavy divergence against NIFTY 50 trend' : 'conflicting Multi-Timeframe momentum'}. Capital preserved.` : `ATR Exhaustion Theory dictates NO TRADE. The stock has already moved ₹${currentDayRange.toFixed(2)} today, consuming its daily volatility limit.`)
-      : `${hasOC ? 'REAL NSE PCR' : 'Estimated PCR'}: ${pcr}. ${hasL2 ? 'REAL NSE L2 Imbalance' : 'Estimated L2'}: ${l2Imbalance.toFixed(1)}%. ${hasL2 && depth.deliveryPct ? `Delivery at ${depth.deliveryPct.toFixed(1)}% ${depth.deliveryPct > 50 ? 'confirms institutional participation' : 'indicates speculative activity'}.` : ''} Vol regime: ${volRegime}. ATR ROC: ${atrRoc.toFixed(1)}%. ${shortSignal !== "NO_SHORT" ? `⚠️ Short Advisor: ${shortSignal} (conviction ${shortConviction}).` : ''}`,
+    aiReasoning: isVetoed
+      ? `Setup explicitly VETOED by Layer 13 / v4.5 filters. Active vetoes: ${[
+          !rvolPass && "RVOL",
+          !mtfPass && "MOMENTUM",
+          !indexAlignPass && "ATR TREND",
+          !killZonePass && "TIMING",
+          trendVeto && "TREND VETO",
+          oversoldOverride && "OVERSOLD OVERRIDE",
+          shortNoVolume && "LOW VOL SHORT",
+          longNoVolume && "LOW VOL LONG",
+          anyDirNoVolume && "LOW VOL ANY",
+          oversoldShort && "OVERSOLD SHORT",
+          trendingOverboughtShort && "TRENDING OVERBOUGHT SHORT",
+          momDisagreeLong && "MOMENTUM DISAGREE LONG",
+          momDisagreeShort && "MOMENTUM DISAGREE SHORT",
+          overboughtLong && "OVERBOUGHT LONG",
+          oversoldTrendLong && "OVERSOLD TREND LONG",
+          candleVetoLong && "CANDLE VETO LONG",
+          candleVetoShort && "CANDLE VETO SHORT",
+          fallingKnifeDailyVeto && "FALLING KNIFE DAILY"
+        ].filter(Boolean).join(", ")}. Capital preserved.`
+      : (isExhausted
+        ? `ATR Exhaustion Theory dictates NO TRADE. The stock has already moved ₹${currentDayRange.toFixed(2)} today, consuming its daily volatility limit.`
+        : `${hasOC ? 'REAL NSE PCR' : 'Estimated PCR'}: ${pcr}. ${hasL2 ? 'REAL NSE L2 Imbalance' : 'Estimated L2'}: ${l2Imbalance.toFixed(1)}%. ${hasL2 && depth.deliveryPct ? `Delivery at ${depth.deliveryPct.toFixed(1)}% ${depth.deliveryPct > 50 ? 'confirms institutional participation' : 'indicates speculative activity'}.` : ''} Vol regime: ${volRegime}. ATR ROC: ${atrRoc.toFixed(1)}%. ${shortSignal !== "NO_SHORT" ? `⚠️ Short Advisor: ${shortSignal} (conviction ${shortConviction}).` : ''}`),
     scoreBreakdown: (() => {
       const baseBreakdown = [
         { layer: "Layer 13 (Veto Engine)", weight: "REAL DATA", points: shapVeto + 5, reason: isVetoed ? "Failed probability filters. Score penalized by -15." : "All filters passed. Score boosted by +5." },
@@ -651,8 +752,28 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
     isBullish,
     isExhausted,
     isVetoed,
+    direction,
     vetoFailCount,
-    vetoesList: [!rvolPass && "RVOL", !mtfPass && "MOMENTUM", !indexAlignPass && "ATR TREND", !killZonePass && "TIMING"].filter(Boolean),
+    vetoesList: [
+      !rvolPass && "RVOL",
+      !mtfPass && "MOMENTUM",
+      !indexAlignPass && "ATR TREND",
+      !killZonePass && "TIMING",
+      trendVeto && "TREND VETO",
+      oversoldOverride && "OVERSOLD OVERRIDE",
+      shortNoVolume && "LOW VOL SHORT",
+      longNoVolume && "LOW VOL LONG",
+      anyDirNoVolume && "LOW VOL ANY",
+      oversoldShort && "OVERSOLD SHORT",
+      trendingOverboughtShort && "TRENDING OVERBOUGHT SHORT",
+      momDisagreeLong && "MOMENTUM DISAGREE LONG",
+      momDisagreeShort && "MOMENTUM DISAGREE SHORT",
+      overboughtLong && "OVERBOUGHT LONG",
+      oversoldTrendLong && "OVERSOLD TREND LONG",
+      candleVetoLong && "CANDLE VETO LONG",
+      candleVetoShort && "CANDLE VETO SHORT",
+      fallingKnifeDailyVeto && "FALLING KNIFE DAILY"
+    ].filter(Boolean),
     recommendedEntry,
     entryPctDiff,
     entryRangeLow,
@@ -942,8 +1063,8 @@ export default function App() {
         else if (selectedStock === "NIFTY PHARMA") yfSymbol = "^CNXPHARMA";
         else yfSymbol = `${selectedStock.replace(/\s+/g, '')}.NS`; // Sanitize spaces for flawless fetching
 
-        // Using 6mo range with 1d interval to calculate 50-day EMA, 28-day ADX, and Multi-TF momentum
-        const targetUrl = `/api/yahoo/v8/finance/chart/${yfSymbol}?range=6mo&interval=1d`;
+        // Using 1y range with 1d interval to calculate 200-day EMA, 50-day EMA, 28-day ADX, and Multi-TF momentum
+        const targetUrl = `/api/yahoo/v8/finance/chart/${yfSymbol}?range=1y&interval=1d`;
 
         const response = await fetch(targetUrl);
         const dateHeader = response.headers.get("Date");
@@ -1012,16 +1133,18 @@ export default function App() {
         let realRvol = 1.0;
         if (volumes.length >= 2) {
           const todayVol = volumes[volumes.length - 1];
-          const avgVol = volumes.slice(0, -1).reduce((a, b) => a + b, 0) / (volumes.length - 1);
+          const prev20Vol = volumes.slice(-21, -1);
+          const avgVol = prev20Vol.length > 0 ? prev20Vol.reduce((a, b) => a + b, 0) / prev20Vol.length : 1.0;
           realRvol = avgVol > 0 ? Math.round((todayVol / avgVol) * 10) / 10 : 1.0;
         }
 
         // --- REAL MOMENTUM (5-day price change direction) ---
         let realMomentum = 0; // -1 bearish, 0 neutral, +1 bullish
+        let momPct = 0;
         if (closes.length >= 6) {
           const fiveDayAgo = closes[closes.length - 6];
           const latest = closes[closes.length - 1];
-          const momPct = ((latest - fiveDayAgo) / fiveDayAgo) * 100;
+          momPct = ((latest - fiveDayAgo) / fiveDayAgo) * 100;
           realMomentum = momPct > 0.5 ? 1 : (momPct < -0.5 ? -1 : 0);
         }
 
@@ -1033,7 +1156,7 @@ export default function App() {
           atrTrend = recentAvg > olderAvg * 1.1 ? 1 : (recentAvg < olderAvg * 0.9 ? -1 : 0);
         }
 
-        // --- REAL EMA20 & EMA50 CALCULATION ---
+        // --- REAL EMA20 & EMA50 & EMA200 CALCULATION ---
         // Exponential Moving Average: weight = 2/(period+1), EMA = price*weight + prevEMA*(1-weight)
         const computeEMA = (data, period) => {
           if (data.length < period) return null;
@@ -1046,6 +1169,7 @@ export default function App() {
         };
         const realEma20 = computeEMA(closes, 20);
         const realEma50 = computeEMA(closes, 50);
+        const realEma200 = computeEMA(closes, 200);
 
         // --- REAL ADX CALCULATION (14-period) ---
         let realAdx = 25; // neutral fallback
@@ -1108,9 +1232,13 @@ export default function App() {
         // the last candle represents today's live session.
         // ═══════════════════════════════════════════════════════════════
         const getIstDateString = (dateObj) => {
-          const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
-          const istDate = new Date(utc + (3600000 * 5.5));
-          return `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
+          try {
+            return dateObj.toLocaleDateString("sv-SE", { timeZone: "Asia/Kolkata" });
+          } catch (e) {
+            const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
+            const istDate = new Date(utc + (3600000 * 5.5));
+            return `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
+          }
         };
 
         let prevClose = 0;
@@ -1127,7 +1255,8 @@ export default function App() {
           if (lastValidIdx !== -1) {
             const lastTimestamp = result.timestamp[lastValidIdx];
             const lastCandleIst = getIstDateString(new Date(lastTimestamp * 1000));
-            const todayIst = getIstDateString(new Date());
+            const marketPriceTime = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000) : new Date();
+            const todayIst = getIstDateString(marketPriceTime);
             const lastIsToday = lastCandleIst === todayIst;
 
             if (lastIsToday) {
@@ -1158,7 +1287,26 @@ export default function App() {
         const changePct = (prevClose && prevClose > 0) ? ((change / prevClose) * 100) : 0;
 
         if (isMounted) {
-          setLiveAtr({ value: atrValue, pct: atrPct, rsi: realRsi, rvol: realRvol, momentum: realMomentum, atrTrend, ema20: realEma20, ema50: realEma50, adx: realAdx, mtfAlignment, closes, highs: rawHighs, lows: rawLows, volumes, opens: rawOpens });
+          setLiveAtr({
+            value: atrValue,
+            pct: atrPct,
+            rsi: realRsi,
+            rvol: realRvol,
+            momentum: realMomentum,
+            momentumPct: momPct,
+            prevDayChangePct: changePct,
+            atrTrend,
+            ema20: realEma20,
+            ema50: realEma50,
+            ema200: realEma200,
+            adx: realAdx,
+            mtfAlignment,
+            closes,
+            highs: rawHighs,
+            lows: rawLows,
+            volumes,
+            opens: rawOpens
+          });
           setLivePrice({
             price: `₹${currentPrice.toFixed(2)}`,
             change: `${change > 0 ? '+' : ''}${change.toFixed(2)}`,
@@ -1235,10 +1383,25 @@ export default function App() {
 
     // Signal time window check — optimal before 9:45 AM IST
     const now = new Date();
-    const istHour = now.getHours();
-    const istMin = now.getMinutes();
+    let istHour = now.getHours();
+    let istMin = now.getMinutes();
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour12: false,
+        hour: 'numeric',
+        minute: 'numeric'
+      }).formatToParts(now).reduce((acc, part) => {
+        acc[part.type] = part.value;
+        return acc;
+      }, {});
+      istHour = parseInt(parts.hour, 10);
+      istMin = parseInt(parts.minute, 10);
+    } catch (e) {
+      // fallback
+    }
     const timeDecimal = istHour + istMin / 60;
-    setSignalTimestamp(now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }));
+    setSignalTimestamp(now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }));
 
 
     // Determine if this is an index (indices don't have option chains or L2)
@@ -1649,6 +1812,39 @@ export default function App() {
 
                 {/* Playbook Widget */}
                 {(() => {
+                  if (mode === "SHORT_TERM" && currentData.direction === "NEUTRAL") {
+                    return (
+                      <div className="playbook-card" style={{ margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem', border: '1px solid var(--danger-dim)', background: 'rgba(239, 68, 68, 0.05)' }}>
+                        <div className="playbook-header" style={{ marginBottom: '0.4rem' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.78rem' }}>🎯 Trade Playbook</span>
+                          <span style={{ fontSize: '0.6rem', background: 'var(--danger-dim)', color: 'var(--danger-solid)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 800 }}>
+                            No Trade
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', margin: '0.5rem 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', color: 'var(--danger-solid)', fontWeight: 700, fontSize: '0.85rem' }}>
+                            <span>🛡️ No Trade Recommended</span>
+                          </div>
+                          <p style={{ fontSize: '0.68rem', lineHeight: '1.4', margin: 0, color: 'var(--text-secondary)' }}>
+                            System filters have triggered a protective veto. The current trend structure, volume, or price action does not support a high-probability trade entry. Capital preserved.
+                          </p>
+                        </div>
+                        {currentData.vetoesList && currentData.vetoesList.length > 0 && (
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginBottom: '0.2rem', textTransform: 'uppercase', fontWeight: 600 }}>Active Vetoes:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                              {currentData.vetoesList.map(v => (
+                                <span key={v} style={{ fontSize: '0.55rem', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger-solid)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                  {v}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   // Compute Short-Term swing parameters
                   let rrRatio = "2.0";
                   let positionSize = 0;

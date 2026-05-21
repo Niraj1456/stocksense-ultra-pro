@@ -50,13 +50,18 @@ async function fetchStockData(symbol) {
         const lastTimestamp = result.timestamp[lastValidIdx];
         
         const getIstDateString = (dateObj) => {
-          const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
-          const istDate = new Date(utc + (3600000 * 5.5));
-          return `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
+          try {
+            return dateObj.toLocaleDateString("sv-SE", { timeZone: "Asia/Kolkata" });
+          } catch (e) {
+            const utc = dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000);
+            const istDate = new Date(utc + (3600000 * 5.5));
+            return `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
+          }
         };
 
         const lastCandleIst = getIstDateString(new Date(lastTimestamp * 1000));
-        const todayIst = getIstDateString(new Date());
+        const marketPriceTime = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000) : new Date();
+        const todayIst = getIstDateString(marketPriceTime);
         const lastIsToday = lastCandleIst === todayIst;
 
         if (lastIsToday) {
@@ -95,7 +100,20 @@ async function fetchStockData(symbol) {
     // Use yesterday's complete volume for ranking (today's is partial during market hours)
     // After market close, today's volume will be complete
     const now = new Date();
-    const hour = now.getHours();
+    let hour = now.getHours();
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour12: false,
+        hour: 'numeric'
+      }).formatToParts(now).reduce((acc, part) => {
+        acc[part.type] = part.value;
+        return acc;
+      }, {});
+      hour = parseInt(parts.hour, 10);
+    } catch (e) {
+      // fallback
+    }
     const isMarketHours = hour >= 9 && hour < 16;
     const rankVolume = isMarketHours && volumes.length >= 2 ? yesterdayVolume : todayVolume;
     

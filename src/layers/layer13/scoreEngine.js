@@ -483,6 +483,10 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // Data: VEDL 5D (RSI 21.42, ADX 38.5, score 95.00→-2.7%)
   const oversoldTrendLong = score >= 58 && rsi < 30 && adx > 25;
 
+  // GATE 7: DAILY CHANGE DISAGREEMENT (FALLING KNIVES PROTECTION)
+  // If down > 2% today and setup is BUY, block the signal unless RSI is extremely oversold (RSI < 25)
+  const fallingKnifeDailyVeto = score >= 58 && prevDayChangePct < -2.0 && rsi >= 25;
+
   // GATE 5: CANDLE STRUCTURE CONFIRMATION
   // Triggering candle must confirm directional bias — a leading (not lagging) signal
   let candleVetoLong = false;
@@ -515,7 +519,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const isExhausted = trendVeto || oversoldOverride || shortNoVolume || longNoVolume
     || anyDirNoVolume || bearMarketLong || forensicDistress || weakBearish
     || oversoldShort || trendingOverboughtShort || momDisagreeLong || momDisagreeShort
-    || overboughtLong || oversoldTrendLong || candleVetoLong || candleVetoShort;
+    || overboughtLong || oversoldTrendLong || candleVetoLong || candleVetoShort
+    || fallingKnifeDailyVeto;
 
   // T2-1: Dynamic ATR Predictor based on Continuous Score + RVOL/ADX Modifiers
   // ═══════════════════════════════════════════════════════════════════════════
@@ -577,6 +582,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
       ...(oversoldTrendLong ? ['OVERSOLD_TREND_LONG'] : []),
       ...(candleVetoLong ? ['CANDLE_VETO_LONG'] : []),
       ...(candleVetoShort ? ['CANDLE_VETO_SHORT'] : []),
+      ...(fallingKnifeDailyVeto ? ['FALLING_KNIFE_DAILY'] : []),
     ],
     direction,
     verdict: isExhausted ? "EXHAUSTED" : getVerdict(score),

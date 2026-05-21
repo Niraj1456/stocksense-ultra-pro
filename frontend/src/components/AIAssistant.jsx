@@ -58,8 +58,23 @@ export default function AIAssistant() {
 
   const isConfigured = status.gemini || status.claude;
   const now = new Date();
-  const hours = now.getHours();
-  const mins = now.getMinutes();
+  let hours = now.getHours();
+  let mins = now.getMinutes();
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour12: false,
+      hour: 'numeric',
+      minute: 'numeric'
+    }).formatToParts(now).reduce((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+    hours = parseInt(parts.hour, 10);
+    mins = parseInt(parts.minute, 10);
+  } catch (e) {
+    // fallback
+  }
   const timeVal = hours + mins / 60;
   const isPreMarket = timeVal >= 8.5 && timeVal < 9.25;
   const isMarketOpen = timeVal >= 9.25 && timeVal < 15.5;
