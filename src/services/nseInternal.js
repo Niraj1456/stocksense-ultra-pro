@@ -14,6 +14,12 @@ let cookiePromise = null; // Concurrency lock
 const apiCache = new Map();
 const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 
+// FIX RC10: Circuit breaker — prevent hammering NSE during outages
+let consecutiveFailures = 0;
+let circuitOpenUntil = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3;   // Open after 3 consecutive failures
+const CIRCUIT_OPEN_DURATION = 120000;  // Stay open for 2 minutes
+
 const NSE_BASE = "https://www.nseindia.com";
 
 const USER_AGENTS = [
@@ -87,6 +93,12 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function nseGetJson(path) {
   const cacheKey = path;
   const now = Date.now();
+
+  // FIX RC10: Circuit breaker — fail fast during outages
+  if (now < circuitOpenUntil) {
+    throw new Error(`NSE circuit breaker OPEN (${Math.ceil((circuitOpenUntil - now)/1000)}s remaining). Skipping ${path}`);
+  }
+
   if (apiCache.has(cacheKey)) {
     const cached = apiCache.get(cacheKey);
     if (now - cached.timestamp < CACHE_TTL) {
@@ -94,30 +106,58 @@ async function nseGetJson(path) {
     }
   }
 
-  await ensureCookie();
-  const url = `${NSE_BASE}${path}`;
-  
-  let resp = await axios.get(url, { headers: nseHeaders(), timeout: 20000, validateStatus: () => true, httpsAgent, httpAgent });
-
-  if (resp.status === 401 || resp.status === 403 || resp.status === 429) {
-    logger.warn(`NSE Auth Failure [${resp.status}]. Forcing session refresh.`);
-    cookieHeader = ""; // Force clear
-    cookieUpdatedAtMs = 0;
-    
-    await delay(2000); // Polite backoff
+  try {
     await ensureCookie();
+    const url = `${NSE_BASE}${path}`;
     
-    resp = await axios.get(url, { headers: nseHeaders(), timeout: 20000, validateStatus: () => true, httpsAgent, httpAgent });
-    
-    if (resp.status >= 400) throw new Error(`NSE ${path} failed after retry: ${resp.status}`);
-  }
+    let resp = await axios.get(url, { headers: nseHeaders(), timeout: 20000, validateStatus: () => true, httpsAgent, httpAgent });
 
-  if (resp.status >= 400) throw new Error(`NSE ${path} failed: ${resp.status}`);
-  
-  await delay(300); // Rate limit spacing between rapid lambda calls
-  
-  apiCache.set(cacheKey, { data: resp.data, timestamp: Date.now() });
-  return resp.data;
+    if (resp.status === 401 || resp.status === 403 || resp.status === 429) {
+      logger.warn(`NSE Auth Failure [${resp.status}]. Forcing session refresh.`);
+      cookieHeader = ""; // Force clear
+      cookieUpdatedAtMs = 0;
+      
+      await delay(2000); // Polite backoff
+      await ensureCookie();
+      
+      resp = await axios.get(url, { headers: nseHeaders(), timeout: 20000, validateStatus: () => true, httpsAgent, httpAgent });
+      
+      if (resp.status >= 400) {
+        consecutiveFailures++;
+        if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+          circuitOpenUntil = Date.now() + CIRCUIT_OPEN_DURATION;
+          logger.error(`NSE circuit breaker OPENED after ${consecutiveFailures} consecutive failures. Will retry after ${CIRCUIT_OPEN_DURATION/1000}s.`);
+        }
+        throw new Error(`NSE ${path} failed after retry: ${resp.status}`);
+      }
+    }
+
+    if (resp.status >= 400) {
+      consecutiveFailures++;
+      if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+        circuitOpenUntil = Date.now() + CIRCUIT_OPEN_DURATION;
+        logger.error(`NSE circuit breaker OPENED after ${consecutiveFailures} consecutive failures.`);
+      }
+      throw new Error(`NSE ${path} failed: ${resp.status}`);
+    }
+    
+    // Success — reset circuit breaker
+    consecutiveFailures = 0;
+    
+    await delay(300); // Rate limit spacing between rapid lambda calls
+    
+    apiCache.set(cacheKey, { data: resp.data, timestamp: Date.now() });
+    return resp.data;
+  } catch (err) {
+    if (!err.message.includes('circuit breaker')) {
+      consecutiveFailures++;
+      if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+        circuitOpenUntil = Date.now() + CIRCUIT_OPEN_DURATION;
+        logger.error(`NSE circuit breaker OPENED after ${consecutiveFailures} failures: ${err.message}`);
+      }
+    }
+    throw err;
+  }
 }
 
 module.exports = { nseGetJson };

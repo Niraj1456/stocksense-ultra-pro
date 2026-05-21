@@ -235,12 +235,14 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   ].filter(Boolean).length;
 
   let confluenceBonus = 0;
-  if (bullSignals >= 5)      confluenceBonus = 8;   // 5+ pillars bullish = massive conviction
-  else if (bullSignals >= 4) confluenceBonus = 5;   // 4 pillars
-  else if (bullSignals >= 3) confluenceBonus = 3;   // 3 pillars
-  if (bearSignals >= 5)      confluenceBonus = -8;
-  else if (bearSignals >= 4) confluenceBonus = -5;
-  else if (bearSignals >= 3) confluenceBonus = -3;
+  // FIX: Use NET confluence (bull - bear) to prevent overwrite bias
+  const netSignals = bullSignals - bearSignals;
+  if (netSignals >= 5)      confluenceBonus = 8;    // Dominant bull agreement
+  else if (netSignals >= 3) confluenceBonus = 5;
+  else if (netSignals >= 1 && bullSignals >= 3) confluenceBonus = 3; // Mild bull edge with 3+ agreeing
+  else if (netSignals <= -5) confluenceBonus = -8;  // Dominant bear agreement
+  else if (netSignals <= -3) confluenceBonus = -5;
+  else if (netSignals <= -1 && bearSignals >= 3) confluenceBonus = -3; // Mild bear edge with 3+ agreeing
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PILLAR 9: NLP SENTIMENT (±4) — powered by Alpha Vantage
@@ -336,7 +338,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   // Add continuous precision (micro-variance) for institutional transparency
   const precisionTweak = ((rsi - 50) * 0.03) + (rvol * 0.15) + (momentumPct * 0.05);
-  score += precisionTweak;
+  score += clamp(precisionTweak, -3, 3); // FIX: Bound micro-adjustment to prevent unbounded drift
 
   // ═══════════════════════════════════════════════════════════════════════════
   // T1-2: ADX CONFIDENCE SCALING — compress score toward neutral in choppy markets
@@ -415,11 +417,17 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // ═══════════════════════════════════════════════════════════════════════════
   const longNoVolume = score >= 60 && rvol < 0.3;
 
+  // FIX: New veto — don't buy strongly in confirmed bear markets with strong trend
+  const bearMarketLong = score >= 60 && marketRegime === 'BEAR' && isTrending;
+
+  // FIX: New veto — financial distress overrides buy signals
+  const forensicDistress = score >= 55 && altmanZone === 'DISTRESS_ZONE';
+
   // ATR headroom: use full ATR for target calculation, no phantom deduction
   const remainingAtr = atrValue;
   
   // Vetoes fire on any of the conditions above
-  const isExhausted = trendVeto || oversoldOverride || shortNoVolume || longNoVolume;
+  const isExhausted = trendVeto || oversoldOverride || shortNoVolume || longNoVolume || bearMarketLong || forensicDistress;
 
   // T2-1: Dynamic ATR Predictor based on Continuous Score + RVOL/ADX Modifiers
   let baseMultiplier = 0.3 + (Math.abs(score - 50) / 50) * 0.35; // 0.3x at score 50, 0.65x at score 100/0
@@ -437,7 +445,10 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // This prevents embarrassing 0% reach on STRONGLY BUY signals.
   // ═══════════════════════════════════════════════════════════════════════════
   if (timeHorizon === '1D') {
-    const maxIntraday = currentPrice * 0.015; // 1.5% cap for intraday
+    // FIX: Use stock-specific ATR% for cap instead of hardcoded 1.5%
+    const atrPct = atrValue / currentPrice;
+    const dailyCap = Math.min(atrPct * 0.8, 0.025); // 80% of ATR%, max 2.5%
+    const maxIntraday = currentPrice * Math.max(dailyCap, 0.005); // Floor at 0.5%
     headroom = Math.min(headroom, maxIntraday);
   }
   
@@ -458,6 +469,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
       ...(oversoldOverride ? ['OVERSOLD_OVERRIDE'] : []),
       ...(shortNoVolume ? ['LOW_VOL_SHORT'] : []),
       ...(longNoVolume ? ['LOW_VOL_LONG'] : []),
+      ...(bearMarketLong ? ['BEAR_MARKET_LONG'] : []),
+      ...(forensicDistress ? ['FORENSIC_DISTRESS'] : []),
     ],
     direction,
     verdict: isExhausted ? "EXHAUSTED" : getVerdict(score),

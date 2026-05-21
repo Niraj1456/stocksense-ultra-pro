@@ -1,21 +1,24 @@
 // MODULE 8.1 — VALUATION SCORE ENGINE
+// FIX RC4: industryPe is now populated from sectorPeMap.js — PE comparison is active
 function valuationScoreEngine({ pe_ratio = null, industry_pe = null, pb_ratio = null, peg_ratio = null }) {
   let score = 0;
   let signal = "FAIRLY_VALUED";
 
   if (pe_ratio && industry_pe) {
-    if (pe_ratio < industry_pe * 0.7) score += 2;
-    if (pe_ratio > industry_pe * 1.5) score -= 2;
+    if (pe_ratio < industry_pe * 0.7) score += 2;    // Trading at >30% discount to sector
+    else if (pe_ratio > industry_pe * 1.5) score -= 2; // Trading at >50% premium to sector
   }
 
   if (pb_ratio) {
     if (pb_ratio < 1.5) score += 2;
-    else if (pb_ratio > 5.0) score -= 1;
+    else if (pb_ratio > 5.0) score -= 2; // FIX: Strengthened penalty from -1 to -2 for extreme PB
   }
 
   if (peg_ratio) {
     if (peg_ratio > 0 && peg_ratio < 1.0) score += 3; // Undervalued relative to growth
     else if (peg_ratio > 2.0) score -= 2; // Overvalued relative to growth
+    // FIX: Handle negative PEG (negative earnings growth = red flag)
+    else if (peg_ratio < 0) score -= 1;
   }
 
   if (score >= 4) signal = "DEEP_VALUE";
@@ -67,11 +70,13 @@ function growthMomentumEngine({ qoq_sales_growth = 0, yoy_sales_growth = 0, qoq_
 }
 
 // MODULE 8.3 — FORENSIC ACCOUNTING & HEALTH SCORE
+// FIX RC2: Now receives correct D/E values (no longer /100)
+// FIX RC3: Parameter renamed from 'roe' to match upstream (was mislabeled as 'roce')
 function forensicHealthEngine({ debt_to_equity = null, interest_coverage = null, current_ratio = null, roe = null, ocf_to_net_income = null }) {
   let pts = 0;
   const flags = [];
 
-  // Leverage & Solvency
+  // Leverage & Solvency — NOW WORKING (D/E values are correct after RC2 fix)
   if (debt_to_equity !== null) {
     if (debt_to_equity > 2.0) { pts -= 3; flags.push("HIGH_LEVERAGE_RISK"); }
     else if (debt_to_equity < 0.5) { pts += 2; }
@@ -89,7 +94,7 @@ function forensicHealthEngine({ debt_to_equity = null, interest_coverage = null,
     else if (current_ratio >= 1.5) { pts += 1; }
   }
 
-  // Profitability
+  // Profitability (ROE — now correctly labeled)
   if (roe !== null) {
     if (roe > 15) { pts += 3; }
     else if (roe < 5) { pts -= 2; flags.push("LOW_RETURN_ON_EQUITY"); }

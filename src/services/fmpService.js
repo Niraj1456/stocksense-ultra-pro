@@ -62,7 +62,17 @@ async function fmpGet(path) {
       console.warn(`[FMP] ${path} returned ${resp.status}`);
       return null;
     }
-    return resp.data;
+    // FIX RC11: Validate response — FMP sometimes returns 200 with error body
+    const data = resp.data;
+    if (data && typeof data === 'object' && !Array.isArray(data) && data['Error Message']) {
+      console.warn(`[FMP] ${path} returned error: ${data['Error Message']}`);
+      return null;
+    }
+    // Reject empty arrays (valid JSON but no data)
+    if (Array.isArray(data) && data.length === 0) {
+      return null;
+    }
+    return data;
   } catch (err) {
     console.error(`[FMP] Error fetching ${path}: ${err.message}`);
     return null;

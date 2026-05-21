@@ -57,8 +57,11 @@ async function analyzeStock(symbol, mode = "ST") {
     peRatio: finOut.data?.peRatio || null,
     pbRatio: finOut.data?.pbRatio || null,
     pegRatio: finOut.data?.pegRatio || null,
-    debtToEquity: finOut.data?.debtToEquity || (fmpMetrics.debtToEquity || null),
-    roce: finOut.data?.roce || (fmpMetrics.roe ? fmpMetrics.roe * 100 : null),
+    debtToEquity: finOut.data?.debtToEquity ?? (fmpMetrics.debtToEquity ?? null),
+    // FIX RC3: Renamed from 'roce' to 'roe' — Yahoo field is returnOnEquity, not ROCE
+    roe: finOut.data?.roe ?? (fmpMetrics.roe ? fmpMetrics.roe * 100 : null),
+    // FIX RC4: industryPe now populated from sectorPeMap.js
+    industryPe: finOut.data?.industryPe || null,
     currentRatio: finOut.data?.currentRatio || fmpMetrics.currentRatio || null,
     // From FMP Profile (free tier — always available)
     marketCap: fmpProfile.marketCap || finOut.data?.marketCap || null,
@@ -109,7 +112,7 @@ async function analyzeStock(symbol, mode = "ST") {
     debt_to_equity: mergedFundamentals.debtToEquity,
     interest_coverage: interestCoverage,
     current_ratio: mergedFundamentals.currentRatio,
-    roe: mergedFundamentals.roce,
+    roe: mergedFundamentals.roe,
     ocf_to_net_income: ocfToNi
   });
 
@@ -118,6 +121,7 @@ async function analyzeStock(symbol, mode = "ST") {
   // ═══════════════════════════════════════════════════════════════
   const valuationOut = Layer8.valuationScoreEngine({
     pe_ratio: mergedFundamentals.peRatio,
+    industry_pe: mergedFundamentals.industryPe,
     pb_ratio: mergedFundamentals.pbRatio,
     peg_ratio: mergedFundamentals.pegRatio
   });
@@ -345,8 +349,11 @@ async function analyzeStock(symbol, mode = "ST") {
       pbRatio: mergedFundamentals.pbRatio,
       pegRatio: mergedFundamentals.pegRatio,
       debtToEquity: mergedFundamentals.debtToEquity,
-      roce: mergedFundamentals.roce,
+      roce: mergedFundamentals.roe,  // FIX RC3: field renamed to 'roe' but scoreEngine param is still 'roce'
       adx: techOut?.data?.indicators?.adx14?.adx ?? techOut?.data?.indicators?.adx14,
+      // FIX: Pass prevDayChangePct and marketRegime for post-processing filters
+      prevDayChangePct: len >= 2 ? ((candles[len-1].c - candles[len-2].c) / candles[len-2].c * 100) : 0,
+      marketRegime: (vixOut?.data?.inputs?.vix_current ?? 15) > 20 ? 'BEAR' : ((momentumPct > 0.5) ? 'BULL' : 'NEUTRAL'),
       // FMP-powered fundamentals boost
       piotroskiScore: piotroskiOut?.data?.f_score || null,
       altmanZone: altmanOut?.data?.zone || null,
@@ -365,7 +372,7 @@ async function analyzeStock(symbol, mode = "ST") {
       l1RiskBand: (vixOut?.data?.inputs?.vix_current ?? vixOut?.data?.last) <= 12 ? "LOW" : (vixOut?.data?.inputs?.vix_current ?? vixOut?.data?.last) <= 20 ? "MODERATE" : "HIGH",
       rsi: techOut?.data?.indicators?.rsi14,
       pcr: pcrOut?.data?.pcr,
-      roce: mergedFundamentals.roce,
+      roce: mergedFundamentals.roe,
       forensicRiskScore: forensicOut?.data?.health_score != null ? Math.max(0, -forensicOut.data.health_score) / 10 : 0,
       valuationBand: valuationOut?.data?.valuationBand,
       predictiveHints: predictiveOut?.data?.hints,
@@ -394,13 +401,15 @@ async function analyzeStock(symbol, mode = "ST") {
       supplyChainNews: Layer15.supplyChainNews ? await Layer15.supplyChainNews().catch((e) => ({ ok: false, error: e?.message })) : {ok: false},
       announcements: Layer15.announcements ? await Layer15.announcements(symbol).catch((e) => ({ ok: false, error: e?.message })) : {ok: false}
     },
+    // FIX RC12: Layer 16/17 no longer reference non-existent functions
     layer16: {
-      symbolResolver: Layer16.symbolResolver ? Layer16.symbolResolver(symbol) : null,
-      cacheProbe: Layer16.cacheLayerProbe ? await Layer16.cacheLayerProbe().catch((e) => ({ ok: false, error: e?.message })) : null
+      freshnessDecay: null, // Available via /api/layer16/freshness route
+      outlierDetection: null, // Available via /api/layer16/outlier-check route
+      confidence: null // Available via /api/layer16/confidence route
     },
     layer17: {
-      winRateByScore: Layer17.winRateByScoreBand ? await Layer17.winRateByScoreBand().catch((e) => ({ ok: false, error: e?.message })) : null,
-      drawdown: Layer17.drawdownAnalysis ? await Layer17.drawdownAnalysis().catch((e) => ({ ok: false, error: e?.message })) : null
+      expectancy: null, // Available via POST /api/layer17/expectancy route
+      drawdown: null // Available via POST /api/layer17/drawdown route
     },
     // NEW: API data confidence
     dataConfidence: {
