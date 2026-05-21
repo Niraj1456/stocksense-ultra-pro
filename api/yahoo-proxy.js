@@ -203,6 +203,31 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (req.query && req.query.debug === 'true') {
+      const debugSymbol = req.query.symbol || 'TCS.NS';
+      console.log(`[Proxy Debug] Running rawSocketGet for symbol: ${debugSymbol}`);
+      const targetQuoteUrl = `https://finance.yahoo.com/quote/${debugSymbol}`;
+      try {
+        const socketResult = await rawSocketGet(targetQuoteUrl);
+        const parsedSummary = extractQuoteSummaryFromHtml(socketResult.bodyStr);
+        return res.status(200).json({
+          symbol: debugSymbol,
+          statusCode: socketResult.statusCode,
+          headers: socketResult.headersStr.substring(0, 1000),
+          bodyLength: socketResult.bodyStr.length,
+          bodyPreview: socketResult.bodyStr.substring(0, 1500),
+          containsQuoteSummary: socketResult.bodyStr.includes('quoteSummary'),
+          parsedSummary: parsedSummary ? "SUCCESSFULLY PARSED" : "FAILED TO PARSE",
+          summaryKeys: parsedSummary ? Object.keys(parsedSummary) : null
+        });
+      } catch (err) {
+        return res.status(500).json({
+          error: err.message,
+          stack: err.stack
+        });
+      }
+    }
+
     let originalPath = '';
     let queryString = '';
 
