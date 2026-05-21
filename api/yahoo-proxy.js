@@ -1,3 +1,6 @@
+const tls = require('tls');
+const { URL } = require('url');
+
 // Module-level cache — persists across warm invocations on Vercel
 let cachedCrumb = null;
 let cachedCookie = null;
@@ -8,15 +11,111 @@ const UA =
 const CACHE_TTL_MS = 25 * 60 * 1000; // 25 minutes
 
 /**
+ * Fetch a URL using a raw TLS socket to bypass HTTP header size limits in Node.
+ * Supports up to 3 redirects.
+ */
+function rawSocketGet(targetUrl, redirectCount = 0) {
+  return new Promise((resolve, reject) => {
+    if (redirectCount > 3) {
+      return reject(new Error('Too many redirects'));
+    }
+
+    try {
+      const parsedUrl = new URL(targetUrl);
+      const host = parsedUrl.hostname || 'finance.yahoo.com';
+      const path = parsedUrl.pathname + parsedUrl.search;
+
+      const socket = tls.connect(443, host, { servername: host }, () => {
+        const request = [
+          `GET ${path} HTTP/1.1`,
+          `Host: ${host}`,
+          `User-Agent: ${UA}`,
+          `Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8`,
+          `Accept-Language: en-US,en;q=0.5`,
+          `Connection: close`,
+          '',
+          ''
+        ].join('\r\n');
+        socket.write(request);
+      });
+
+      let responseData = '';
+      socket.on('data', (chunk) => {
+        responseData += chunk.toString('utf8');
+      });
+
+      socket.on('end', () => {
+        const headerEndIndex = responseData.indexOf('\r\n\r\n');
+        if (headerEndIndex === -1) {
+          return reject(new Error('Invalid HTTP response from socket'));
+        }
+
+        const headersStr = responseData.substring(0, headerEndIndex);
+        const bodyStr = responseData.substring(headerEndIndex + 4);
+
+        const statusLine = headersStr.split('\r\n')[0];
+        const statusMatch = statusLine.match(/HTTP\/1\.[01]\s+(\d+)/);
+        const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+
+        // Handle redirects
+        if (statusCode === 301 || statusCode === 302) {
+          const locationMatch = headersStr.match(/location:\s*([^\r\n]+)/i);
+          if (locationMatch) {
+            let redirectUrl = locationMatch[1].trim();
+            if (!redirectUrl.startsWith('http')) {
+              redirectUrl = `https://${host}${redirectUrl}`;
+            }
+            console.log(`[Socket Redirect] Following redirect to: ${redirectUrl}`);
+            return resolve(rawSocketGet(redirectUrl, redirectCount + 1));
+          }
+        }
+
+        resolve({ statusCode, headersStr, bodyStr });
+      });
+
+      socket.on('error', (err) => {
+        reject(err);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/**
+ * Extract quoteSummary JSON from Yahoo Finance quote page HTML.
+ */
+function extractQuoteSummaryFromHtml(html) {
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const content = match[1].trim();
+    if (content.includes('quoteSummary') && content.includes('"status":200')) {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed && parsed.body) {
+          const bodyObj = JSON.parse(parsed.body);
+          if (bodyObj && bodyObj.quoteSummary) {
+            return bodyObj;
+          }
+        }
+      } catch (e) {
+        // ignore and continue
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Fetch a fresh crumb + cookie pair from Yahoo Finance.
  * Step 1: GET https://fc.yahoo.com  → grab set-cookie header (session cookie)
  * Step 2: GET https://query2.finance.yahoo.com/v1/test/getcrumb with that cookie → plain-text crumb
  */
 async function fetchCrumb() {
-  // Step 1 – obtain session cookies
   const cookieRes = await fetch('https://fc.yahoo.com', {
     headers: { 'User-Agent': UA },
-    redirect: 'manual', // don't follow redirects, we just need the cookies
+    redirect: 'manual',
   });
 
   const setCookieHeaders = cookieRes.headers.getSetCookie
@@ -27,12 +126,10 @@ async function fetchCrumb() {
     throw new Error('Failed to obtain Yahoo session cookies');
   }
 
-  // Extract only the cookie key=value pairs (strip attributes like Path, Domain, etc.)
   const cookie = setCookieHeaders
     .map((c) => c.split(';')[0])
     .join('; ');
 
-  // Step 2 – fetch crumb using the session cookie
   const crumbRes = await fetch(
     'https://query2.finance.yahoo.com/v1/test/getcrumb',
     {
@@ -53,7 +150,6 @@ async function fetchCrumb() {
     throw new Error('Received invalid crumb from Yahoo');
   }
 
-  // Cache the pair
   cachedCrumb = crumb;
   cachedCookie = cookie;
   cacheExpiry = Date.now() + CACHE_TTL_MS;
@@ -61,14 +157,12 @@ async function fetchCrumb() {
   return { crumb, cookie };
 }
 
-/** Invalidate the cached crumb/cookie so the next call fetches fresh ones. */
 function invalidateCache() {
   cachedCrumb = null;
   cachedCookie = null;
   cacheExpiry = 0;
 }
 
-/** Return cached crumb+cookie if still valid, otherwise fetch fresh. */
 async function getCrumb() {
   if (cachedCrumb && Date.now() < cacheExpiry) {
     return { crumb: cachedCrumb, cookie: cachedCookie };
@@ -76,10 +170,6 @@ async function getCrumb() {
   return fetchCrumb();
 }
 
-/**
- * Make an authenticated request to a v10 Yahoo Finance endpoint.
- * If Yahoo responds with 401, invalidate the cache and retry once with a fresh crumb.
- */
 async function fetchWithCrumb(targetUrl, isRetry = false) {
   const { crumb, cookie } = await getCrumb();
 
@@ -95,7 +185,6 @@ async function fetchWithCrumb(targetUrl, isRetry = false) {
   });
 
   if (response.status === 401 && !isRetry) {
-    // Crumb expired or became invalid — retry once with a fresh pair
     invalidateCache();
     return fetchWithCrumb(targetUrl, true);
   }
@@ -123,7 +212,6 @@ export default async function handler(req, res) {
       const queryParams = new URLSearchParams(restQuery).toString();
       queryString = queryParams ? `?${queryParams}` : '';
     } else {
-      // Fallback: extract path from req.url
       const fullUrl = req.url || '';
       const yahooPathMatch = fullUrl.match(/\/api\/yahoo\/(.*)/);
       if (yahooPathMatch) {
@@ -137,16 +225,45 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid Yahoo API path' });
     }
 
+    // Intercept quoteSummary requests and try SvelteKit scraping via raw socket first
+    const isQuoteSummary = originalPath.includes('v10/finance/quoteSummary');
+    if (isQuoteSummary) {
+      const symbolMatch = originalPath.match(/quoteSummary\/([^/?]+)/);
+      if (symbolMatch) {
+        const symbol = symbolMatch[1];
+        console.log(`[Proxy] Scraping Yahoo Finance page for symbol: ${symbol}`);
+        try {
+          const targetQuoteUrl = `https://finance.yahoo.com/quote/${symbol}`;
+          const socketResult = await rawSocketGet(targetQuoteUrl);
+          
+          if (socketResult.statusCode === 200) {
+            const parsedSummary = extractQuoteSummaryFromHtml(socketResult.bodyStr);
+            if (parsedSummary) {
+              console.log(`[Proxy] Successfully scraped and parsed SvelteKit quoteSummary for: ${symbol}`);
+              res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+              res.setHeader('Content-Type', 'application/json');
+              return res.status(200).json(parsedSummary);
+            } else {
+              console.warn(`[Proxy] Script containing quoteSummary not found in scraped HTML for: ${symbol}`);
+            }
+          } else {
+            console.warn(`[Proxy] Scraper returned non-200 status: ${socketResult.statusCode} for: ${symbol}`);
+          }
+        } catch (scrapeErr) {
+          console.error(`[Proxy] Scraper error for ${symbol}:`, scrapeErr.message);
+        }
+        console.log(`[Proxy] Falling back to standard API crumb endpoint for: ${symbol}`);
+      }
+    }
+
     const isV10 = originalPath.includes('v10');
     const targetUrl = `https://query1.finance.yahoo.com/${originalPath}${queryString}`;
 
     let response;
 
     if (isV10) {
-      // v10 endpoints require crumb + cookie authentication
       response = await fetchWithCrumb(targetUrl);
     } else {
-      // v7, v8 chart, etc. — simple passthrough (no crumb needed)
       response = await fetch(targetUrl, {
         headers: {
           'User-Agent': UA,
