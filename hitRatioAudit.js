@@ -18,10 +18,22 @@ const USER_AGENTS = [
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 ];
 let uaIdx = 0;
+let yahooCookie = '';
+
+function getYahooCookie() {
+  return new Promise((resolve) => {
+    const ua = USER_AGENTS[0];
+    https.get('https://fc.yahoo.com', { headers: { 'User-Agent': ua } }, (res) => {
+      const cookies = res.headers['set-cookie'] || [];
+      const cookieStr = cookies.map(c => c.split(';')[0]).join('; ');
+      resolve(cookieStr);
+    }).on('error', () => resolve(''));
+  });
+}
 
 function httpGet(url) {
   return new Promise((resolve, reject) => {
-    const ua = USER_AGENTS[uaIdx++ % USER_AGENTS.length];
+    const ua = USER_AGENTS[0];
     const opts = {
       headers: {
         'User-Agent': ua,
@@ -29,6 +41,9 @@ function httpGet(url) {
         'Accept-Language': 'en-US,en;q=0.9',
       }
     };
+    if (yahooCookie) {
+      opts.headers['Cookie'] = yahooCookie;
+    }
     https.get(url, opts, (res) => {
       let d = '';
       res.on('data', c => d += c);
@@ -121,6 +136,13 @@ async function runAudit() {
   console.log(`║  Timestamp: ${timestamp.padEnd(63)}║`);
   console.log("╚═══════════════════════════════════════════════════════════════════════════════╝\n");
 
+  try {
+    yahooCookie = await getYahooCookie();
+    console.log(`  🔑 Yahoo Finance Session Cookie: ${yahooCookie ? "CONNECTED" : "FAILED"}\n`);
+  } catch (e) {
+    console.log("  ⚠ Failed to get Yahoo cookie, continuing anonymously\n");
+  }
+
   const results = [];
   let dirHits = 0, dirTotal = 0;
   let tgtHits = 0, tgtTotal = 0;
@@ -152,6 +174,7 @@ async function runAudit() {
     const highs = q.high.filter(Boolean);
     const lows = q.low.filter(Boolean);
     const volumes = q.volume.filter(Boolean);
+    const opens = q.open ? q.open.filter(Boolean) : [];
 
     if (closes.length < 30) { console.log("⚠ SKIP (insufficient data)"); failCount++; continue; }
 
@@ -174,6 +197,7 @@ async function runAudit() {
     const avgVol = volumesAt.slice(-21, -1).reduce((a, b) => a + b, 0) / 20;
     const rvol = avgVol > 0 ? +(todayVol / avgVol).toFixed(2) : 1.0;
     const mom5 = closesAt.length >= 6 ? (closesAt[closesAt.length - 1] > closesAt[closesAt.length - 6] ? 1 : -1) : 0;
+    const momentumPct = closesAt.length >= 6 ? ((closesAt[closesAt.length - 1] - closesAt[closesAt.length - 6]) / closesAt[closesAt.length - 6]) * 100 : 0;
     const atrPrev = computeATR(highsAt.slice(0, -5), lowsAt.slice(0, -5), closesAt.slice(0, -5));
     const atrTrend = atrValue > atrPrev * 1.05 ? 1 : (atrValue < atrPrev * 0.95 ? -1 : 0);
 
@@ -185,13 +209,22 @@ async function runAudit() {
     const ema50Arr = EMA.calculate({ period: 50, values: closesAt });
     const ema50 = ema50Arr.length ? ema50Arr[ema50Arr.length - 1] : predPrice;
 
+    // v4.5: Candle structure data for directional confirmation
+    const triggerCandleOpen = opens.length > predIdx ? opens[predIdx] : null;
+    const triggerCandleHigh = highsAt[highsAt.length - 1];
+    const triggerCandleLow = lowsAt[lowsAt.length - 1];
+    const prevCandleOpen = predIdx > 0 && opens.length > (predIdx - 1) ? opens[predIdx - 1] : null;
+    const prevCandleClose = predIdx > 0 ? closesAt[closesAt.length - 2] : null;
+
     // ── Run Engine ──
     const result = runEngine(stock, predPrice, {
-      rsi, rvol, momentum: mom5, atrTrend, atrValue,
+      rsi, rvol, momentum: mom5, momentumPct, atrTrend, atrValue,
       pcr: 1.0, l2Imbalance: 0, hasRealPCR: false, hasRealL2: false,
       macd: null, ema20, ema50,
       peRatio: null, pbRatio: null, pegRatio: null, debtToEquity: null, roce: null,
-      adx
+      adx,
+      triggerCandleOpen, triggerCandleHigh, triggerCandleLow,
+      prevCandleOpen, prevCandleClose
     });
 
     // ── Evaluate ──
@@ -244,8 +277,8 @@ async function runAudit() {
       tgtHit: pred !== "NEUTRAL" ? tgtHit : null,
     });
 
-    // Polite delay to avoid rate limiting
-    await sleep(1800 + Math.random() * 700);
+    // Polite delay with cookie is much shorter
+    await sleep(200 + Math.random() * 200);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

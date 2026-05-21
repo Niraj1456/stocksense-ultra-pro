@@ -9,22 +9,46 @@ const fs = require('fs');
 const { runEngine } = require("./src/layers/layer13/scoreEngine");
 const { ADX, EMA, MACD } = require("technicalindicators");
 
-const UA = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/123.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36',
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 ];
 let uaIdx = 0;
+let yahooCookie = '';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function getYahooCookie() {
+  return new Promise((resolve) => {
+    const ua = USER_AGENTS[0];
+    https.get('https://fc.yahoo.com', { headers: { 'User-Agent': ua } }, (res) => {
+      const cookies = res.headers['set-cookie'] || [];
+      const cookieStr = cookies.map(c => c.split(';')[0]).join('; ');
+      resolve(cookieStr);
+    }).on('error', () => resolve(''));
+  });
+}
 
 function httpGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': UA[uaIdx++ % UA.length], 'Accept': 'application/json' } }, res => {
+    const ua = USER_AGENTS[0];
+    const opts = {
+      headers: {
+        'User-Agent': ua,
+        'Accept': 'application/json,text/plain,*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+      }
+    };
+    if (yahooCookie) {
+      opts.headers['Cookie'] = yahooCookie;
+    }
+    https.get(url, opts, (res) => {
       let d = '';
       res.on('data', c => d += c);
       res.on('end', () => {
         if (res.statusCode === 429) return reject(new Error('RATE_LIMITED'));
-        try { resolve(JSON.parse(d)); } catch { reject(new Error('JSON_PARSE')); }
+        try { resolve(JSON.parse(d)); }
+        catch (e) { reject(new Error('JSON_PARSE')); }
       });
     }).on('error', reject);
   });
@@ -99,6 +123,13 @@ async function runAudit() {
   console.log(`║  ${ts}                                                          ║`);
   console.log("╚══════════════════════════════════════════════════════════════════════════════════╝\n");
 
+  try {
+    yahooCookie = await getYahooCookie();
+    console.log(`  🔑 Yahoo Finance Session Cookie: ${yahooCookie ? "CONNECTED" : "FAILED"}\n`);
+  } catch (e) {
+    console.log("  ⚠ Failed to get Yahoo cookie, continuing anonymously\n");
+  }
+
   const results = [];
   let dirHits = 0, dirTotal = 0, tgtHits = 0, tgtTotal = 0, neutralCount = 0, failCount = 0;
   // Intraday high/low hit tracking
@@ -121,21 +152,21 @@ async function runAudit() {
       }
     }
   } catch (e) { console.log(`  ⚠ Nifty fetch failed, using NEUTRAL regime\n`); }
-  await sleep(2000);
+  await sleep(500);
 
   const bands = {
     'STRONGLY_BUY (75-95)': { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
-    'BUY (60-74)':          { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
-    'NEUTRAL/HOLD (45-59)': { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
-    'AVOID (35-44)':        { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
-    'STRONGLY_AVOID (5-34)':{ dirH: 0, tgtH: 0, intH: 0, tot: 0 },
+    'BUY (58-74)':          { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
+    'NEUTRAL/HOLD (38-57)': { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
+    'AVOID (28-37)':        { dirH: 0, tgtH: 0, intH: 0, tot: 0 },
+    'STRONGLY_AVOID (5-27)':{ dirH: 0, tgtH: 0, intH: 0, tot: 0 },
   };
   function getBand(s) {
     if (s >= 75) return 'STRONGLY_BUY (75-95)';
-    if (s >= 60) return 'BUY (60-74)';
-    if (s >= 45) return 'NEUTRAL/HOLD (45-59)';
-    if (s >= 35) return 'AVOID (35-44)';
-    return 'STRONGLY_AVOID (5-34)';
+    if (s >= 58) return 'BUY (58-74)';
+    if (s >= 38) return 'NEUTRAL/HOLD (38-57)';
+    if (s >= 28) return 'AVOID (28-37)';
+    return 'STRONGLY_AVOID (5-27)';
   }
 
   for (let i = 0; i < TEST_STOCKS.length; i++) {
@@ -148,10 +179,10 @@ async function runAudit() {
       yahoo = await fetchYahoo(stock); 
       fundamentals = await fetchFundamentals(stock);
     }
-    catch (e) { console.log(`⚠ SKIP: ${e.message}`); failCount++; await sleep(2000); continue; }
+    catch (e) { console.log(`⚠ SKIP: ${e.message}`); failCount++; await sleep(500); continue; }
 
     const q = yahoo?.indicators?.quote?.[0];
-    if (!q) { console.log("⚠ SKIP: no data"); failCount++; await sleep(1500); continue; }
+    if (!q) { console.log("⚠ SKIP: no data"); failCount++; await sleep(200); continue; }
 
     let peRatio = null, pbRatio = null, pegRatio = null, debtToEquity = null, roce = null;
     if (fundamentals) {
@@ -170,7 +201,8 @@ async function runAudit() {
     const highs  = q.high.filter(Boolean);
     const lows   = q.low.filter(Boolean);
     const vols   = q.volume.filter(Boolean);
-    if (closes.length < 30) { console.log("⚠ SKIP: insufficient"); failCount++; await sleep(1500); continue; }
+    const opens  = q.open.filter(Boolean);
+    if (closes.length < 30) { console.log("⚠ SKIP: insufficient"); failCount++; await sleep(200); continue; }
 
     // ══════════════════════════════════════════════════════════════════
     // KEY CHANGE: 1-DAY LOOKBACK
@@ -224,13 +256,22 @@ async function runAudit() {
     // FIX 2: Compute previous-day candle change
     const prevDayChangePct = pi >= 1 ? ((cAt[pi] - cAt[pi - 1]) / cAt[pi - 1]) * 100 : 0;
 
+    // v4.5: Candle structure data for directional confirmation
+    const triggerCandleOpen = opens.length > pi ? opens[pi] : null;
+    const triggerCandleHigh = hAt[hAt.length - 1];
+    const triggerCandleLow = lAt[lAt.length - 1];
+    const prevCandleOpen = pi > 0 && opens.length > (pi - 1) ? opens[pi - 1] : null;
+    const prevCandleClose = pi > 0 ? cAt[cAt.length - 2] : null;
+
     const eng = runEngine(stock, predPrice, {
       rsi, rvol, momentum: mom5, momentumPct, atrTrend, atrValue,
       pcr: 1.0, l2Imbalance: 0, hasRealPCR: false, hasRealL2: false,
       macd, ema20, ema50, ema200,
       peRatio, pbRatio, pegRatio, debtToEquity, roce, adx,
-      prevDayChangePct, marketRegime // FIX 2 & 4: new inputs
-    }, { timeHorizon: '1D' }); // FIX 3: pass timeHorizon for ATR cap
+      prevDayChangePct, marketRegime,
+      triggerCandleOpen, triggerCandleHigh, triggerCandleLow,
+      prevCandleOpen, prevCandleClose
+    }, { timeHorizon: '1D' });
 
     const pred = eng.direction;
 
@@ -297,7 +338,7 @@ async function runAudit() {
       rsi, adx: +adx.toFixed(1), rvol, atrValue,
     });
 
-    await sleep(2000 + Math.random() * 500);
+    await sleep(200 + Math.random() * 200);
   }
 
   // ═══════════════════════════════════════════════════════════════════
