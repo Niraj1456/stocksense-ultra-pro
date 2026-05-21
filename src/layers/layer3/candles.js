@@ -35,7 +35,8 @@ const SYMBOL_TOKEN_MAP = {
 };
 
 async function yahooChartCandles(symbol, { range = "6mo", interval = "1d" } = {}) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+  const ticker = symbol.includes(".") ? symbol : `${symbol}.NS`;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`;
   const resp = await axios.get(url, {
     headers: { "User-Agent": "Mozilla/5.0" },
     params: { range, interval },
