@@ -1811,15 +1811,29 @@ export default function App() {
       setStBackendData(null);
       setLtBackendData(null);
 
+      const pollAnalysis = async (symbol, mode) => {
+        const maxAttempts = 15;
+        const intervalMs = 2000;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          console.log(`[StockSense] Polling ${mode} analysis for ${symbol} (attempt ${attempt}/${maxAttempts})...`);
+          const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}&mode=${mode}`);
+          if (!res.ok) {
+            throw new Error(`API returned status ${res.status}`);
+          }
+          const data = await res.json();
+          if (data && data.status !== "PROCESSING") {
+            return data;
+          }
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, intervalMs));
+          }
+        }
+        throw new Error(`Polling timed out after ${maxAttempts} attempts`);
+      };
+
       const [stRes, ltRes] = await Promise.allSettled([
-        fetch(`/api/analyze?symbol=${encodeURIComponent(selectedStock)}&mode=ST`).then(async r => {
-          if (!r.ok) throw new Error(`ST API returned status ${r.status}`);
-          return r.json();
-        }),
-        fetch(`/api/analyze?symbol=${encodeURIComponent(selectedStock)}&mode=LT`).then(async r => {
-          if (!r.ok) throw new Error(`LT API returned status ${r.status}`);
-          return r.json();
-        })
+        pollAnalysis(selectedStock, "ST"),
+        pollAnalysis(selectedStock, "LT")
       ]);
 
       if (stRes.status === 'fulfilled' && stRes.value && stRes.value.ok) {
