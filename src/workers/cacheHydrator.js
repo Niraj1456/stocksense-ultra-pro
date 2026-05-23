@@ -156,6 +156,7 @@ async function hydrateSymbol(symbol, mode = "ST") {
       layer17Metrics,
       sector,
       sectorIndexSymbol,
+      kiteSectorQuoteOut: kiteSectorQuoteOut?.ok ? kiteSectorQuoteOut.data : null,
       hydratedAt: new Date().toISOString()
     };
 

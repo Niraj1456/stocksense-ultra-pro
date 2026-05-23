@@ -151,6 +151,8 @@ async function analyzeStock(symbol, mode = "ST") {
   // 2. Fetch Volatile, Fast data from In-Memory WebSocket Ticker Cache
   const volatile = VolatileCacheManager.get(cleanSymbol);
   const currentPrice = volatile.lastPrice;
+  const candles = volatile.candles || [];
+  const len = candles.length;
 
   // Unpack static context from Redis
   const {
@@ -169,6 +171,10 @@ async function analyzeStock(symbol, mode = "ST") {
     sector,
     sectorIndexSymbol
   } = cachedStatic;
+
+  // Extract sector index quote to dynamically determine sectorRegime
+  const sectorChangePct = cachedStatic.kiteSectorQuoteOut?.changePct ?? 0;
+  const sectorRegime = sectorChangePct > 0.5 ? 'BULL' : (sectorChangePct < -0.5 ? 'BEAR' : 'NEUTRAL');
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 7: Derivatives (PCR, Max Pain) — unchanged logic
@@ -290,6 +296,9 @@ async function analyzeStock(symbol, mode = "ST") {
   // ═══════════════════════════════════════════════════════════════
   // LAYER 10: DCF Valuation — ACTIVATED WITH FMP DCF DATA
   // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
+  // LAYER 10: Multi-Model Valuation Consensus & Local DCF
+  // ═══════════════════════════════════════════════════════════════
   let dcfOut = { ok: false, data: {} };
   if (fmpData?.dcf && currentPrice) {
     dcfOut = {
@@ -304,6 +313,93 @@ async function analyzeStock(symbol, mode = "ST") {
       }
     };
   }
+
+  let grahamRes = null;
+  let reverseDcfRes = null;
+  let earningsYieldRes = null;
+
+  const epsVal = mergedFundamentals.eps;
+  const totalEquityVal = mergedFundamentals.totalEquity;
+  const marketCapVal = mergedFundamentals.marketCap;
+
+  let bvpsVal = null;
+  if (totalEquityVal && marketCapVal && marketCapVal > 0 && currentPrice) {
+    bvpsVal = (totalEquityVal / marketCapVal) * currentPrice;
+  }
+
+  if (epsVal !== null && epsVal > 0 && bvpsVal !== null && bvpsVal > 0 && currentPrice) {
+    try {
+      grahamRes = Layer10.grahamNumberEngine({
+        eps: epsVal,
+        bvps: bvpsVal,
+        current_price: currentPrice
+      });
+    } catch (e) {
+      console.warn("Graham Number engine calculation failed:", e.message);
+    }
+  }
+
+  const fcfVal = mergedFundamentals.freeCashFlow;
+  if (fcfVal !== null && fcfVal > 0 && marketCapVal && marketCapVal > 0 && currentPrice) {
+    const fcfPerShareVal = (fcfVal / marketCapVal) * currentPrice;
+    try {
+      reverseDcfRes = Layer10.reverseDcfEngine({
+        current_price: currentPrice,
+        fcf_per_share: fcfPerShareVal,
+        discount_rate: 0.10,
+        terminal_growth: 0.03,
+        historical_growth_rate: 0.08
+      });
+    } catch (e) {
+      console.warn("Reverse DCF calculation failed:", e.message);
+    }
+  }
+
+  const peRatioVal = mergedFundamentals.peRatio;
+  if (peRatioVal !== null && peRatioVal > 0) {
+    try {
+      earningsYieldRes = Layer10.earningsYieldEngine({
+        pe_ratio: peRatioVal,
+        gsec_10yr_yield: 7.0
+      });
+    } catch (e) {
+      console.warn("Earnings Yield spread calculation failed:", e.message);
+    }
+  }
+
+  if (!dcfOut.ok && fcfVal !== null && fcfVal > 0 && marketCapVal && marketCapVal > 0 && currentPrice) {
+    const sharesOutstandingVal = marketCapVal / currentPrice;
+    try {
+      const localDcfRes = Layer10.dcfEngine({
+        fcf: fcfVal,
+        shares_outstanding: sharesOutstandingVal,
+        growth_rate_1_5: 0.10,
+        growth_rate_6_10: 0.05,
+        terminal_growth: 0.03,
+        discount_rate: 0.10,
+        current_price: currentPrice
+      });
+      if (localDcfRes && localDcfRes.ok) {
+        dcfOut = {
+          ok: true,
+          data: {
+            intrinsic_value: localDcfRes.data.intrinsic_value,
+            current_price: currentPrice,
+            margin_of_safety_pct: localDcfRes.data.margin_of_safety_pct,
+            valuation_status: localDcfRes.data.valuation_status,
+            pts: localDcfRes.data.pts,
+            source: "LOCAL_DCF"
+          }
+        };
+      }
+    } catch (e) {
+      console.warn("Local DCF fallback calculation failed:", e.message);
+    }
+  }
+
+  const grahamPts = grahamRes?.ok ? grahamRes.data.pts : 0;
+  const reverseDcfPts = reverseDcfRes?.ok ? reverseDcfRes.data.pts : 0;
+  const earningsYieldPts = earningsYieldRes?.ok ? earningsYieldRes.data.pts : 0;
 
   const daysToEarnings = avEarnings?.daysToEarnings ?? null;
 
@@ -375,7 +471,7 @@ async function analyzeStock(symbol, mode = "ST") {
   const catalystVeto = eventCatalystRes.ok ? eventCatalystRes.data.veto : false;
 
   // ═══════════════════════════════════════════════════════════════
-  // LAYER 11: Predictive Signals
+  // LAYER 11: Predictive Signals & Mathematical Models
   // ═══════════════════════════════════════════════════════════════
   const predictiveOut = Layer11.predictiveSignals({
     maxPain: maxPainOut.data || {},
@@ -383,6 +479,74 @@ async function analyzeStock(symbol, mode = "ST") {
     technicals: volatile.indicators || {},
     valuationBand: valuationOut.data?.valuationBand
   });
+
+  let meanReversionRes = null;
+  let breakoutSqueezeRes = null;
+  let markovRes = null;
+
+  const ema50Val = volatile.indicators?.ema50;
+  const ema200Val = volatile.indicators?.ema200;
+  const atr14Val = volatile.indicators?.atr14;
+
+  if (ema50Val && ema200Val && atr14Val && currentPrice) {
+    try {
+      meanReversionRes = Layer11.meanReversionEngine({
+        current_price: currentPrice,
+        sma_50: ema50Val,
+        sma_200: ema200Val,
+        atr_14: atr14Val
+      });
+    } catch (e) {
+      console.warn("Mean reversion engine failed:", e.message);
+    }
+  }
+
+  const bb20Val = volatile.indicators?.bb20;
+  const ema20Val = volatile.indicators?.ema20 || currentPrice;
+
+  if (bb20Val?.upper && bb20Val?.lower && ema20Val && atr14Val && currentPrice) {
+    const keltner_upper = ema20Val + 2 * atr14Val;
+    const keltner_lower = ema20Val - 2 * atr14Val;
+    const rvol20Val = volatile.indicators?.rvol20 || 1.0;
+    const volume_trend_pct = (rvol20Val - 1.0) * 100;
+
+    try {
+      breakoutSqueezeRes = Layer11.breakoutProbabilityEngine({
+        bb_upper: bb20Val.upper,
+        bb_lower: bb20Val.lower,
+        keltner_upper,
+        keltner_lower,
+        current_price: currentPrice,
+        volume_trend_pct
+      });
+    } catch (e) {
+      console.warn("Breakout Squeeze engine failed:", e.message);
+    }
+  }
+
+  if (candles && candles.length >= 21) {
+    const returns20D = [];
+    const recentCandles = candles.slice(-21);
+    for (let i = 1; i < recentCandles.length; i++) {
+      const prev = recentCandles[i - 1].c;
+      if (prev > 0) {
+        returns20D.push((recentCandles[i].c - prev) / prev);
+      }
+    }
+    if (returns20D.length >= 20) {
+      try {
+        markovRes = Layer11.markovTrendPredictor({
+          recent_daily_returns: returns20D
+        });
+      } catch (e) {
+        console.warn("Markov Trend predictor failed:", e.message);
+      }
+    }
+  }
+
+  const meanReversionPts = meanReversionRes?.ok ? meanReversionRes.data.pts : 0;
+  const breakoutPts = breakoutSqueezeRes?.ok ? breakoutSqueezeRes.data.pts : 0;
+  const markovPts = markovRes?.ok ? markovRes.data.pts : 0;
 
   const slOut = Layer12.slCalculator ? Layer12.slCalculator({
     atr14: volatile.indicators?.atr14,
@@ -416,8 +580,7 @@ async function analyzeStock(symbol, mode = "ST") {
   const l2ImbalancePrev = l2ImbalanceHistory.get(cleanSymbol) ?? l2Imbalance;
   l2ImbalanceHistory.set(cleanSymbol, l2Imbalance);
 
-  const candles = volatile.candles;
-  const len = candles.length;
+
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 5: Volume Profile Engine (Computed from Volatile Candles)
@@ -742,11 +905,17 @@ async function analyzeStock(symbol, mode = "ST") {
       adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14,
       prevDayChangePct: len >= 2 ? ((candles[len-1].c - candles[len-2].c) / candles[len-2].c * 100) : 0,
       marketRegime: (vixOut?.data?.inputs?.vix_current ?? 15) > 20 ? 'BEAR' : ((momentumPct > 0.5) ? 'BULL' : 'NEUTRAL'),
-      sectorRegime: 'NEUTRAL',
+      sectorRegime: sectorRegime || 'NEUTRAL',
       deliveryPct: 45.0,
       piotroskiScore: piotroskiOut?.data?.f_score || null,
       altmanZone: altmanOut?.data?.zone || null,
       dcfMoS: dcfOut?.data?.margin_of_safety_pct || null,
+      grahamPts,
+      reverseDcfPts,
+      earningsYieldPts,
+      meanReversionPts,
+      breakoutPts,
+      markovPts,
       sentimentPts,
       sentimentVeto,
       sentimentConfidence: sentimentConfidenceScore,

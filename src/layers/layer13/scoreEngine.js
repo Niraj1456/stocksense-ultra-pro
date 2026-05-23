@@ -166,19 +166,43 @@ function getLayerScoresFromIndicators(indicators, currentPrice) {
   let l10 = 50;
   const mos = indicators.dcfMoS;
   if (mos !== undefined && mos !== null) {
-    l10 += mos * 0.8;
+    l10 += mos * 0.5;
+  }
+  if (indicators.grahamPts !== undefined && indicators.grahamPts !== null) {
+    l10 += indicators.grahamPts * 4;
+  }
+  if (indicators.reverseDcfPts !== undefined && indicators.reverseDcfPts !== null) {
+    l10 += indicators.reverseDcfPts * 4;
+  }
+  if (indicators.earningsYieldPts !== undefined && indicators.earningsYieldPts !== null) {
+    l10 += indicators.earningsYieldPts * 4;
   }
   scores.layer10_valuation = clamp(l10, 10, 90);
 
   // 11. Predictive
   let l11 = 50;
-  if (indicators.predictiveHints) {
-    const count = Array.isArray(indicators.predictiveHints) ? indicators.predictiveHints.length : 0;
-    l11 += count * 8;
-  } else if (indicators.momentum > 0) {
-    l11 += 15;
-  } else if (indicators.momentum < 0) {
-    l11 -= 15;
+  let basePredictiveCount = 0;
+  if (indicators.predictiveHints && Array.isArray(indicators.predictiveHints)) {
+    basePredictiveCount += indicators.predictiveHints.length;
+  }
+  l11 += basePredictiveCount * 5;
+
+  if (indicators.meanReversionPts !== undefined && indicators.meanReversionPts !== null) {
+    l11 += indicators.meanReversionPts * 3;
+  }
+  if (indicators.breakoutPts !== undefined && indicators.breakoutPts !== null) {
+    l11 += indicators.breakoutPts * 3;
+  }
+  if (indicators.markovPts !== undefined && indicators.markovPts !== null) {
+    l11 += indicators.markovPts * 3;
+  }
+
+  if (l11 === 50) {
+    if (indicators.momentum > 0) {
+      l11 += 15;
+    } else if (indicators.momentum < 0) {
+      l11 -= 15;
+    }
   }
   scores.layer11_predictive = clamp(l11, 10, 90);
 
