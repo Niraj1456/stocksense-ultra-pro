@@ -431,17 +431,31 @@ function supportResistanceEngine({ high_prices, low_prices, close_prices, curren
   const resistance_zones = all_zones.filter(z => z.type === "RESISTANCE").sort((a, b) => a.price - b.price);
   const support_zones = all_zones.filter(z => z.type === "SUPPORT").sort((a, b) => b.price - a.price);
 
+  // Standard Pivot Points fallback (using previous completed candle)
+  const len = close_prices.length;
+  const prevHigh = high_prices[len - 2] ?? current_price;
+  const prevLow = low_prices[len - 2] ?? current_price;
+  const prevClose = close_prices[len - 2] ?? current_price;
+
+  const pp = (prevHigh + prevLow + prevClose) / 3;
+  const pivot_r1 = (2 * pp) - prevLow;
+  const pivot_s1 = (2 * pp) - prevHigh;
+  const pivot_r2 = pp + (prevHigh - prevLow);
+  const pivot_s2 = pp - (prevHigh - prevLow);
+  const pivot_r3 = prevHigh + 2 * (pp - prevLow);
+  const pivot_s3 = prevLow - 2 * (prevHigh - pp);
+
   return {
     ok: true,
     data: {
       resistance_zones,
       support_zones,
-      r1: resistance_zones[0]?.price || null,
-      r2: resistance_zones[1]?.price || null,
-      r3: resistance_zones[2]?.price || null,
-      s1: support_zones[0]?.price || null,
-      s2: support_zones[1]?.price || null,
-      s3: support_zones[2]?.price || null,
+      r1: resistance_zones[0]?.price || pivot_r1,
+      r2: resistance_zones[1]?.price || pivot_r2,
+      r3: resistance_zones[2]?.price || pivot_r3,
+      s1: support_zones[0]?.price || pivot_s1,
+      s2: support_zones[1]?.price || pivot_s2,
+      s3: support_zones[2]?.price || pivot_s3,
       zone_strength: all_zones.map(z => ({ price: z.price, strength: z.strength, type: z.type }))
     },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:supportResistanceEngine" }
@@ -455,5 +469,6 @@ module.exports = {
   atrEngine,
   rvolEngine,
   adxEngine,
-  supportResistanceEngine
+  supportResistanceEngine,
+  volumeProfileEngine
 };

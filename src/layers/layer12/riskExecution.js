@@ -167,7 +167,7 @@ function slCalculator({ atr14, lastClose, mode = "ST" }) {
   }
   const isLongTerm = mode === "LT";
   const slMultiplier = isLongTerm ? 2.0 : 1.5;
-  const targetMultiplier = isLongTerm ? 3.0 : 2.0;
+  const targetMultiplier = isLongTerm ? 6.0 : 2.5;
 
   const slRoom = atr14 * slMultiplier;
   const targetRoom = atr14 * targetMultiplier;

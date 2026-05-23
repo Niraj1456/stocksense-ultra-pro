@@ -260,6 +260,10 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
         {l: "MTF Alignment", v: `${mtf > 0 ? '+' : ''}${mtf}/3`}
       ]}
     ],
-    dataSources: { fundamentals: fundBadge, institutional: instBadge, depth: depthBadge }
+    dataSources: { fundamentals: fundBadge, institutional: instBadge, depth: depthBadge },
+    timeframe,
+    riskRating,
+    isVetoed: false,
+    vetoesList: []
   };
 }

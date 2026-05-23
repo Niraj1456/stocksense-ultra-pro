@@ -7,6 +7,8 @@ const { runMigrations } = require("./db/migrate");
 const { startLayer1Jobs } = require("./jobs/layer1Refresh");
 const { logger } = require("./lib/logger");
 
+const { startCacheHydrator } = require("./workers/cacheHydrator");
+
 async function main() {
   for (const w of validateEnv()) {
     logger.warn("env_warning", { warning: w });
@@ -21,6 +23,7 @@ async function main() {
   });
 
   startLayer1Jobs();
+  startCacheHydrator();
 }
 
 main().catch((err) => {

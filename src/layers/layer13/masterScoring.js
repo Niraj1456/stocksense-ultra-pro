@@ -4,7 +4,7 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
   let weights = {
     layer1_macro: 5,
     layer2_microstructure: 10,
-    layer3_technicals: 20,
+    layer3_technicals: 15,
     layer4_price_action: 15,
     layer5_volume_profile: 10,
     layer6_institutional: 10,
@@ -13,6 +13,7 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
     layer9_forensic: 5,
     layer10_valuation: 5,
     layer11_predictive: 5,
+    layer15_sentiment: 5, // Sentiment & Catalysts
     layer12_risk: 0 // Risk doesn't add to conviction score, it handles sizing
   };
 
@@ -32,6 +33,7 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
     weights.layer10_valuation += 15;
     weights.layer9_forensic += 10;
     weights.layer1_macro += 5;
+    weights.layer15_sentiment += 5; // Higher weight for long term sentiment
 
     weights.layer2_microstructure = 0;
     weights.layer7_derivatives = 0;

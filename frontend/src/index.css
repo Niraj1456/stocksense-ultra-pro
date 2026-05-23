@@ -111,7 +111,8 @@ body {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-primary);
   transition: background-color 0.3s ease;
 }
@@ -2001,7 +2002,7 @@ body {
 
 .attribution-dashboard-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   flex-shrink: 0;
 }
@@ -2023,15 +2024,54 @@ body {
   grid-template-columns: 200px 1fr 60px !important;
 }
 
+/* ===== RESPONSIVE HELPERS ===== */
+@media (max-width: 580px) {
+  .navbar-toggle-text {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-suffix {
+    display: none;
+  }
+}
+
 /* ===== RESPONSIVE STYLES FOR TABLETS & MOBILES ===== */
 @media (max-width: 1024px) {
   .market-grid-layout,
   .attribution-dashboard-grid {
     grid-template-columns: 1fr;
   }
+
+  .active-stock-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .shap-bar-node {
+    grid-template-columns: 100px 1fr 50px !important;
+    gap: 0.5rem;
+  }
+
+  .shap-label-box {
+    width: 100px !important;
+  }
+
+  .shap-reason-row,
+  .shap-math-block-margin {
+    margin-left: 0 !important;
+  }
 }
 
 @media (max-width: 768px) {
+  .app-container {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   .split-workspace {
     flex-direction: column;
     height: auto;
@@ -2065,32 +2105,92 @@ body {
     overflow: visible;
   }
 
-  .active-stock-header {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem;
-  }
-
   .score-card {
     flex-direction: column !important;
     text-align: center;
     gap: 1rem !important;
   }
 
-  .shap-bar-node {
-    grid-template-columns: 100px 1fr 50px !important;
-    gap: 0.5rem;
+  .market-chart-card {
+    height: 320px !important;
   }
 
-  .shap-label-box {
-    width: 100px !important;
+  .market-l2-card {
+    height: 360px !important;
   }
 
-  .shap-reason-row,
-  .shap-math-block-margin {
-    margin-left: 0 !important;
+  .quant-standby-card {
+    padding: 1.5rem !important;
   }
 }
+
+/* ===== ENHANCED PLAYBOOK STYLES ===== */
+.playbook-select-container {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
+
+.playbook-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+  padding-right: 4px;
+}
+
+.playbook-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.playbook-range-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.65rem;
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-top: 0.4rem;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.playbook-range-row:hover {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+
+.playbook-range-box {
+  text-align: right;
+}
+
+.playbook-range-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.playbook-badge-neutral {
+  font-size: 0.58rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 
 
 

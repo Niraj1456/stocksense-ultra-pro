@@ -25,6 +25,11 @@ const env = {
   alphaVantageKey: process.env.ALPHA_VANTAGE_KEY || "",
   fmpApiKey: process.env.FMP_API_KEY || "",
 
+  // Zerodha Kite Connect API
+  kiteApiKey: process.env.KITE_API_KEY || "",
+  kiteApiSecret: process.env.KITE_API_SECRET || "",
+  kiteAccessToken: process.env.KITE_ACCESS_TOKEN || "",
+
   rbiDbieBase: process.env.RBI_DBIE_BASE || "https://api.dbie.rbi.org.in/DBIE/dbie.rbi",
   rbiDbieApiKey: process.env.RBI_DBIE_API_KEY || ""
 };
@@ -44,6 +49,12 @@ function validateEnv() {
 
   if (env.enableClaude && !env.anthropicApiKey) {
     warnings.push("ENABLE_CLAUDE=true but ANTHROPIC_API_KEY missing");
+  }
+
+  // Validate Kite Connect parameters if any are configured
+  if (env.kiteApiKey || env.kiteApiSecret) {
+    if (!env.kiteApiKey) warnings.push("KITE_API_KEY missing");
+    if (!env.kiteApiSecret) warnings.push("KITE_API_SECRET missing");
   }
 
   return warnings;

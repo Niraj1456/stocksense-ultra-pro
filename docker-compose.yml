@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # REDIS CACHE MICROSERVICE
+  # -------------------------------------------------------------
+  redis-cache:
+    image: redis:7-alpine
+    container_name: stocksense-redis-cache
+    command: redis-server --maxmemory 512mb --maxmemory-policy volatile-lru --port 6379
+    ports:
+      - "6379:6379"
+    networks:
+      - stocksense-network
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # CORE STOCKSENSE ENGINE API MICROSERVICE
+  # -------------------------------------------------------------
+  engine-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stocksense-engine-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis-cache:6379
+      - LOG_LEVEL=info
+      # Optional: Add DATABASE_URL if PostgreSQL is running locally
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY:-}
+      - FMP_API_KEY=${FMP_API_KEY:-}
+      - KITE_API_KEY=${KITE_API_KEY:-}
+      - KITE_API_SECRET=${KITE_API_SECRET:-}
+      - KITE_ACCESS_TOKEN=${KITE_ACCESS_TOKEN:-}
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - stocksense-network
+    restart: unless-stopped
+
+# ---------------------------------------------------------------
+# NETWORKS & VOLUMES CONFIGURATION
+# ---------------------------------------------------------------
+networks:
+  stocksense-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local

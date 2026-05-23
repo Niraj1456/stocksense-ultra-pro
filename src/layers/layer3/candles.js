@@ -118,9 +118,97 @@ async function smartApiCandles({ symbol, range = "6mo" } = {}) {
   }
 }
 
-async function getCandles({ symbol, sourcePreference = ["smartapi", "yahoo"], range, interval } = {}) {
+// Kite Connect Ingestion
+const kiteService = require("../../services/kiteService");
+
+async function kiteCandles({ symbol, range = "6mo" } = {}) {
+  try {
+    const cleanSymbol = symbol.replace(".NS", "").replace(".BO", "");
+    const rangeDays = range === "1y" ? 365 : range === "6mo" ? 180 : range === "3mo" ? 90 : 30;
+    const candles = await kiteService.getHistoricalData(cleanSymbol, "day", rangeDays);
+    if (candles && candles.length >= 20) {
+      return {
+        ok: true,
+        data: candles.map(c => ({
+          ts: c.t,
+          o: c.o,
+          h: c.h,
+          l: c.l,
+          c: c.c,
+          v: c.v
+        })),
+        meta: { source: "kiteconnect", fetchedAt: new Date().toISOString() }
+      };
+    }
+    return { ok: false, error: "kiteconnect_insufficient_candles", meta: { source: "kiteconnect" } };
+  } catch (err) {
+    return { ok: false, error: `kiteconnect_error:${err.message}`, meta: { source: "kiteconnect" } };
+  }
+}
+
+// FIX RC6: SmartAPI candle source is now actually wired to Angel One
+async function smartApiCandles({ symbol, range = "6mo" } = {}) {
+  if (!env.enableSmartApi) return { ok: false, error: "smartapi_disabled", meta: { source: "smartapi" } };
+
+  // Look up the Angel One token for this symbol
+  const cleanSymbol = symbol.replace(".NS", "").replace(".BO", "");
+  const symbolToken = SYMBOL_TOKEN_MAP[cleanSymbol];
+  if (!symbolToken) {
+    return { ok: false, error: `smartapi_no_token_for:${cleanSymbol}`, meta: { source: "smartapi" } };
+  }
+
+  try {
+    // Ensure we have a valid session
+    if (!angelOneService.jwtToken) {
+      const sessionOk = await angelOneService.generateToken();
+      if (!sessionOk) return { ok: false, error: "smartapi_auth_failed", meta: { source: "smartapi" } };
+    }
+
+    // Calculate date range based on requested range
+    const now = new Date();
+    const toDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 15:30`;
+    const fromDate = new Date(now);
+    const rangeDays = range === "1y" ? 365 : range === "6mo" ? 180 : range === "3mo" ? 90 : 30;
+    fromDate.setDate(fromDate.getDate() - rangeDays);
+    const fromStr = `${fromDate.getFullYear()}-${String(fromDate.getMonth()+1).padStart(2,'0')}-${String(fromDate.getDate()).padStart(2,'0')} 09:15`;
+
+    const result = await angelOneService.getHistoricalData(
+      symbolToken,
+      "NSE",
+      "ONE_DAY",
+      fromStr,
+      toDate
+    );
+
+    if (!result || !result.data || !Array.isArray(result.data)) {
+      return { ok: false, error: "smartapi_empty_response", meta: { source: "smartapi" } };
+    }
+
+    // Transform SmartAPI format [timestamp, o, h, l, c, v] to our standard format
+    const candles = result.data.map(c => ({
+      ts: c[0],
+      o: c[1],
+      h: c[2],
+      l: c[3],
+      c: c[4],
+      v: c[5]
+    })).filter(c => [c.o, c.h, c.l, c.c].every(x => typeof x === "number"));
+
+    if (candles.length < 20) {
+      return { ok: false, error: `smartapi_insufficient_candles:${candles.length}`, meta: { source: "smartapi" } };
+    }
+
+    return { ok: true, data: candles, meta: { source: "smartapi:angelone", fetchedAt: new Date().toISOString() } };
+  } catch (err) {
+    console.error(`[SmartAPI] Error fetching candles for ${cleanSymbol}: ${err.message}`);
+    return { ok: false, error: `smartapi_error:${err.message}`, meta: { source: "smartapi" } };
+  }
+}
+
+async function getCandles({ symbol, sourcePreference = ["kite", "smartapi", "yahoo"], range, interval } = {}) {
   const sources = sourcePreference
     .map((s) => {
+      if (s === "kite") return { name: "kite", fn: () => kiteCandles({ symbol, range, interval }) };
       if (s === "smartapi") return { name: "smartapi", fn: () => smartApiCandles({ symbol, range, interval }) };
       if (s === "yahoo") return { name: "yahoo", fn: () => yahooChartCandles(symbol, { range, interval }) };
       return null;
