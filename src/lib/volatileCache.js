@@ -22,35 +22,37 @@ class VolatileCacheManager {
    * Initializes volatile cache for a symbol with realistic default/simulated datasets
    */
   static initSymbol(symbol) {
-    if (global.volatileCache[symbol]) return global.volatileCache[symbol];
+    const cleanSymbol = String(symbol).trim().toUpperCase().replace(".NS", "").replace(".BO", "");
+    if (global.volatileCache[cleanSymbol]) return global.volatileCache[cleanSymbol];
 
-    const basePrice = this.getBasePrice(symbol);
+    const basePrice = this.getBasePrice(cleanSymbol);
     const candles = this.generateMockCandles(basePrice);
-    const depth = this.generateMockDepth(basePrice);
+    const lastPrice = candles[candles.length - 1].c;
+    const depth = this.generateMockDepth(lastPrice);
     
     const volatileObj = {
-      symbol,
-      lastPrice: basePrice,
+      symbol: cleanSymbol,
+      lastPrice: lastPrice,
       candles,
       depth,
       lastUpdated: new Date().toISOString(),
       indicators: null // compiled on first read or simulation tick
     };
 
-    global.volatileCache[symbol] = volatileObj;
-    this.recomputeIndicators(symbol);
+    global.volatileCache[cleanSymbol] = volatileObj;
+    this.recomputeIndicators(cleanSymbol);
 
     // Start simulation ticks for this symbol to emulate live WebSocket feeds
-    this.startSimulation(symbol);
+    this.startSimulation(cleanSymbol);
 
-    return global.volatileCache[symbol];
+    return global.volatileCache[cleanSymbol];
   }
 
   /**
    * Returns volatile data for a symbol. Automatically initializes if missing.
    */
   static get(symbol) {
-    const cleanSymbol = String(symbol).trim().toUpperCase();
+    const cleanSymbol = String(symbol).trim().toUpperCase().replace(".NS", "").replace(".BO", "");
     if (!global.volatileCache[cleanSymbol]) {
       this.initSymbol(cleanSymbol);
     }
@@ -61,7 +63,7 @@ class VolatileCacheManager {
    * Updates volatile cache with real incoming WebSocket tick data
    */
   static updateTick(symbol, price, depthData = null) {
-    const cleanSymbol = String(symbol).trim().toUpperCase();
+    const cleanSymbol = String(symbol).trim().toUpperCase().replace(".NS", "").replace(".BO", "");
     const cache = global.volatileCache[cleanSymbol];
     if (!cache) {
       this.initSymbol(cleanSymbol);

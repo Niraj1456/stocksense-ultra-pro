@@ -118,7 +118,7 @@ function calculateBeneishMScore(fmpData) {
  * and fast/volatile data from the in-memory WebSocket Cache.
  */
 async function analyzeStock(symbol, mode = "ST") {
-  const cleanSymbol = String(symbol).trim().toUpperCase();
+  const cleanSymbol = String(symbol).trim().toUpperCase().replace(".NS", "").replace(".BO", "");
 
   // 1. Fetch Slow, Static fundamental data from Redis Cache
   const cacheKey = `stocksense:static:${cleanSymbol}`;

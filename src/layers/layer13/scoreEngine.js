@@ -405,7 +405,8 @@ function scoreEngine({ mode, stock, currentPrice, indicators, inputs }) {
       layer9_forensic: raw.l9 ?? 50,
       layer10_valuation: raw.l10 ?? 50,
       layer11_predictive: raw.l11 ?? 50,
-      layer12_risk: raw.l12 ?? 50
+      layer12_risk: raw.l12 ?? 50,
+      layer15_sentiment: 50
     };
 
     const aggRes = scoreAggregationEngine({ layer_scores: layerScores, weights });
@@ -423,8 +424,5 @@ function scoreEngine({ mode, stock, currentPrice, indicators, inputs }) {
     meta: { fetchedAt: new Date().toISOString(), source: "calc:scoreEngine:v6" }
   };
 }
-
-module.exports = { scoreEngine, runEngine };
-
 
 module.exports = { scoreEngine, runEngine };

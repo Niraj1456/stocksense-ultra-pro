@@ -43,7 +43,7 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
   }
 
   // Adjustments based on Market Regime (VIX/Macro)
-  if (market_regime === "HIGH_VOLATILITY" || market_regime === "FEAR") {
+  if (market_regime === "HIGH_VOLATILITY" || market_regime === "FEAR" || market_regime === "BEAR") {
     weights.layer1_macro += 5;
     weights.layer9_forensic += 5;
     // Reduce noise from fast indicators
