@@ -904,11 +904,6 @@ async function analyzeStock(symbol, mode = "ST") {
       roce: mergedFundamentals.roe,
       adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14,
       prevDayChangePct: len >= 2 ? ((candles[len-1].c - candles[len-2].c) / candles[len-2].c * 100) : 0,
-      triggerCandleHigh: len >= 1 ? candles[len-1].h : null,
-      triggerCandleLow: len >= 1 ? candles[len-1].l : null,
-      triggerCandleOpen: len >= 1 ? candles[len-1].o : null,
-      prevCandleOpen: len >= 2 ? candles[len-2].o : null,
-      prevCandleClose: len >= 2 ? candles[len-2].c : null,
       marketRegime: (vixOut?.data?.inputs?.vix_current ?? 15) > 20 ? 'BEAR' : ((momentumPct > 0.5) ? 'BULL' : 'NEUTRAL'),
       sectorRegime: sectorRegime || 'NEUTRAL',
       deliveryPct: 45.0,
@@ -949,6 +944,11 @@ async function analyzeStock(symbol, mode = "ST") {
       promoterSellingVeto: promoterSellingVeto || false,
       circuitBreakerTripped: circuitBreakerTripped || false,
       circuitBreakerReason: circuitBreakerReason || "NORMAL",
+      triggerCandleOpen: len >= 1 ? candles[len - 1].o : null,
+      triggerCandleHigh: len >= 1 ? candles[len - 1].h : null,
+      triggerCandleLow: len >= 1 ? candles[len - 1].l : null,
+      prevCandleOpen: len >= 2 ? candles[len - 2].o : null,
+      prevCandleClose: len >= 2 ? candles[len - 2].c : null,
       rrValid: rrOut?.data?.valid ?? true
     },
     inputs: {
