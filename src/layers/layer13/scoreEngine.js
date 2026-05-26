@@ -67,6 +67,10 @@ function getLayerScoresFromIndicators(indicators, currentPrice) {
     if (indicators.ema20 > indicators.ema50) l3 += 10;
     else if (indicators.ema20 < indicators.ema50) l3 -= 10;
   }
+  // PDH/PDL Breakout bonus (±4 raw pts → ±12 layer pts max)
+  if (indicators.pdhPdlPts !== undefined && indicators.pdhPdlPts !== null) {
+    l3 += indicators.pdhPdlPts * 3;
+  }
   const adx = indicators.adx ?? 25;
   if (adx > 25) {
     l3 = 50 + (l3 - 50) * 1.15;
@@ -459,6 +463,11 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const momDisagreeShort = isBearish && momentumPct > 1.0 && rsi < 75;
   const overboughtLong = isBullish && S_5b < 75 && rsi > 82;
   const oversoldTrendLong = isBullish && rsi < 30 && adx > 25;
+  
+  // PDH/PDL Contradiction: engine says UP but stock breaking below PDL, or vice versa
+  const pdhPdlPts = indicators.pdhPdlPts ?? 0;
+  const pdhPdlContradictionLong = isBullish && pdhPdlPts <= -3;
+  const pdhPdlContradictionShort = isBearish && pdhPdlPts >= 3;
 
   let candleVetoLong = false;
   let candleVetoShort = false;
@@ -508,7 +517,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     ...(insiderVeto ? ['INSIDER_VETO'] : []),
     ...(indicators.l19VetoCode ? [indicators.l19VetoCode] : []),
     ...(indicators.l20CautionCode ? [indicators.l20CautionCode] : []),
-    ...(indicators.l26VetoCode ? [indicators.l26VetoCode] : [])
+    ...(indicators.l26VetoCode ? [indicators.l26VetoCode] : []),
+    ...(pdhPdlContradictionLong ? ['PDH_PDL_CONTRADICTION_LONG'] : []),
+    ...(pdhPdlContradictionShort ? ['PDH_PDL_CONTRADICTION_SHORT'] : [])
   ];
 
   // Run tiered veto verification
@@ -544,7 +555,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     'STRONGLY_BEARISH_SENTIMENT': 0.70,
     'EARNINGS_IMMINENT_VETO': 0.70,
     'INSIDER_VETO': 0.70,
-    'TREND_MISALIGNMENT': 0.65
+    'TREND_MISALIGNMENT': 0.65,
+    'PDH_PDL_CONTRADICTION_LONG': 0.80,
+    'PDH_PDL_CONTRADICTION_SHORT': 0.80
   };
 
   // Worst-of-N caution model: use the single worst multiplier, then apply

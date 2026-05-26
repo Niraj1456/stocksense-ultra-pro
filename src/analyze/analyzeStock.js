@@ -660,6 +660,25 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
   const breakoutPts = breakoutSqueezeRes?.ok ? breakoutSqueezeRes.data.pts : 0;
   const markovPts = markovRes?.ok ? markovRes.data.pts : 0;
 
+  // PDH/PDL Breakout Detection (Previous Day High/Low)
+  let pdhPdlRes = null;
+  if (candles && candles.length >= 3) {
+    try {
+      const { pdhPdlBreakoutEngine } = require('../layers/layer3/technicals');
+      pdhPdlRes = pdhPdlBreakoutEngine({
+        high_prices: candles.map(c => c.h),
+        low_prices: candles.map(c => c.l),
+        close_prices: candles.map(c => c.c),
+        current_price: currentPrice,
+        rvol: volatile.indicators?.rvol20 || 1.0,
+        adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14 ?? 25
+      });
+    } catch (e) {
+      console.warn('PDH/PDL Breakout engine failed:', e.message);
+    }
+  }
+  const pdhPdlPts = pdhPdlRes?.ok ? pdhPdlRes.data.pts : 0;
+
   const slOut = Layer12.slCalculator ? Layer12.slCalculator({
     atr14: volatile.indicators?.atr14,
     lastClose: currentPrice,
@@ -1252,6 +1271,7 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
       meanReversionPts,
       breakoutPts,
       markovPts,
+      pdhPdlPts,
       sentimentPts,
       sentimentVeto,
       sentimentConfidence: sentimentConfidenceScore,

@@ -462,6 +462,109 @@ function supportResistanceEngine({ high_prices, low_prices, close_prices, curren
   };
 }
 
+// MODULE 3.9 — PREVIOUS DAY HIGH/LOW (PDH/PDL) BREAKOUT ENGINE
+// Detects when the current price has broken above PDH (bullish) or below PDL (bearish).
+// This is one of the highest-edge intraday setups used by institutional prop desks.
+// Includes: volume confirmation, gap-away filtering, ADX regime dampening, confidence scoring.
+function pdhPdlBreakoutEngine({ high_prices, low_prices, close_prices, current_price, rvol = 1.0, adx = 25 }) {
+  if (!high_prices || !low_prices || !close_prices || high_prices.length < 3) {
+    return { ok: false, error: "insufficient_data" };
+  }
+
+  const len = close_prices.length;
+
+  // Previous day's high, low, and close (second-to-last completed candle)
+  const prevDayHigh = high_prices[len - 2];
+  const prevDayLow = low_prices[len - 2];
+  const prevDayClose = close_prices[len - 2];
+
+  // Calculate gap from previous close to current price
+  const gapPct = prevDayClose > 0 ? ((current_price - prevDayClose) / prevDayClose) * 100 : 0;
+
+  let breakoutSignal = "INSIDE_RANGE";
+  let pts = 0;
+  let confidence = "NEUTRAL";
+
+  // ── BULLISH BREAKOUT: Current price above PDH ──
+  if (current_price > prevDayHigh && prevDayHigh > 0) {
+    const breakPct = ((current_price - prevDayHigh) / prevDayHigh) * 100;
+
+    if (gapPct > 3.0) {
+      // Gap-away above PDH: breakout already priced in, lower edge
+      breakoutSignal = "GAP_ABOVE_PDH";
+      pts = 1;
+      confidence = "LOW";
+    } else if (breakPct < 1.5 && rvol > 1.2) {
+      // Fresh clean break with volume confirmation — highest edge
+      breakoutSignal = "FRESH_PDH_BREAKOUT";
+      pts = 4;
+      confidence = adx > 20 ? "HIGH" : "MODERATE";
+    } else if (breakPct < 1.5) {
+      // Fresh break but lacking volume confirmation
+      breakoutSignal = "PDH_BREAKOUT_LOW_VOL";
+      pts = 2;
+      confidence = "MODERATE";
+    } else {
+      // Extended well beyond PDH (>1.5% above)
+      breakoutSignal = "EXTENDED_ABOVE_PDH";
+      pts = 1;
+      confidence = "LOW";
+    }
+  }
+  // ── BEARISH BREAKDOWN: Current price below PDL ──
+  else if (current_price < prevDayLow && prevDayLow > 0) {
+    const breakPct = ((prevDayLow - current_price) / prevDayLow) * 100;
+
+    if (gapPct < -3.0) {
+      // Gap-away below PDL: breakdown already priced in
+      breakoutSignal = "GAP_BELOW_PDL";
+      pts = -1;
+      confidence = "LOW";
+    } else if (breakPct < 1.5 && rvol > 1.2) {
+      // Fresh clean breakdown with volume confirmation
+      breakoutSignal = "FRESH_PDL_BREAKDOWN";
+      pts = -4;
+      confidence = adx > 20 ? "HIGH" : "MODERATE";
+    } else if (breakPct < 1.5) {
+      // Fresh breakdown but lacking volume
+      breakoutSignal = "PDL_BREAKDOWN_LOW_VOL";
+      pts = -2;
+      confidence = "MODERATE";
+    } else {
+      // Extended well below PDL
+      breakoutSignal = "EXTENDED_BELOW_PDL";
+      pts = -1;
+      confidence = "LOW";
+    }
+  }
+
+  // ADX dampening: in choppy/range-bound markets (ADX < 18), breakouts are unreliable
+  if (adx < 18 && Math.abs(pts) > 1) {
+    pts = Math.sign(pts) * 1;
+    confidence = "LOW";
+  }
+
+  const breakPercent = current_price > prevDayHigh
+    ? +((current_price - prevDayHigh) / prevDayHigh * 100).toFixed(2)
+    : current_price < prevDayLow
+      ? +((prevDayLow - current_price) / prevDayLow * 100).toFixed(2)
+      : 0;
+
+  return {
+    ok: true,
+    data: {
+      prevDayHigh: +prevDayHigh.toFixed(2),
+      prevDayLow: +prevDayLow.toFixed(2),
+      breakoutSignal,
+      pts,
+      confidence,
+      gapPct: +gapPct.toFixed(2),
+      breakPercent
+    },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:pdhPdlBreakoutEngine" }
+  };
+}
+
 module.exports = {
   rsiEngine,
   macdEngine,
@@ -470,5 +573,7 @@ module.exports = {
   rvolEngine,
   adxEngine,
   supportResistanceEngine,
-  volumeProfileEngine
+  volumeProfileEngine,
+  pdhPdlBreakoutEngine
 };
+

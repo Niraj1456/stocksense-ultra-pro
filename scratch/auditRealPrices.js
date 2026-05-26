@@ -6,7 +6,8 @@ const {
   macdEngine,
   emaEngine,
   atrEngine,
-  adxEngine
+  adxEngine,
+  pdhPdlBreakoutEngine
 } = require('../src/layers/layer3/technicals');
 const { yahooChartCandles } = require('../src/layers/layer3/candles');
 
@@ -67,6 +68,23 @@ function calculateIndicatorsForSlice(candlesSlice, entryPrice) {
     momentumPct = ((close_prices[len - 1] - close_prices[len - 6]) / close_prices[len - 6]) * 100;
   }
 
+  // PDH/PDL Breakout Detection
+  const adxVal = adxRes.ok ? adxRes.data.adx : 25;
+  let pdhPdlPts = 0;
+  if (len >= 3) {
+    const pdhPdlRes = pdhPdlBreakoutEngine({
+      high_prices,
+      low_prices,
+      close_prices,
+      current_price: entryPrice,
+      rvol: rvol20,
+      adx: adxVal
+    });
+    if (pdhPdlRes.ok) {
+      pdhPdlPts = pdhPdlRes.data.pts;
+    }
+  }
+
   return {
     rsi: rsiRes.ok ? rsiRes.data.rsi_value : 50,
     rvol: rvol20,
@@ -88,8 +106,9 @@ function calculateIndicatorsForSlice(candlesSlice, entryPrice) {
     ema20: emaRes.ok ? emaRes.data.ema20 : null,
     ema50: emaRes.ok ? emaRes.data.ema50 : null,
     ema200: emaRes.ok ? emaRes.data.ema200 : null,
-    adx: adxRes.ok ? adxRes.data.adx : 25,
+    adx: adxVal,
     prevDayChangePct: len >= 2 ? ((close_prices[len - 1] - close_prices[len - 2]) / close_prices[len - 2]) * 100 : 0,
+    pdhPdlPts,
     marketRegime: "NEUTRAL",
     sectorRegime: "NEUTRAL"
   };
