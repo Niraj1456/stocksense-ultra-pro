@@ -46,14 +46,14 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   else if (vix > 20) l1 -= 15;
   if (indicators.sectorRegime === 'BULL') l1 += 10;
   else if (indicators.sectorRegime === 'BEAR') l1 -= 10;
-  scores.layer1_macro = clamp(l1, 10, 90);
+  scores.layer1_macro = clamp(l1, 0, 100);
 
   // 2. Microstructure
   let l2 = 50;
   const obi = indicators.l2Imbalance ?? 0;
   const obiPrev = indicators.l2ImbalancePrev ?? obi;
   l2 += obi * 0.8 + (obi - obiPrev) * 0.4;
-  scores.layer2_microstructure = clamp(l2, 10, 90);
+  scores.layer2_microstructure = clamp(l2, 0, 100);
 
   // 3. Technicals
   let l3 = 50;
@@ -75,7 +75,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (adx > 25) {
     l3 = 50 + (l3 - 50) * 1.15;
   }
-  scores.layer3_technicals = clamp(l3, 10, 90);
+  scores.layer3_technicals = clamp(l3, 0, 100);
 
   // 4. Price Action
   let l4 = 50;
@@ -90,7 +90,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (indicators.maxConfluencePts) {
     l4 += indicators.maxConfluencePts * 3;
   }
-  scores.layer4_price_action = clamp(l4, 10, 90);
+  scores.layer4_price_action = clamp(l4, 0, 100);
 
   // 5. Volume Profile
   let l5 = 50;
@@ -105,7 +105,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (rvol > 1.5) {
     l5 = 50 + (l5 - 50) * 1.3;
   }
-  scores.layer5_volume_profile = clamp(l5, 10, 90);
+  scores.layer5_volume_profile = clamp(l5, 0, 100);
 
   // 6. Institutional
   let l6 = 50;
@@ -121,14 +121,14 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (indicators.bulkBlockPts !== undefined && indicators.bulkBlockPts !== null) l6 += indicators.bulkBlockPts;
   if (indicators.peerCorrPts !== undefined && indicators.peerCorrPts !== null) l6 += indicators.peerCorrPts;
 
-  scores.layer6_institutional = clamp(l6, 10, 90);
+  scores.layer6_institutional = clamp(l6, 0, 100);
 
   // 7. Derivatives
   let l7 = 50;
   const pcr = indicators.pcr ?? 1.0;
   if (pcr > 1.2) l7 += 15;
   else if (pcr < 0.6) l7 -= 15;
-  scores.layer7_derivatives = clamp(l7, 10, 90);
+  scores.layer7_derivatives = clamp(l7, 0, 100);
 
   // 8. Fundamentals
   let l8 = 50;
@@ -147,7 +147,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
     if (peg < 1.0) l8 += 10;
     else if (peg > 2.0) l8 -= 10;
   }
-  scores.layer8_fundamentals = clamp(l8, 10, 90);
+  scores.layer8_fundamentals = clamp(l8, 0, 100);
 
   // 9. Forensic
   let l9 = 50;
@@ -163,7 +163,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (bM !== undefined && bM !== null && bM > -1.78) {
     l9 -= 20;
   }
-  scores.layer9_forensic = clamp(l9, 10, 90);
+  scores.layer9_forensic = clamp(l9, 0, 100);
 
   // 10. Valuation
   let l10 = 50;
@@ -180,7 +180,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   if (indicators.earningsYieldPts !== undefined && indicators.earningsYieldPts !== null) {
     l10 += indicators.earningsYieldPts * 4;
   }
-  scores.layer10_valuation = clamp(l10, 10, 90);
+  scores.layer10_valuation = clamp(l10, 0, 100);
 
   // 11. Predictive
   let l11 = 50;
@@ -207,14 +207,14 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
       l11 -= 15;
     }
   }
-  scores.layer11_predictive = clamp(l11, 10, 90);
+  scores.layer11_predictive = clamp(l11, 0, 100);
 
   // 15. Sentiment & Catalysts
   let l15 = 50;
   l15 += (indicators.sentimentPts || 0) * 10;
   l15 += (indicators.insiderPts || 0) * 8;
   l15 += (indicators.catalystPts || 0) * 10;
-  scores.layer15_sentiment = clamp(l15, 10, 90);
+  scores.layer15_sentiment = clamp(l15, 0, 100);
 
   // 12. Risk (weight=0, used for sizing only)
   scores.layer12_risk = indicators.rrValid ?? true ? 75 : 45;
@@ -225,45 +225,45 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
 
   // 19. Promoter Pledge
   // Score is provided from external L19 module via indicators.l19Score
-  scores.layer19_promoter_pledge = clamp(indicators.l19Score ?? 50, 10, 90);
+  scores.layer19_promoter_pledge = clamp(indicators.l19Score ?? 50, 0, 100);
 
   // 20. Earnings Quality
   // Score is provided from external L20 module via indicators.l20Score
-  scores.layer20_earnings_quality = clamp(indicators.l20Score ?? 50, 10, 90);
+  scores.layer20_earnings_quality = clamp(indicators.l20Score ?? 50, 0, 100);
 
   // 21. RS Rating
   // Score is provided from external L21 module via indicators.l21Score
-  scores.layer21_rs_rating = clamp(indicators.l21Score ?? 50, 10, 90);
+  scores.layer21_rs_rating = clamp(indicators.l21Score ?? 50, 0, 100);
 
   // 22. Multi-Timeframe Coherence
   // Score is provided from external L22 module via indicators.l22Score
-  scores.layer22_mtf_coherence = clamp(indicators.l22Score ?? 50, 10, 90);
+  scores.layer22_mtf_coherence = clamp(indicators.l22Score ?? 50, 0, 100);
 
   // 23. Peer Percentile
   // Score is provided from external L23 module via indicators.l23Score
-  scores.layer23_peer_percentile = clamp(indicators.l23Score ?? 50, 10, 90);
+  scores.layer23_peer_percentile = clamp(indicators.l23Score ?? 50, 0, 100);
 
   // 24. Management Quality
   // Score is provided from external L24 module via indicators.l24Score
-  scores.layer24_mgmt_quality = clamp(indicators.l24Score ?? 50, 10, 90);
+  scores.layer24_mgmt_quality = clamp(indicators.l24Score ?? 50, 0, 100);
 
   // 14. AI Consensus
-  scores.layer14_consensus = clamp(indicators.l14Score ?? 50, 10, 90);
+  scores.layer14_consensus = clamp(indicators.l14Score ?? 50, 0, 100);
 
   // 16. Dynamic Integrity Guard
-  scores.layer16_integrity = clamp(indicators.l16Score ?? 50, 10, 90);
+  scores.layer16_integrity = clamp(indicators.l16Score ?? 50, 0, 100);
 
   // 17. Backtest DB
-  scores.layer17_backtest = clamp(indicators.l17Score ?? 50, 10, 90);
+  scores.layer17_backtest = clamp(indicators.l17Score ?? 50, 0, 100);
 
   // 18. Volatility Predictor
-  scores.layer18_volatility = clamp(indicators.l18Score ?? 50, 10, 90);
+  scores.layer18_volatility = clamp(indicators.l18Score ?? 50, 0, 100);
 
   // 25. Ensemble weights
-  scores.layer25_ensemble = clamp(indicators.l25Score ?? 50, 10, 90);
+  scores.layer25_ensemble = clamp(indicators.l25Score ?? 50, 0, 100);
 
   // 26. Walk forward
-  scores.layer26_walk_forward = clamp(indicators.l26Score ?? 50, 10, 90);
+  scores.layer26_walk_forward = clamp(indicators.l26Score ?? 50, 0, 100);
 
   // Apply deterministic variation to ensure all layers actively participate and have non-zero attributions
   for (const [key, val] of Object.entries(scores)) {
@@ -378,18 +378,30 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     activeLayers.add('layer26_walk_forward');
   }
 
-  // Assign raw static weights directly to active layers without dynamic normalization
-  const weights = {};
+  // Assign raw static weights directly to active layers and calculate active weight sum
+  const rawWeights = {};
+  let activeWeightSum = 0;
   for (const [layer, w] of Object.entries(baseWeights)) {
+    if (layer === 'layer12_risk') {
+      rawWeights[layer] = 0;
+      continue;
+    }
+    if (activeLayers.has(layer)) {
+      rawWeights[layer] = w;
+      activeWeightSum += w;
+    } else {
+      rawWeights[layer] = 0;
+    }
+  }
+
+  // Dynamically normalize active weights to sum to exactly 100%
+  const weights = {};
+  for (const [layer, w] of Object.entries(rawWeights)) {
     if (layer === 'layer12_risk') {
       weights[layer] = 0;
       continue;
     }
-    if (activeLayers.has(layer)) {
-      weights[layer] = w;
-    } else {
-      weights[layer] = 0;
-    }
+    weights[layer] = activeWeightSum > 0 ? (w * 100) / activeWeightSum : 0;
   }
 
   // STEP 0.5: Apply pre-processing L3 RS Dampening
@@ -793,7 +805,7 @@ function scoreEngine({ mode, stock, currentPrice, indicators, inputs }) {
     ok: true,
     data: {
       rawScores: indicators ? engineResult?.layerScores : scoreFromInputs(inputs),
-      weights,
+      weights: indicators ? engineResult?.weights : (aggRes?.data?.weights || weights),
       totalScore: Number(totalScore.toFixed(2)),
       engineResult,
       vixRegime

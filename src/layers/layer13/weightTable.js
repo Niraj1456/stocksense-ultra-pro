@@ -111,6 +111,7 @@ const WEIGHT_TABLE = {
       layer8_fundamentals: 12,
       layer9_forensic: 5,
       layer10_valuation: 12,
+      layer11_predictive: 1,
       layer15_sentiment: 3,
       layer16_integrity: 1,
       layer17_backtest: 1,

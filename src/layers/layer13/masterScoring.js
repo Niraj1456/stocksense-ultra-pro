@@ -30,25 +30,44 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
 function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
   let total_score = 50;
   const score_breakdown = {};
+  const normalized_weights = {};
+
+  // Calculate active weights sum (excluding risk)
+  let activeWeightSum = 0;
+  for (const [layer, weight] of Object.entries(weights)) {
+    if (layer === 'layer12_risk') continue;
+    activeWeightSum += weight;
+  }
 
   for (const [layer, weight] of Object.entries(weights)) {
-    if (layer === 'layer12_risk') continue; // Risk layer doesn't contribute to conviction score
+    if (layer === 'layer12_risk') {
+      normalized_weights[layer] = 0;
+      continue;
+    }
     
-    // layer_scores should provide a normalized score (10 to 90) for each layer
+    // Normalize weight dynamically
+    const normalizedWeight = activeWeightSum > 0 ? (weight * 100) / activeWeightSum : 0;
+    normalized_weights[layer] = normalizedWeight;
+
+    // layer_scores should provide a normalized score (0 to 100) for each layer
     const layer_score = Number(layer_scores[layer]) || 50; // Default neutral if missing
-    const points = ((layer_score - 50) * weight) / 100;
+    const points = ((layer_score - 50) * normalizedWeight) / 100;
     
     total_score += points;
     score_breakdown[layer] = {
       raw_score: layer_score,
-      weight_applied: weight,
-      contribution: points
+      weight_applied: Number(normalizedWeight.toFixed(2)),
+      contribution: Number(points.toFixed(2))
     };
   }
 
   return {
     ok: true,
-    data: { total_score: Number(total_score.toFixed(2)), score_breakdown },
+    data: { 
+      total_score: Number(total_score.toFixed(2)), 
+      score_breakdown, 
+      weights: normalized_weights 
+    },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:scoreAggregationEngine:v2" }
   };
 }
