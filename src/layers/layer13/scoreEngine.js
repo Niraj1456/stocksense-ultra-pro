@@ -270,7 +270,80 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const vixRegime = vixLevel >= 19.0 ? 'HIGH_VIX' : (vixLevel <= 16.5 ? 'LOW_VIX' : (options.activeRegime || indicators._prevVixRegime || 'LOW_VIX'));
 
   // Get weights (dynamic override or static baseline)
-  const weights = indicators.activeWeights || getWeights(timeHorizon === '5D' ? 'INVESTMENT' : 'INTRADAY', vixRegime);
+  const baseWeights = indicators.activeWeights || getWeights(timeHorizon === '5D' ? 'INVESTMENT' : 'INTRADAY', vixRegime);
+
+  // Dynamic Weight Normalization: Identify which layers have active non-default data
+  const activeLayers = new Set([
+    'layer1_macro',        // Always active
+    'layer3_technicals',   // Always active
+    'layer4_price_action',  // Always active
+    'layer11_predictive'   // Always active
+  ]);
+
+  if (indicators.l2Imbalance !== undefined && indicators.l2Imbalance !== null) {
+    activeLayers.add('layer2_microstructure');
+  }
+  if (indicators.vpDetails !== undefined || (indicators.r1 !== undefined && indicators.s1 !== undefined)) {
+    activeLayers.add('layer5_volume_profile');
+  }
+  if (indicators.insiderNetBuying !== undefined || indicators.mfFlowPts !== undefined || indicators.fiiDiiPts !== undefined) {
+    activeLayers.add('layer6_institutional');
+  }
+  if (indicators.pcr !== undefined && indicators.pcr !== null && indicators.hasRealPCR) {
+    activeLayers.add('layer7_derivatives');
+  }
+  if (indicators.roce !== undefined || indicators.debtToEquity !== undefined || indicators.pegRatio !== undefined) {
+    activeLayers.add('layer8_fundamentals');
+  }
+  if (indicators.piotroskiScore !== undefined || indicators.altmanZone !== undefined || indicators.beneishMScore !== undefined) {
+    activeLayers.add('layer9_forensic');
+  }
+  if (indicators.dcfMoS !== undefined || indicators.grahamPts !== undefined || indicators.reverseDcfPts !== undefined) {
+    activeLayers.add('layer10_valuation');
+  }
+  if (indicators.sentimentPts || indicators.insiderPts || indicators.catalystPts) {
+    activeLayers.add('layer15_sentiment');
+  }
+  if (indicators.l19Score !== undefined && indicators.l19Score !== null) {
+    activeLayers.add('layer19_promoter_pledge');
+  }
+  if (indicators.l20Score !== undefined && indicators.l20Score !== null) {
+    activeLayers.add('layer20_earnings_quality');
+  }
+  if (indicators.l21Score !== undefined || indicators.rsPercentile !== undefined) {
+    activeLayers.add('layer21_rs_rating');
+  }
+  if (indicators.l22Score !== undefined || indicators.l22Alignment !== undefined) {
+    activeLayers.add('layer22_mtf_coherence');
+  }
+  if (indicators.l23Score !== undefined && indicators.l23Score !== null) {
+    activeLayers.add('layer23_peer_percentile');
+  }
+  if (indicators.l24Score !== undefined && indicators.l24Score !== null) {
+    activeLayers.add('layer24_mgmt_quality');
+  }
+
+  // Calculate the total weight of active layers to redistribute weights
+  let activeWeightSum = 0;
+  for (const [layer, w] of Object.entries(baseWeights)) {
+    if (layer === 'layer12_risk') continue;
+    if (activeLayers.has(layer)) {
+      activeWeightSum += w;
+    }
+  }
+
+  const weights = {};
+  for (const [layer, w] of Object.entries(baseWeights)) {
+    if (layer === 'layer12_risk') {
+      weights[layer] = 0;
+      continue;
+    }
+    if (activeLayers.has(layer) && activeWeightSum > 0) {
+      weights[layer] = (w / activeWeightSum) * 100;
+    } else {
+      weights[layer] = 0;
+    }
+  }
 
   // STEP 0.5: Apply pre-processing L3 RS Dampening
   // If RS percentile < 70, dampen L3 score
@@ -280,7 +353,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     l3 = 50 + (l3 - 50) * 0.90;
   }
 
-  // STEP 1: Calculate Base Weighted Sum
+  // STEP 1: Calculate Base Weighted Sum using normalized weights
   let S_base = 0;
   for (const [layer, weight] of Object.entries(weights)) {
     if (layer === 'layer12_risk') continue;
@@ -349,8 +422,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
 
   // Determine direction based on S_5b
-  const isBullish = S_5b >= 55;
-  const isBearish = S_5b < 42;
+  const isBullish = S_5b >= 56.5;
+  const isBearish = S_5b < 40.5;
   const isStrongShort = S_5b < 30;
 
   // Count directional layer agreement for Conviction Gating & Weak Bear check
@@ -375,16 +448,16 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   const trendVeto = isStrongShort && isMacroUptrend && isLongTermUptrend;
   const oversoldOverride = isStrongShort && rsi < 25 && adx > 25 && isLongTermUptrend;
-  const shortNoVolume = isStrongShort && rvol < 0.5;
-  const longNoVolume = isBullish && rvol < 0.25;
-  const anyDirNoVolume = (isBullish || isBearish) && rvol < 0.35;
+  const shortNoVolume = isStrongShort && rvol < 0.30;
+  const longNoVolume = isBullish && rvol < 0.15;
+  const anyDirNoVolume = (isBullish || isBearish) && rvol < 0.20;
   const bearMarketLong = isBullish && marketRegime === 'BEAR' && adx > 25;
   const forensicDistress = isBullish && altmanZone === 'DISTRESS_ZONE';
-  const oversoldShort = isBearish && rsi < 30 && !(adx > 30 && momentumPct < -3);
+  const oversoldShort = isBearish && rsi < 25 && !(adx > 30 && momentumPct < -3);
   const trendingOverboughtShort = isBearish && rsi > 70 && adx > 25 && momentumPct > 0;
   const momDisagreeLong = isBullish && momentumPct < -3.0 && rsi > 40;
   const momDisagreeShort = isBearish && momentumPct > 1.0 && rsi < 75;
-  const overboughtLong = isBullish && S_5b < 75 && rsi > 78;
+  const overboughtLong = isBullish && S_5b < 75 && rsi > 82;
   const oversoldTrendLong = isBullish && rsi < 30 && adx > 25;
 
   let candleVetoLong = false;
@@ -394,8 +467,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     const closePosition = candleRange > 0 ? (currentPrice - triggerCandleLow) / candleRange : 0.5;
     const triggerBody = currentPrice - triggerCandleOpen;
 
-    if (isBullish && closePosition < 0.40) candleVetoLong = true;
-    if (isBearish && closePosition > 0.60) candleVetoShort = true;
+    if (isBullish && closePosition < 0.30) candleVetoLong = true;
+    if (isBearish && closePosition > 0.70) candleVetoShort = true;
 
     if (prevCandleOpen != null && prevCandleClose != null) {
       const prevBody = prevCandleClose - prevCandleOpen;
@@ -505,9 +578,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   let baseMultiplier;
   if (timeHorizon === '1D') {
     // Intraday: tighter targets for high hit-rate
-    // Range: 0.08× ATR (neutral edge) to 0.23× ATR (extreme conviction)
-    baseMultiplier = 0.08 + deviation * 0.15;
-    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.10);
+    // Range: 0.06× ATR (neutral edge) to 0.18× ATR (extreme conviction)
+    baseMultiplier = 0.06 + deviation * 0.12;
+    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.09);
   } else {
     // Swing/positional: wider targets for multi-day moves
     // Range: 0.40× ATR (neutral edge) to 1.20× ATR (extreme conviction)
@@ -515,8 +588,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.45);
   }
 
-  const atrFloor = timeHorizon === '1D' ? 0.06 : 0.35;
-  const atrCeiling = timeHorizon === '1D' ? 0.23 : 1.20;
+  const atrFloor = timeHorizon === '1D' ? 0.05 : 0.35;
+  const atrCeiling = timeHorizon === '1D' ? 0.18 : 1.20;
   let atrMultiplier = Math.max(atrFloor, Math.min(atrCeiling, baseMultiplier));
   let headroom = atrValue * atrMultiplier;
 
@@ -536,8 +609,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // Intraday 1D trade cap: keep targets within realistic single-session range
   if (timeHorizon === '1D') {
     const atrPct = atrValue / currentPrice;
-    const dailyCap = Math.min(atrPct * 0.40, 0.012);  // Max 1.2% of price (was 1.8%)
-    const maxIntraday = currentPrice * Math.max(dailyCap, 0.0035); // Floor 0.35% (was 0.4%)
+    const dailyCap = Math.min(atrPct * 0.40, 0.010);  // Max 1.0% of price (was 1.2%)
+    const maxIntraday = currentPrice * Math.max(dailyCap, 0.0030); // Floor 0.30% (was 0.35%)
     headroom = Math.min(headroom, maxIntraday);
   }
   
@@ -546,8 +619,15 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   let direction = "NEUTRAL";
   if (!hasFatalVeto) {
-    if (score >= 55) direction = "UP";
-    else if (score < 42) direction = "DOWN";
+    if (score >= 56.5) {
+      if (rsi > 48 && momentum >= 0) {
+        direction = "UP";
+      }
+    } else if (score < 40.5) {
+      if (rsi < 52 && momentum <= 0) {
+        direction = "DOWN";
+      }
+    }
   }
 
   // Use verdictClassifierEngine for official verdict with conviction gating
