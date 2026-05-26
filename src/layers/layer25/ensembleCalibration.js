@@ -355,8 +355,8 @@ function calibrateWeights({
   const newCeilingHitStreak = { ...ceilingHitStreak };
 
   for (const k of layerKeys) {
-    // Check if calibrated weight hit the 30% ceiling
-    if (normalizedCalibrated[k] >= 30.0) {
+    // Check if calibrated weight hit the 30% ceiling (with tiny rounding tolerance)
+    if (normalizedCalibrated[k] >= 29.99) {
       newCeilingHitStreak[k] = (newCeilingHitStreak[k] || 0) + 1;
       if (newCeilingHitStreak[k] >= 3) {
         shouldReset = true;

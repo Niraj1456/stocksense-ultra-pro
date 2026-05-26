@@ -2393,9 +2393,6 @@ export default function App() {
 
     const isVetoed = data.isVetoed ?? false;
     const vetoesList = data.vetoesList || [];
-    const finalScore = data.score ?? 50;
-    const direction = data.direction || (finalScore >= 55 ? "UP" : finalScore <= 45 ? "DOWN" : "NEUTRAL");
-    const verdict = data.verdict || "NEUTRAL";
     const currentPrice = livePrice?.numericPrice ?? 1000;
     
     const rvol = liveAtr?.rvol || 1.0;
@@ -2428,10 +2425,10 @@ export default function App() {
       layer8_fundamentals: clampScore(realData?.fundamentals?.roe > 20 ? 65 : 50),
       layer9_forensic: 55,
       layer10_valuation: clampScore(realData?.fundamentals?.pe < 15 ? 65 : 50),
-      layer11_predictive: clampScore(finalScore),
+      layer11_predictive: clampScore(data.score ?? 50),
       layer12_risk: 50,
       layer13_veto: isVetoed ? 35 : 55,
-      layer14_consensus: clampScore(finalScore),
+      layer14_consensus: clampScore(data.score ?? 50),
       layer15_sentiment: applyDeterministicVariation(50, symbol, 'layer15_sentiment'),
       layer16_integrity: applyDeterministicVariation(50, symbol, 'layer16_integrity'),
       layer17_backtest: 64,
@@ -2448,6 +2445,18 @@ export default function App() {
 
     const masterMode = isLt ? "INVESTMENT" : "INTRADAY";
     const baselineWeights = BASELINE_WEIGHTS[masterMode] || {};
+
+    // Calculate finalScore using point-based aggregation (baseline 50) and static weights
+    let weightedSumPoints = 0;
+    for (const [key, score] of Object.entries(clientScores)) {
+      if (key === 'layer12_risk' || key === 'key13_veto' || key === 'layer13_veto') continue;
+      const weight = baselineWeights[key] ?? 0;
+      weightedSumPoints += ((score - 50) * weight) / 100;
+    }
+    const finalScore = Math.max(5, Math.min(95, Math.round(50 + weightedSumPoints)));
+
+    const direction = data.direction || (isVetoed ? "NEUTRAL" : (finalScore >= 53 ? "UP" : finalScore < 47 ? "DOWN" : "NEUTRAL"));
+    const verdict = data.verdict || (isVetoed ? "SYSTEM_VETO" : getVerdict(finalScore));
 
     const dummyRes = {
       stock: symbol,

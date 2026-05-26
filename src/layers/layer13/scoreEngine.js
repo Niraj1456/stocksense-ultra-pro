@@ -378,23 +378,15 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     activeLayers.add('layer26_walk_forward');
   }
 
-  // Calculate the total weight of active layers to redistribute weights
-  let activeWeightSum = 0;
-  for (const [layer, w] of Object.entries(baseWeights)) {
-    if (layer === 'layer12_risk') continue;
-    if (activeLayers.has(layer)) {
-      activeWeightSum += w;
-    }
-  }
-
+  // Assign raw static weights directly to active layers without dynamic normalization
   const weights = {};
   for (const [layer, w] of Object.entries(baseWeights)) {
     if (layer === 'layer12_risk') {
       weights[layer] = 0;
       continue;
     }
-    if (activeLayers.has(layer) && activeWeightSum > 0) {
-      weights[layer] = (w / activeWeightSum) * 100;
+    if (activeLayers.has(layer)) {
+      weights[layer] = w;
     } else {
       weights[layer] = 0;
     }
@@ -408,15 +400,15 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     l3 = 50 + (l3 - 50) * 0.90;
   }
 
-  // STEP 1: Calculate Base Weighted Sum using normalized weights
-  let S_base = 0;
+  // STEP 1: Calculate Base Weighted Sum using point-based aggregation (baseline 50)
+  let S_base = 50;
   for (const [layer, weight] of Object.entries(weights)) {
     if (layer === 'layer12_risk') continue;
     let l_val = layerScores[layer] ?? 50;
     if (layer === 'layer3_technicals') {
       l_val = l3;
     }
-    S_base += (l_val * weight) / 100;
+    S_base += ((l_val - 50) * weight) / 100;
   }
 
   // STEP 2: Apply Multi-Timeframe Coherence compression
@@ -477,8 +469,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
 
   // Determine direction based on S_5b
-  const isBullish = S_5b >= 56.5;
-  const isBearish = S_5b < 40.5;
+  const isBullish = S_5b >= 53.0;
+  const isBearish = S_5b < 47.0;
   const isStrongShort = S_5b < 30;
 
   // Count directional layer agreement for Conviction Gating & Weak Bear check
@@ -642,9 +634,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   let baseMultiplier;
   if (timeHorizon === '1D') {
     // Intraday: tighter targets for high hit-rate
-    // Range: 0.06× ATR (neutral edge) to 0.18× ATR (extreme conviction)
-    baseMultiplier = 0.06 + deviation * 0.12;
-    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.09);
+    // Range: 0.05× ATR (neutral edge) to 0.15× ATR (extreme conviction)
+    baseMultiplier = 0.05 + deviation * 0.10;
+    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.08);
   } else {
     // Swing/positional: wider targets for multi-day moves
     // Range: 0.40× ATR (neutral edge) to 1.20× ATR (extreme conviction)
@@ -683,12 +675,12 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   let direction = "NEUTRAL";
   if (!hasFatalVeto) {
-    if (score >= 56.5) {
-      if (rsi > 48 && momentum >= 0) {
+    if (score >= 53.0) {
+      if (rsi > 45 && momentum >= 0) {
         direction = "UP";
       }
-    } else if (score < 40.5) {
-      if (rsi < 52 && momentum <= 0) {
+    } else if (score < 47.0) {
+      if (rsi < 55 && momentum <= 0) {
         direction = "DOWN";
       }
     }

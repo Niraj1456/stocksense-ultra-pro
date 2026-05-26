@@ -26,9 +26,9 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
 }
 
 // MODULE 13.2 — SCORE AGGREGATION ENGINE
-// Updated to handle 26 layers and skip layer12_risk (weight=0, used for sizing only)
+// Updated to use point-based aggregation (baseline 50) and un-normalized weights
 function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
-  let total_score = 0;
+  let total_score = 50;
   const score_breakdown = {};
 
   for (const [layer, weight] of Object.entries(weights)) {
@@ -36,19 +36,19 @@ function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
     
     // layer_scores should provide a normalized score (10 to 90) for each layer
     const layer_score = Number(layer_scores[layer]) || 50; // Default neutral if missing
-    const weighted_contribution = (layer_score * weight) / 100;
+    const points = ((layer_score - 50) * weight) / 100;
     
-    total_score += weighted_contribution;
+    total_score += points;
     score_breakdown[layer] = {
       raw_score: layer_score,
       weight_applied: weight,
-      contribution: weighted_contribution
+      contribution: points
     };
   }
 
   return {
     ok: true,
-    data: { total_score, score_breakdown },
+    data: { total_score: Number(total_score.toFixed(2)), score_breakdown },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:scoreAggregationEngine:v2" }
   };
 }
