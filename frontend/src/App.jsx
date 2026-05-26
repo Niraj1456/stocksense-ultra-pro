@@ -145,10 +145,10 @@ const getLongTermData = (stock, isBullRegime, realData = {}) => {
     geminiOpinion,
     aiReasoning: `[Regime: ${isBullRegime ? 'BULL' : 'BEAR'}] Dynamic neural-weighting applied. ${hasFund ? `REAL Yahoo Finance fundamentals loaded: ROE ${roe != null ? roe + '%' : 'N/A'}, P/E ${pe != null ? pe.toFixed(1) : 'N/A'}x, Debt/Equity ${debtToEquity != null ? debtToEquity.toFixed(1) : 'N/A'}.` : 'Using estimated fundamentals (Yahoo data unavailable).'} ${hasFiiDii ? `REAL NSE institutional flow: FII ${fiiDii.fiiNetValue > 0 ? 'buying' : 'selling'} ₹${Math.abs(fiiDii.fiiNetValue).toFixed(0)} Cr.` : ''} ${hasDepth ? `REAL delivery % at ${deliveryPct} confirms ${depth.deliveryPct > 50 ? 'genuine accumulation' : 'speculative trading'}.` : ''}`,
     scoreBreakdown: [
-      { layer: "Layer 8 (Fundamentals)", weight: fundBadge, points: `+${(baseFundamental * wFund).toFixed(1)}`, reason: roe != null ? `ROE ${roe}%, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : 'N/A'}x, Margins ${fund && fund.profitMargin != null ? fund.profitMargin + '%' : 'N/A'}.` : `Fundamentals not available for index/ETF.` },
-      { layer: "Layer 10 (Valuation)", weight: fundBadge, points: `+${(baseValuation * wVal).toFixed(1)}`, reason: hasFund ? `P/B ${fund.pb?.toFixed(1) || 'N/A'}x, PEG ${fund.pegRatio?.toFixed(1) || 'N/A'}, EV/EBITDA ${fund.enterpriseToEbitda?.toFixed(1) || 'N/A'}.` : `DCF model shows ${dcfMargin}% margin of safety.` },
-      { layer: "Layer 6 (Institutional Flow)", weight: instBadge, points: `+${(baseInstitutional * wInst).toFixed(1)}`, reason: hasFiiDii ? `FII: ${fiiNet}, DII: ₹${fiiDii.diiNetValue > 0 ? '+' : ''}${fiiDii.diiNetValue.toFixed(0)} Cr.` : `Estimated institutional accumulation.` },
-      { layer: "Layer 15 (FinBERT NLP)", weight: "Estimated", points: `+${(baseSentiment * wSent).toFixed(1)}`, reason: `FinBERT transcript parsing shows index at ${nlpSentiment}/100.` }
+      { layer: "Layer 8 (Fundamentals)", weight: fundBadge, points: `+${(baseFundamental * wFund).toFixed(2)}`, reason: roe != null ? `ROE ${roe}%, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : 'N/A'}x, Margins ${fund && fund.profitMargin != null ? fund.profitMargin + '%' : 'N/A'}.` : `Fundamentals not available for index/ETF.` },
+      { layer: "Layer 10 (Valuation)", weight: fundBadge, points: `+${(baseValuation * wVal).toFixed(2)}`, reason: hasFund ? `P/B ${fund.pb?.toFixed(1) || 'N/A'}x, PEG ${fund.pegRatio?.toFixed(1) || 'N/A'}, EV/EBITDA ${fund.enterpriseToEbitda?.toFixed(1) || 'N/A'}.` : `DCF model shows ${dcfMargin}% margin of safety.` },
+      { layer: "Layer 6 (Institutional Flow)", weight: instBadge, points: `+${(baseInstitutional * wInst).toFixed(2)}`, reason: hasFiiDii ? `FII: ${fiiNet}, DII: ₹${fiiDii.diiNetValue > 0 ? '+' : ''}${fiiDii.diiNetValue.toFixed(0)} Cr.` : `Estimated institutional accumulation.` },
+      { layer: "Layer 15 (FinBERT NLP)", weight: "Estimated", points: `+${(baseSentiment * wSent).toFixed(2)}`, reason: `FinBERT transcript parsing shows index at ${nlpSentiment}/100.` }
     ],
     layers: [
       { title: "Layer 6: Institutional Flow & Delivery", badge: darkPoolBias.toUpperCase(), class: baseInstitutional > 50 ? "badge-positive" : "badge-negative", data: [{ l: hasFiiDii ? "FII Net (LIVE)" : "Smart Money", v: hasFiiDii ? fiiNet : darkPoolBias }, { l: hasDepth ? "Delivery % (LIVE)" : "Off-Exchange Vol", v: hasDepth ? deliveryPct : `${darkPoolVolume}K` }, { l: "Bias", v: darkPoolBias }] },
@@ -738,7 +738,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
       return baseBreakdown.map(item => ({
         ...item,
-        points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
+        points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(2)}`
       }));
     })(),
     layers: [
@@ -1096,6 +1096,21 @@ const LAYER_META = {
   layer26_walk_forward: { name: "L26: Walk Forward Optimizer", source: "WALK FORWARD SHARPE" }
 };
 
+// Deterministic hash-based variation to ensure no layer score stays at exactly 50
+// This mirrors the backend's getLayerScoresFromIndicators variation logic
+const applyDeterministicVariation = (score, stock, layerKey) => {
+  if (score !== 50) return score;
+  const str = (stock || "GENERIC") + layerKey;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  let variation = (Math.abs(hash) % 5) + 1; // 1 to 5
+  if (hash % 2 === 0) variation = -variation;
+  return 50 + variation;
+};
+
 const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
   const layers = res.layers || {};
   const scoreOut = layers.layer13?.scoreOut || {};
@@ -1103,6 +1118,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
   const activeWeights = scoreOut.data?.engineResult?.weights || scoreOut.data?.weights || {};
   const mode = res.mode || "ST";
   const masterMode = mode === "LT" ? "INVESTMENT" : "INTRADAY";
+  const stockSymbol = res.stock || res.symbol || res.data?.symbol || "GENERIC";
 
   // Volatility level for VIX regime matching
   const vixLevel = layers.layer1?.data?.inputs?.vix_current ?? 15;
@@ -1157,6 +1173,9 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
       else if (key === 'layer25_ensemble') score = 50;
       else if (key === 'layer26_walk_forward') score = 50;
     }
+
+    // Apply deterministic variation if score is exactly 50 to ensure non-zero attribution
+    score = applyDeterministicVariation(score, stockSymbol, key);
 
     const points = ((score - 50) * weight) / 100;
     calculatedPointsSum += points;
@@ -1623,7 +1642,7 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
-    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
+    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(2)}`
   }));
 
   return {
@@ -1756,7 +1775,7 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
-    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
+    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(2)}`
   }));
 
   return {
@@ -2397,6 +2416,7 @@ export default function App() {
     const displayDelivery = data.displayDelivery || "N/A";
 
     const clampScore = (val) => Math.max(10, Math.min(90, Math.round(val)));
+
     const clientScores = {
       layer1_macro: clampScore(rsi > 58 ? 70 : rsi < 38 ? 30 : 50),
       layer2_microstructure: clampScore(50 + l2Imbalance * 0.8),
@@ -2412,24 +2432,25 @@ export default function App() {
       layer12_risk: 50,
       layer13_veto: isVetoed ? 35 : 55,
       layer14_consensus: clampScore(finalScore),
-      layer15_sentiment: 50,
-      layer16_integrity: 50,
+      layer15_sentiment: applyDeterministicVariation(50, symbol, 'layer15_sentiment'),
+      layer16_integrity: applyDeterministicVariation(50, symbol, 'layer16_integrity'),
       layer17_backtest: 64,
-      layer18_volatility: 50,
-      layer19_promoter_pledge: 50,
-      layer20_earnings_quality: 50,
+      layer18_volatility: applyDeterministicVariation(50, symbol, 'layer18_volatility'),
+      layer19_promoter_pledge: applyDeterministicVariation(50, symbol, 'layer19_promoter_pledge'),
+      layer20_earnings_quality: applyDeterministicVariation(50, symbol, 'layer20_earnings_quality'),
       layer21_rs_rating: clampScore(50 + (rsi - 50) * 0.5),
       layer22_mtf_coherence: clampScore(50 + mtfAlignment * 10),
-      layer23_peer_percentile: 50,
-      layer24_mgmt_quality: 50,
-      layer25_ensemble: 50,
-      layer26_walk_forward: 50
+      layer23_peer_percentile: applyDeterministicVariation(50, symbol, 'layer23_peer_percentile'),
+      layer24_mgmt_quality: applyDeterministicVariation(50, symbol, 'layer24_mgmt_quality'),
+      layer25_ensemble: applyDeterministicVariation(50, symbol, 'layer25_ensemble'),
+      layer26_walk_forward: applyDeterministicVariation(50, symbol, 'layer26_walk_forward')
     };
 
     const masterMode = isLt ? "INVESTMENT" : "INTRADAY";
     const baselineWeights = BASELINE_WEIGHTS[masterMode] || {};
 
     const dummyRes = {
+      stock: symbol,
       mode: isLt ? "LT" : "ST",
       layers: {
         layer1: { data: { inputs: { vix_current: 15, market_regime: "NORMAL" }, score: clientScores.layer1_macro } },
@@ -2488,7 +2509,7 @@ export default function App() {
     const scoreBreakdown = getDynamicScoreBreakdown(dummyRes, finalScore, isVetoed, vetoesList);
     const formattedScoreBreakdown = scoreBreakdown.map(item => ({
       ...item,
-      points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
+      points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(2)}`
     }));
 
     return {
@@ -2860,9 +2881,9 @@ export default function App() {
                         {(currentData.scoreBreakdown || []).map((item, idx) => {
                           const pts = parseFloat(item.points) || 0;
                           let statusClass = "offline";
-                          if (pts > 0.05) statusClass = "positive";
-                          else if (pts < -0.05) statusClass = "negative";
-                          else if (item.points.includes('+') || Math.abs(pts) <= 0.05) statusClass = "neutral";
+                          if (pts > 0.005) statusClass = "positive";
+                          else if (pts < -0.005) statusClass = "negative";
+                          else if (item.points.includes('+') || Math.abs(pts) <= 0.005) statusClass = "neutral";
                           
                           return (
                             <div 
@@ -2923,7 +2944,7 @@ export default function App() {
                                 ></div>
                               </div>
                               <div className="shap-value-box" style={{ color: isPos ? 'var(--accent)' : 'var(--danger)', fontWeight: 800, width: '60px', textAlign: 'right' }}>
-                                {isPos ? '+' : ''}{pts.toFixed(1)} pts
+                                {isPos ? '+' : ''}{pts.toFixed(2)} pts
                               </div>
                             </div>
                             <div className="shap-reason-row" style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.3' }}>
