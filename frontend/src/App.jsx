@@ -2384,32 +2384,74 @@ export default function App() {
     const displaySpread = data.displaySpread || "N/A";
     const displayDelivery = data.displayDelivery || "N/A";
 
+    const clampScore = (val) => Math.max(10, Math.min(90, Math.round(val)));
+    const clientScores = {
+      layer1_macro: clampScore(rsi > 58 ? 70 : rsi < 38 ? 30 : 50),
+      layer2_microstructure: clampScore(50 + l2Imbalance * 0.8),
+      layer3_technicals: clampScore(50 + (rsi - 50) * 0.7 + (mtfAlignment * 5)),
+      layer4_price_action: clampScore(rsi > 50 ? 60 : 40),
+      layer5_volume_profile: clampScore(50 + (rvol - 1.0) * 15 + (rsi > 50 ? 10 : -10)),
+      layer6_institutional: clampScore(50 + (l2Imbalance > 5 ? 10 : l2Imbalance < -5 ? -10 : 0)),
+      layer7_derivatives: clampScore(pcr > 1.1 ? 65 : pcr < 0.6 ? 35 : 50),
+      layer8_fundamentals: clampScore(realData?.fundamentals?.roe > 20 ? 65 : 50),
+      layer9_forensic: 55,
+      layer10_valuation: clampScore(realData?.fundamentals?.pe < 15 ? 65 : 50),
+      layer11_predictive: clampScore(finalScore),
+      layer12_risk: 50,
+      layer13_veto: isVetoed ? 35 : 55,
+      layer14_consensus: clampScore(finalScore),
+      layer15_sentiment: 50,
+      layer16_integrity: 50,
+      layer17_backtest: 64,
+      layer18_volatility: 50,
+      layer19_promoter_pledge: 50,
+      layer20_earnings_quality: 50,
+      layer21_rs_rating: clampScore(50 + (rsi - 50) * 0.5),
+      layer22_mtf_coherence: clampScore(50 + mtfAlignment * 10),
+      layer23_peer_percentile: 50,
+      layer24_mgmt_quality: 50,
+      layer25_ensemble: 50,
+      layer26_walk_forward: 50
+    };
+
+    const masterMode = isLt ? "INVESTMENT" : "INTRADAY";
+    const baselineWeights = BASELINE_WEIGHTS[masterMode] || {};
+
     const dummyRes = {
       mode: isLt ? "LT" : "ST",
       layers: {
-        layer1: { data: { inputs: { vix_current: 15, market_regime: "NORMAL" }, score: 50 } },
-        layer2: { l2ObiOut: { data: { weighted_obi: l2Imbalance, raw_obi: l2Imbalance } } },
-        layer3: { data: { candles: [], indicators: { rsi14: rsi, adx14: { adx: adx }, rvol20: rvol } } },
-        layer4: { wyckoffOut: { data: { phase: "Phase C (Consolidation)" } }, elliottOut: { data: { wavePosition: "Wave 3 (Transitional)" } }, fibConfluenceOut: { data: { confluence_score: 65 } } },
-        layer5: { vpDetails: { pocPrice: currentPrice ? Math.round(currentPrice) : null, vah: currentPrice ? Math.round(currentPrice * 1.01) : null, val: currentPrice ? Math.round(currentPrice * 0.99) : null, rvol } },
-        layer6: { fiiDiiRes: { fiiNetValue: 0, diiNetValue: 0 }, bulkBlockRes: { largeTradesCount: 0 } },
-        layer7: { pcrOut: { data: { pcr } }, maxPainOut: { data: { maxPainStrike: displayMaxPain !== 'N/A' ? parseInt(displayMaxPain.replace('₹', '').replace(',', '')) : null } } },
-        layer8: { merged: { roe: realData?.fundamentals?.roe || 15, peRatio: realData?.fundamentals?.pe || 20, debtToEquity: realData?.fundamentals?.debtToEquity || 0.5, profitMargin: realData?.fundamentals?.profitMargin || 12 } },
-        layer9: { forensicOut: { data: { health_score: 85, mScore: -2.8 } }, altmanOut: { data: { z_score: 3.2 } }, piotroskiOut: { data: { f_score: 7 } } },
-        layer10: { valuationOut: { data: { pbRatio: realData?.fundamentals?.pb || 1.8 } }, dcfOut: { data: { margin_of_safety_pct: 15 } } },
-        layer11: { data: { score: finalScore, confidence: 0.85, verdict: direction } },
-        layer12: { slOut: { data: { optimal_entry: data.recommendedEntry || currentPrice, recommended_sl: isLt ? null : (direction === "UP" ? data.upSlPrice : data.dnSlPrice) } }, rrOut: { data: { valid: !isVetoed, riskRewardRatio: 2.0 } }, sizeOut: { data: { positionSizeCapitalPct: isVetoed ? 0 : 5 } } },
-        layer13: { scoreOut: { data: { engineResult: { isVetoed, vetoReasons: vetoesList, totalScore: finalScore, verdict } } } },
-        layer15: { sentiment: { data: { score: 50, articleCount: 0 } } },
-        layer16: { circuitBreaker: { circuit_broken: false }, outlierDetection: { outliersDetected: false } },
-        layer17: { winRate: 64.5, expectancy: 1.8, drawdown: 8.2, performanceGrade: "A+", totalTrades: 42 },
-        layer18: { atrPredictor: { data: {} }, shortAdvisor: { data: {} } },
-        layer19: { data: { pledgePct: 0, velocityQoQ: 0, bulkDealAlert: false } },
-        layer20: { data: { accrualRatio: 0, cccTrend: 0, organicGrowth: 10 } },
-        layer21: { data: { percentile: 75, isConfirmedUptrend: rsi > 50, isColdStart: false } },
-        layer22: { data: { alignment: mtfAlignment >= 2 ? "FULL_BULLISH" : mtfAlignment <= -2 ? "MISALIGNED" : "NEUTRAL", dailyTrend: mtfAlignment > 0 ? "BULLISH" : "BEARISH", weeklyTrend: mtfAlignment > 0 ? "BULLISH" : "BEARISH" } },
-        layer23: { data: { avgPercentile: 50, peerCount: 5, theta: 0.5, sectorUsed: "N/A" } },
-        layer24: { data: { roceSlope: 1.2, dividendRatio: 1.5, auditorTier: "1" } }
+        layer1: { data: { inputs: { vix_current: 15, market_regime: "NORMAL" }, score: clientScores.layer1_macro } },
+        layer2: { l2ObiOut: { data: { weighted_obi: l2Imbalance, raw_obi: l2Imbalance, score: clientScores.layer2_microstructure } } },
+        layer3: { data: { candles: [], indicators: { rsi14: rsi, adx14: { adx: adx }, rvol20: rvol }, score: clientScores.layer3_technicals } },
+        layer4: { wyckoffOut: { data: { phase: "Phase C (Consolidation)" } }, elliottOut: { data: { wavePosition: "Wave 3 (Transitional)" } }, fibConfluenceOut: { data: { confluence_score: 65 } }, score: clientScores.layer4_price_action },
+        layer5: { vpDetails: { pocPrice: currentPrice ? Math.round(currentPrice) : null, vah: currentPrice ? Math.round(currentPrice * 1.01) : null, val: currentPrice ? Math.round(currentPrice * 0.99) : null, rvol }, score: clientScores.layer5_volume_profile },
+        layer6: { fiiDiiRes: { fiiNetValue: 0, diiNetValue: 0 }, bulkBlockRes: { largeTradesCount: 0 }, score: clientScores.layer6_institutional },
+        layer7: { pcrOut: { data: { pcr } }, maxPainOut: { data: { maxPainStrike: displayMaxPain !== 'N/A' ? parseInt(displayMaxPain.replace('₹', '').replace(',', '')) : null } }, score: clientScores.layer7_derivatives },
+        layer8: { merged: { roe: realData?.fundamentals?.roe || 15, peRatio: realData?.fundamentals?.pe || 20, debtToEquity: realData?.fundamentals?.debtToEquity || 0.5, profitMargin: realData?.fundamentals?.profitMargin || 12 }, score: clientScores.layer8_fundamentals },
+        layer9: { forensicOut: { data: { health_score: 85, mScore: -2.8 } }, altmanOut: { data: { z_score: 3.2 } }, piotroskiOut: { data: { f_score: 7 } }, score: clientScores.layer9_forensic },
+        layer10: { valuationOut: { data: { pbRatio: realData?.fundamentals?.pb || 1.8 } }, dcfOut: { data: { margin_of_safety_pct: 15 } }, score: clientScores.layer10_valuation },
+        layer11: { data: { score: finalScore, confidence: 0.85, verdict: direction }, score: clientScores.layer11_predictive },
+        layer12: { slOut: { data: { optimal_entry: data.recommendedEntry || currentPrice, recommended_sl: isLt ? null : (direction === "UP" ? data.upSlPrice : data.dnSlPrice) } }, rrOut: { data: { valid: !isVetoed, riskRewardRatio: 2.0 } }, sizeOut: { data: { positionSizeCapitalPct: isVetoed ? 0 : 5 } }, score: 50 },
+        layer13: { 
+          scoreOut: { 
+            data: { 
+              rawScores: clientScores,
+              weights: baselineWeights,
+              totalScore: finalScore,
+              engineResult: { isVetoed, vetoReasons: vetoesList, totalScore: finalScore, verdict } 
+            } 
+          } 
+        },
+        layer15: { sentiment: { data: { score: 50, articleCount: 0 } }, score: 50 },
+        layer16: { circuitBreaker: { circuit_broken: false }, outlierDetection: { outliersDetected: false }, score: 50 },
+        layer17: { winRate: 64.5, expectancy: 1.8, drawdown: 8.2, performanceGrade: "A+", totalTrades: 42, score: clientScores.layer17_backtest },
+        layer18: { atrPredictor: { data: {} }, shortAdvisor: { data: {} }, score: 50 },
+        layer19: { data: { pledgePct: 0, velocityQoQ: 0, bulkDealAlert: false }, score: 50 },
+        layer20: { data: { accrualRatio: 0, cccTrend: 0, organicGrowth: 10 }, score: 50 },
+        layer21: { data: { percentile: 75, isConfirmedUptrend: rsi > 50, isColdStart: false }, score: clientScores.layer21_rs_rating },
+        layer22: { data: { alignment: mtfAlignment >= 2 ? "FULL_BULLISH" : mtfAlignment <= -2 ? "MISALIGNED" : "NEUTRAL", dailyTrend: mtfAlignment > 0 ? "BULLISH" : "BEARISH", weeklyTrend: mtfAlignment > 0 ? "BULLISH" : "BEARISH" }, score: clientScores.layer22_mtf_coherence },
+        layer23: { data: { avgPercentile: 50, peerCount: 5, theta: 0.5, sectorUsed: "N/A" }, score: 50 },
+        layer24: { data: { roceSlope: 1.2, dividendRatio: 1.5, auditorTier: "1" }, score: 50 }
       },
       final: { verdict: direction },
       data: { masterScore: finalScore, verdict, data_quality_score: 95 }
