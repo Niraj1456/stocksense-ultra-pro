@@ -16,10 +16,10 @@ Unlike the previous report which used a deterministic mock data generator and a 
 | Metric | Short-Term (ST) Intraday | Long-Term (LT) Horizon | Target Benchmark | Status |
 | :--- | :---: | :---: | :---: | :---: |
 | **Total Evaluated Stocks** | 100 | 100 | — | — |
-| **Vetoed / Filtered Stocks** | 83 | 84 | — | — |
-| **Active Trade Setups** | 17 | 16 | — | — |
-| **Target Hit Ratio (Wins)** | 76.47% | 68.75% | >= 90.00% | **FAILED** ❌ |
-| **Directional Accuracy** | 64.71% | 25.00% | >= 70.00% | **FAILED** ❌ |
+| **Vetoed / Filtered Stocks** | 88 | 100 | — | — |
+| **Active Trade Setups** | 12 | 0 | — | — |
+| **Target Hit Ratio (Wins)** | 58.33% | 0.00% | >= 90.00% | **FAILED** ❌ |
+| **Directional Accuracy** | 66.67% | 0.00% | >= 70.00% | **FAILED** ❌ |
 
 *Note: In real-world data, trades that do not hit target or SL within the intraday session are classified as **TIMEOUT** (exit at close), which represents standard trading execution.*
 
@@ -29,9 +29,9 @@ Unlike the previous report which used a deterministic mock data generator and a 
 
 To verify that higher system scores correlate mathematically with higher winning probability, active trades are grouped by their Master Intelligence score ranges:
 
-* **High Conviction (Score >= 75)**: **100.00% Win Rate** (5/5 setups)
-* **Moderate Conviction (45 <= Score < 75)**: **100.00% Win Rate** (4/4 setups)
-* **Low/Short Conviction (Score < 45)**: **50.00% Win Rate** (4/8 setups)
+* **High Conviction (Score >= 75)**: **0.00% Win Rate** (0/0 setups)
+* **Moderate Conviction (45 <= Score < 75)**: **58.33% Win Rate** (7/12 setups)
+* **Low/Short Conviction (Score < 45)**: **0.00% Win Rate** (0/0 setups)
 
 ---
 
@@ -41,106 +41,106 @@ This ledger presents the entry price, target level, stop-loss, and the **actual 
 
 | ID | Symbol | Entry Price | Score | Direction | Target Price | Stop-Loss | Actual Final/Limit Price | Vetoed | ST Result |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | `GSLSU` | ₹54.25 | 58.49 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 2 | `RSYSTEMS` | ₹268.90 | 46.35 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 3 | `UTTAMSUGAR` | ₹245.20 | 51.05 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 4 | `MOSCHIP` | ₹201.06 | 46.49 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 5 | `LXCHEM` | ₹151.81 | 55.22 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 6 | `KINGFA` | ₹5135.70 | 58.63 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 7 | `MOBIKWIK` | ₹193.27 | 43.66 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 8 | `LODHA` | ₹886.75 | 43.42 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 9 | `GANECOS` | ₹955.60 | 26.49 | **DOWN** | ₹939.17 | ₹1043.35 | **₹893.10** | NO | **WIN** |
-| 10 | `LINC` | ₹99.41 | 43.3 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 11 | `INDIGO` | ₹4438.60 | 58.18 | **UP** | ₹4459.65 | ₹4233.78 | **₹4538.00** | NO | **WIN** |
-| 12 | `INSPIRISYS` | ₹125.45 | 28.48 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 13 | `MAGNUM` | ₹19.96 | 46.32 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 14 | `HNDFDS` | ₹513.35 | 72.37 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 15 | `MITTAL` | ₹1.07 | 76.44 | **UP** | ₹1.09 | ₹0.98 | **₹1.21** | NO | **WIN** |
-| 16 | `AIIL` | ₹510.75 | 54.37 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 17 | `ETHOSLTD` | ₹2407.80 | 53.51 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 18 | `AWHCL` | ₹466.25 | 39.2 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 19 | `BVCL` | ₹41.92 | 45.59 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 20 | `INFOMEDIA` | ₹5.99 | 53.2 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 21 | `INDNIPPON` | ₹795.05 | 54.69 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 22 | `LAMBODHARA` | ₹101.65 | 43 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 23 | `MFML` | ₹24.98 | 56.97 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 24 | `LCCINFOTEC` | ₹4.51 | 53.62 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 25 | `MIDHANI` | ₹413.20 | 57.52 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 26 | `MAHSEAMLES` | ₹635.35 | 64.06 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 27 | `LICHSGFIN` | ₹539.20 | 42.86 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 28 | `MHLXMIRU` | ₹173.60 | 43.11 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 29 | `INTELLECT` | ₹697.95 | 42.3 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 30 | `MAHEPC` | ₹117.24 | 54.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 31 | `INOXWIND` | ₹94.31 | 29.82 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 32 | `LIKHITHA` | ₹203.21 | 31.99 | **DOWN** | ₹200.59 | ₹219.56 | **₹210.18** | NO | **TIMEOUT** |
-| 33 | `MANAKCOAT` | ₹100.71 | 29.14 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 34 | `BLACKBUCK` | ₹500.20 | 54.28 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 35 | `CARTRADE` | ₹1796.60 | 44.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 36 | `JAYAGROGN` | ₹231.72 | 34.28 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 37 | `HMAAGRO` | ₹24.37 | 45.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 38 | `ENERGYDEV` | ₹16.90 | 57.31 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 39 | `HONDAPOWER` | ₹2221.40 | 54.45 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 40 | `MOTHERSON` | ₹136.18 | 78.51 | **UP** | ₹137.54 | ₹129.21 | **₹138.75** | NO | **WIN** |
-| 41 | `KTKBANK` | ₹264.50 | 58.72 | **UP** | ₹266.03 | ₹249.82 | **₹267.00** | NO | **WIN** |
-| 42 | `NATHBIOGEN` | ₹172.83 | 54.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 43 | `GOCOLORS` | ₹303.40 | 89.05 | **UP** | ₹308.86 | ₹277.70 | **₹333.30** | NO | **WIN** |
-| 44 | `ARIHANTSUP` | ₹242.65 | 33.5 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 45 | `ELECTCAST` | ₹78.13 | 24.64 | **DOWN** | ₹77.16 | ₹84.30 | **₹82.37** | NO | **TIMEOUT** |
-| 46 | `NITINSPIN` | ₹499.50 | 59.69 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 47 | `AKSHAR` | ₹0.49 | 57 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 48 | `LTTS` | ₹3419.30 | 44.35 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 49 | `ICEMAKE` | ₹793.55 | 58.52 | **UP** | ₹797.91 | ₹757.22 | **₹825.00** | NO | **WIN** |
-| 50 | `BLUSPRING` | ₹67.30 | 60.83 | **UP** | ₹67.93 | ₹61.56 | **₹70.00** | NO | **WIN** |
-| 51 | `NARMADA` | ₹37.61 | 25.07 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 52 | `GREAVESCOT` | ₹169.45 | 57.35 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 53 | `APOLSINHOT` | ₹1130.90 | 39.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 54 | `MUNJALSHOW` | ₹137.49 | 56.09 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 55 | `CCL` | ₹1064.90 | 34.85 | **DOWN** | ₹1055.10 | ₹1126.90 | **₹1053.10** | NO | **WIN** |
-| 56 | `HITECHCORP` | ₹167.87 | 28.1 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 57 | `LANCORHOL` | ₹24.47 | 52.81 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 58 | `PRITI` | ₹44.86 | 42.34 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 59 | `NECLIFE` | ₹12.06 | 38.67 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 60 | `KRITI` | ₹71.07 | 51.64 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 61 | `PVRINOX` | ₹979.80 | 42.75 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 62 | `GODREJPROP` | ₹1732.90 | 44.43 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 63 | `GILLETTE` | ₹7783.50 | 41.09 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 64 | `PCBL` | ₹293.20 | 53.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 65 | `STALLION` | ₹166.80 | 47.37 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 66 | `STLTECH` | ₹441.15 | 34.25 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 67 | `SHAHALLOYS` | ₹72.78 | 61.87 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 68 | `PALASHSECU` | ₹96.03 | 56.76 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 69 | `LAKPRE` | ₹6.19 | 42.33 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 70 | `BOHRAIND` | ₹19.20 | 60.08 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 71 | `PROZONER` | ₹51.56 | 31.96 | **DOWN** | ₹50.68 | ₹57.06 | **₹50.04** | NO | **WIN** |
-| 72 | `INNOVANA` | ₹357.55 | 53.57 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 73 | `HCG` | ₹654.30 | 81.62 | **UP** | ₹661.88 | ₹617.40 | **₹663.75** | NO | **WIN** |
-| 74 | `ALANKIT` | ₹8.63 | 41.59 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 75 | `LAXMIDENTL` | ₹249.28 | 25.36 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 76 | `GOLDENTOBC` | ₹26.88 | 53.55 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 77 | `MOIL` | ₹303.45 | 44.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 78 | `SKFINDIA` | ₹1694.70 | 42.38 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 79 | `ARKADE` | ₹113.16 | 52.41 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 80 | `ACEINTEG` | ₹20.09 | 57.43 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 81 | `PRINCEPIPE` | ₹273.45 | 53.41 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 82 | `INTERARCH` | ₹1750.30 | 33.72 | **DOWN** | ₹1730.07 | ₹1904.55 | **₹1813.00** | NO | **TIMEOUT** |
-| 83 | `STEL` | ₹443.80 | 43.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 84 | `HSCL` | ₹587.15 | 59.11 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 85 | `SUNDARAM` | ₹1.40 | 34.16 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 86 | `GTECJAINX` | ₹18.30 | 53.59 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 87 | `EIMCOELECO` | ₹1605.60 | 44.05 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 88 | `HDIL` | ₹1.99 | 33.77 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 89 | `SONAMLTD` | ₹58.39 | 26.95 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 90 | `PGHL` | ₹5553.00 | 82.17 | **UP** | ₹5594.64 | ₹5352.08 | **₹5741.00** | NO | **WIN** |
-| 91 | `NAVINFLUOR` | ₹7125.00 | 66.44 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 92 | `NDRAUTO` | ₹806.45 | 57.17 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 93 | `MANGALAM` | ₹29.41 | 34.45 | **DOWN** | ₹29.14 | ₹31.12 | **₹29.01** | NO | **WIN** |
-| 94 | `NITCO` | ₹96.27 | 57.11 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 95 | `SHREECEM` | ₹24785.00 | 42.59 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 96 | `FISCHER` | ₹36.48 | 44.73 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 97 | `LAOPALA` | ₹170.38 | 33.72 | **DOWN** | ₹169.36 | ₹178.19 | **₹174.64** | NO | **TIMEOUT** |
-| 98 | `A2ZINFRA` | ₹15.53 | 29.25 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 99 | `AGARWALEYE` | ₹479.35 | 31.1 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 100 | `SAKSOFT` | ₹139.02 | 43.31 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 1 | `UCOBANK` | ₹25.54 | 50.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 2 | `RICOAUTO` | ₹119.76 | 53.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 3 | `ROSSELLIND` | ₹55.54 | 53.83 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 4 | `HIRECT` | ₹972.75 | 54.34 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 5 | `RGL` | ₹103.87 | 50.16 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 6 | `DMCC` | ₹278.85 | 49.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 7 | `AHLEAST` | ₹165.64 | 52.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 8 | `REDINGTON` | ₹224.14 | 50.28 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 9 | `IIFLCAPS` | ₹345.55 | 50.63 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 10 | `RBA` | ₹68.06 | 53.95 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 11 | `IGIL` | ₹373.90 | 53.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 12 | `LOTUSEYE` | ₹109.05 | 50.04 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 13 | `ADANIENT` | ₹2849.70 | 57.1 | **UP** | ₹2894.82 | ₹2717.93 | **₹2903.80** | NO | **WIN** |
+| 14 | `KTKBANK` | ₹264.25 | 55.85 | **UP** | ₹267.97 | ₹250.10 | **₹272.95** | NO | **WIN** |
+| 15 | `EQUIPPP` | ₹15.22 | 49.81 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 16 | `RAINBOW` | ₹1350.00 | 50.71 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 17 | `LUMAXTECH` | ₹1591.00 | 49.45 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 18 | `NAVINFLUOR` | ₹7445.50 | 58.06 | **UP** | ₹7551.69 | ₹7144.36 | **₹7448.50** | NO | **TIMEOUT** |
+| 19 | `KAVDEFENCE` | ₹65.90 | 50.41 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 20 | `RELTD` | ₹127.63 | 49.83 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 21 | `OMAXE` | ₹76.84 | 52.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 22 | `AMBER` | ₹7461.50 | 52.68 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 23 | `EUREKAFORB` | ₹465.85 | 45.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 24 | `AYMSYNTEX` | ₹214.88 | 49.74 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 25 | `NH` | ₹1940.00 | 54.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 26 | `PALREDTEC` | ₹44.40 | 54.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 27 | `PANACEABIO` | ₹419.05 | 54.92 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 28 | `NGLFINE` | ₹2858.90 | 56.12 | **UP** | ₹2958.96 | ₹2553.49 | **₹2816.50** | NO | **TIMEOUT** |
+| 29 | `GSLSU` | ₹54.04 | 45.75 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 30 | `ORIENTBELL` | ₹356.65 | 56.17 | **UP** | ₹364.73 | ₹326.28 | **₹349.15** | NO | **TIMEOUT** |
+| 31 | `KAMATHOTEL` | ₹165.38 | 50.05 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 32 | `LFIC` | ₹137.15 | 52.91 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 33 | `AMBICAAGAR` | ₹23.64 | 47.74 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 34 | `LAMBODHARA` | ₹103.15 | 50.12 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 35 | `OSIAHYPER` | ₹3.86 | 44.57 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 36 | `LLOYDSENT` | ₹71.32 | 54.63 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 37 | `AETHER` | ₹1074.50 | 49.28 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 38 | `PARASPETRO` | ₹2.10 | 46.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 39 | `ANANTRAJ` | ₹507.50 | 53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 40 | `GILLETTE` | ₹7807.50 | 50.08 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 41 | `PATINTLOG` | ₹12.32 | 55.27 | **UP** | ₹12.53 | ₹11.51 | **₹14.40** | NO | **WIN** |
+| 42 | `REPCOHOME` | ₹396.20 | 52.57 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 43 | `LAXMIDENTL` | ₹246.86 | 56.52 | **UP** | ₹253.45 | ₹227.26 | **₹239.66** | NO | **TIMEOUT** |
+| 44 | `POLYPLEX` | ₹913.55 | 50.95 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 45 | `NILAINFRA` | ₹8.15 | 53.08 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 46 | `ACE` | ₹885.45 | 53.09 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 47 | `PGHH` | ₹9659.00 | 45.93 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 48 | `RAYMONDLSL` | ₹729.35 | 47.06 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 49 | `ALLDIGI` | ₹828.05 | 52.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 50 | `SHANKARA` | ₹126.00 | 54.5 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 51 | `AMJLAND` | ₹38.01 | 49.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 52 | `LAURUSLABS` | ₹1356.30 | 55.46 | **UP** | ₹1368.75 | ₹1308.42 | **₹1369.20** | NO | **WIN** |
+| 53 | `AAKASH` | ₹8.94 | 54.89 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 54 | `EPACK` | ₹234.15 | 46.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 55 | `JUBLPHARMA` | ₹1007.25 | 49.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 56 | `ADANIGREEN` | ₹1411.10 | 56.07 | **UP** | ₹1437.94 | ₹1330.12 | **₹1446.20** | NO | **WIN** |
+| 57 | `KAUSHALYA` | ₹884.90 | 52.86 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 58 | `SCPL` | ₹419.70 | 50.14 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 59 | `NOVAAGRI` | ₹28.66 | 50.23 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 60 | `NAHARSPING` | ₹263.00 | 54.26 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 61 | `NILASPACES` | ₹12.94 | 46.79 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 62 | `NPST` | ₹1031.20 | 49.42 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 63 | `PTCIL` | ₹16279.00 | 50.17 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 64 | `LANDMARK` | ₹384.05 | 50.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 65 | `MODIRUBBER` | ₹133.15 | 53.54 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 66 | `SAMMAANCAP` | ₹168.56 | 54.64 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 67 | `HECPROJECT` | ₹130.57 | 53.66 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 68 | `RUPA` | ₹148.86 | 53.64 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 69 | `KALYANKJIL` | ₹357.85 | 49.47 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 70 | `NOCIL` | ₹165.74 | 52.75 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 71 | `GENESYS` | ₹253.65 | 50.37 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 72 | `ANDHRAPAP` | ₹62.92 | 45.89 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 73 | `LLOYDSENGG` | ₹74.63 | 58.55 | **UP** | ₹76.41 | ₹69.65 | **₹77.84** | NO | **WIN** |
+| 74 | `SPIC` | ₹71.81 | 53.33 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 75 | `ALLCARGO` | ₹8.87 | 49.94 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 76 | `HEXATRADEX` | ₹164.01 | 49.7 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 77 | `SONACOMS` | ₹594.65 | 53.49 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 78 | `SANCO` | ₹3.80 | 57.05 | **UP** | ₹3.93 | ₹3.39 | **₹3.61** | NO | **TIMEOUT** |
+| 79 | `SAMBHV` | ₹107.42 | 51.16 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 80 | `PKTEA` | ₹834.90 | 53.42 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 81 | `ELDEHSG` | ₹805.70 | 49.96 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 82 | `PREMIERENE` | ₹985.00 | 49.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 83 | `DENTA` | ₹285.50 | 53.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 84 | `ORIENTCEM` | ₹138.67 | 50.13 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 85 | `KPIGREEN` | ₹436.35 | 52.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 86 | `SMARTWORKS` | ₹456.80 | 54.33 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 87 | `GNFC` | ₹515.05 | 49.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 88 | `ORTEL` | ₹1.59 | 46.58 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 89 | `ASHAPURMIN` | ₹677.10 | 54.86 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 90 | `RPTECH` | ₹547.40 | 54.29 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 91 | `PRAENG` | ₹20.90 | 49.91 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 92 | `SAKAR` | ₹801.00 | 56.07 | **UP** | ₹822.45 | ₹720.09 | **₹835.00** | NO | **WIN** |
+| 93 | `SPECIALITY` | ₹113.35 | 54.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 94 | `STARCEMENT` | ₹218.10 | 52.55 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 95 | `DEN` | ₹27.53 | 51.08 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 96 | `RAYMONDREL` | ₹613.15 | 53.61 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 97 | `ACC` | ₹1382.30 | 50.66 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 98 | `LEXUS` | ₹18.91 | 49.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 99 | `KAJARIACER` | ₹1070.00 | 52.93 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 100 | `PSPPROJECT` | ₹772.45 | 53.33 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
 
 ---
 
@@ -150,106 +150,106 @@ This ledger presents the entry price, target level, stop-loss, and the **actual 
 
 | ID | Symbol | Entry Price | Score | Direction | Target Price | Stop-Loss | Actual Final/Limit Price | Vetoed | LT Result |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | `GSLSU` | ₹55.81 | 47.97 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 2 | `RSYSTEMS` | ₹277.00 | 40.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 3 | `UTTAMSUGAR` | ₹233.25 | 31.3 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 4 | `MOSCHIP` | ₹202.68 | 42.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 5 | `LXCHEM` | ₹151.09 | 56.81 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 6 | `KINGFA` | ₹5303.60 | 57.54 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 7 | `MOBIKWIK` | ₹189.02 | 34.93 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 8 | `LODHA` | ₹857.75 | 37.62 | **DOWN** | ₹850.81 | ₹923.23 | **₹845.70** | NO | **WIN** |
-| 9 | `GANECOS` | ₹1029.40 | 53.1 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 10 | `LINC` | ₹94.61 | 54.23 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 11 | `INDIGO` | ₹4275.70 | 43.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 12 | `INSPIRISYS` | ₹114.09 | 12.82 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 13 | `MAGNUM` | ₹20.10 | 44.08 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 14 | `HNDFDS` | ₹514.85 | 55.97 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 15 | `MITTAL` | ₹0.88 | 55.65 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 16 | `AIIL` | ₹497.50 | 58.21 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 17 | `ETHOSLTD` | ₹2275.90 | 54.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 18 | `AWHCL` | ₹463.85 | 32.44 | **DOWN** | ₹459.45 | ₹500.87 | **₹459.05** | NO | **WIN** |
-| 19 | `BVCL` | ₹42.77 | 47.19 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 20 | `INFOMEDIA` | ₹5.69 | 56.99 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 21 | `INDNIPPON` | ₹779.40 | 58.86 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 22 | `LAMBODHARA` | ₹101.87 | 38.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 23 | `MFML` | ₹24.51 | 32.82 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 24 | `LCCINFOTEC` | ₹4.57 | 53.48 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 25 | `MIDHANI` | ₹397.80 | 59.11 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 26 | `MAHSEAMLES` | ₹636.60 | 65.83 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 27 | `LICHSGFIN` | ₹545.55 | 42.69 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 28 | `MHLXMIRU` | ₹176.57 | 45.58 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 29 | `INTELLECT` | ₹691.15 | 55.02 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 30 | `MAHEPC` | ₹114.59 | 49.81 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 31 | `INOXWIND` | ₹94.75 | 32.71 | **DOWN** | ₹93.79 | ₹102.86 | **₹97.04** | NO | **TIMEOUT** |
-| 32 | `LIKHITHA` | ₹195.84 | 32.36 | **DOWN** | ₹193.06 | ₹219.18 | **₹192.00** | NO | **WIN** |
-| 33 | `MANAKCOAT` | ₹99.36 | 61.13 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 34 | `BLACKBUCK` | ₹527.10 | 52.35 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 35 | `CARTRADE` | ₹1784.10 | 42.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 36 | `JAYAGROGN` | ₹210.91 | 72.08 | **UP** | ₹213.46 | ₹191.35 | **₹234.15** | NO | **WIN** |
-| 37 | `HMAAGRO` | ₹23.32 | 47.03 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 38 | `ENERGYDEV` | ₹16.80 | 57.03 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 39 | `HONDAPOWER` | ₹2137.40 | 38.45 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 40 | `MOTHERSON` | ₹128.75 | 63.29 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 41 | `KTKBANK` | ₹242.85 | 38.7 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 42 | `NATHBIOGEN` | ₹158.30 | 32.57 | **DOWN** | ₹156.56 | ₹175.60 | **₹178.79** | NO | **LOSS** |
-| 43 | `GOCOLORS` | ₹259.50 | 53.32 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 44 | `ARIHANTSUP` | ₹258.50 | 22.78 | **DOWN** | ₹252.57 | ₹297.97 | **₹235.00** | NO | **WIN** |
-| 45 | `ELECTCAST` | ₹77.96 | 32.31 | **DOWN** | ₹76.95 | ₹86.42 | **₹73.51** | NO | **WIN** |
-| 46 | `NITINSPIN` | ₹494.95 | 64.18 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 47 | `AKSHAR` | ₹0.49 | 65.01 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 48 | `LTTS` | ₹3549.50 | 56.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 49 | `ICEMAKE` | ₹750.85 | 44.16 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 50 | `BLUSPRING` | ₹69.38 | 50.66 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 51 | `NARMADA` | ₹34.92 | 31.83 | **DOWN** | ₹34.56 | ₹37.91 | **₹38.70** | NO | **LOSS** |
-| 52 | `GREAVESCOT` | ₹160.48 | 42.61 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 53 | `APOLSINHOT` | ₹1093.80 | 42.81 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 54 | `MUNJALSHOW` | ₹132.52 | 56.19 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 55 | `CCL` | ₹1090.40 | 45.64 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 56 | `HITECHCORP` | ₹135.66 | 44.35 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 57 | `LANCORHOL` | ₹24.13 | 56.09 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 58 | `PRITI` | ₹44.78 | 42.62 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 59 | `NECLIFE` | ₹12.38 | 41.62 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 60 | `KRITI` | ₹69.70 | 53.63 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 61 | `PVRINOX` | ₹1007.90 | 42.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 62 | `GODREJPROP` | ₹1686.30 | 44.11 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 63 | `GILLETTE` | ₹7732.00 | 47.06 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 64 | `PCBL` | ₹267.50 | 44.61 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 65 | `STALLION` | ₹143.08 | 24.72 | **DOWN** | ₹140.45 | ₹162.13 | **₹180.00** | NO | **LOSS** |
-| 66 | `STLTECH` | ₹421.90 | 31.21 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 67 | `SHAHALLOYS` | ₹68.73 | 78.06 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 68 | `PALASHSECU` | ₹96.90 | 55.02 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 69 | `LAKPRE` | ₹6.34 | 46.83 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 70 | `BOHRAIND` | ₹19.21 | 58.93 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 71 | `PROZONER` | ₹50.41 | 32.9 | **DOWN** | ₹49.63 | ₹58.23 | **₹49.21** | NO | **WIN** |
-| 72 | `INNOVANA` | ₹370.95 | 44.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 73 | `HCG` | ₹632.25 | 72.24 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 74 | `ALANKIT` | ₹8.65 | 44.1 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 75 | `LAXMIDENTL` | ₹197.67 | 42.57 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 76 | `GOLDENTOBC` | ₹26.46 | 44.54 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 77 | `MOIL` | ₹300.90 | 44.4 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 78 | `SKFINDIA` | ₹1661.30 | 40.55 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 79 | `ARKADE` | ₹113.56 | 32.53 | **DOWN** | ₹112.70 | ₹122.07 | **₹111.50** | NO | **WIN** |
-| 80 | `ACEINTEG` | ₹19.09 | 42.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 81 | `PRINCEPIPE` | ₹252.85 | 62.33 | **UP** | ₹255.27 | ₹229.95 | **₹295.95** | NO | **WIN** |
-| 82 | `INTERARCH` | ₹1632.00 | 11.61 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 83 | `STEL` | ₹444.20 | 53.53 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 84 | `HSCL` | ₹551.50 | 33.33 | **DOWN** | ₹545.27 | ₹614.28 | **₹539.60** | NO | **WIN** |
-| 85 | `SUNDARAM` | ₹1.38 | 28.84 | **DOWN** | ₹1.36 | ₹1.57 | **₹1.39** | NO | **TIMEOUT** |
-| 86 | `GTECJAINX` | ₹19.00 | 33.42 | **DOWN** | ₹18.71 | ₹22.06 | **₹17.72** | NO | **WIN** |
-| 87 | `EIMCOELECO` | ₹1552.70 | 45.59 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 88 | `HDIL` | ₹1.98 | 44.18 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 89 | `SONAMLTD` | ₹50.21 | 51.64 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 90 | `PGHL` | ₹5255.00 | 58.24 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 91 | `NAVINFLUOR` | ₹6904.50 | 61.21 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 92 | `NDRAUTO` | ₹820.40 | 39.3 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 93 | `MANGALAM` | ₹30.37 | 64.52 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 94 | `NITCO` | ₹98.72 | 60.01 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 95 | `SHREECEM` | ₹24475.00 | 45.5 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 96 | `FISCHER` | ₹34.77 | 57.44 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 97 | `LAOPALA` | ₹168.48 | 58.9 | **NEUTRAL** | — | — | **—** | YES | **N/A** |
-| 98 | `A2ZINFRA` | ₹14.50 | 53.92 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 99 | `AGARWALEYE` | ₹442.00 | 46.31 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
-| 100 | `SAKSOFT` | ₹133.26 | 56.48 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 1 | `UCOBANK` | ₹24.77 | 48.99 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 2 | `RICOAUTO` | ₹113.78 | 49.36 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 3 | `ROSSELLIND` | ₹55.31 | 49.9 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 4 | `HIRECT` | ₹992.95 | 51.22 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 5 | `RGL` | ₹101.88 | 49.24 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 6 | `DMCC` | ₹295.65 | 49.89 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 7 | `AHLEAST` | ₹160.10 | 50.6 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 8 | `REDINGTON` | ₹221.24 | 50.12 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 9 | `IIFLCAPS` | ₹343.15 | 49.8 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 10 | `RBA` | ₹68.28 | 51.51 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 11 | `IGIL` | ₹332.70 | 50.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 12 | `LOTUSEYE` | ₹108.61 | 49.03 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 13 | `ADANIENT` | ₹2725.00 | 51.61 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 14 | `KTKBANK` | ₹247.75 | 50.84 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 15 | `EQUIPPP` | ₹14.32 | 48.76 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 16 | `RAINBOW` | ₹1350.70 | 51.29 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 17 | `LUMAXTECH` | ₹1626.10 | 49.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 18 | `NAVINFLUOR` | ₹7075.50 | 51.39 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 19 | `KAVDEFENCE` | ₹63.49 | 50.14 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 20 | `RELTD` | ₹125.54 | 48.9 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 21 | `OMAXE` | ₹74.81 | 49.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 22 | `AMBER` | ₹7128.50 | 49.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 23 | `EUREKAFORB` | ₹491.25 | 49.8 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 24 | `AYMSYNTEX` | ₹227.83 | 49.89 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 25 | `NH` | ₹1884.10 | 50.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 26 | `PALREDTEC` | ₹39.37 | 50.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 27 | `PANACEABIO` | ₹416.40 | 51.16 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 28 | `NGLFINE` | ₹2276.70 | 50.86 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 29 | `GSLSU` | ₹55.38 | 48.69 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 30 | `ORIENTBELL` | ₹350.00 | 51.17 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 31 | `KAMATHOTEL` | ₹163.69 | 49 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 32 | `LFIC` | ₹138.28 | 49.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 33 | `AMBICAAGAR` | ₹23.82 | 49.41 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 34 | `LAMBODHARA` | ₹101.39 | 49.79 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 35 | `OSIAHYPER` | ₹4.29 | 48.72 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 36 | `LLOYDSENT` | ₹68.51 | 49.92 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 37 | `AETHER` | ₹1095.90 | 49.74 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 38 | `PARASPETRO` | ₹2.04 | 49.06 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 39 | `ANANTRAJ` | ₹482.45 | 49.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 40 | `GILLETTE` | ₹7662.50 | 49.13 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 41 | `PATINTLOG` | ₹11.86 | 49.92 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 42 | `REPCOHOME` | ₹395.80 | 50.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 43 | `LAXMIDENTL` | ₹204.24 | 50.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 44 | `POLYPLEX` | ₹886.20 | 49.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 45 | `NILAINFRA` | ₹7.88 | 49.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 46 | `ACE` | ₹881.95 | 50.83 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 47 | `PGHH` | ₹9706.00 | 50.06 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 48 | `RAYMONDLSL` | ₹743.65 | 49.24 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 49 | `ALLDIGI` | ₹825.40 | 50.73 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 50 | `SHANKARA` | ₹125.98 | 50.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 51 | `AMJLAND` | ₹38.44 | 48.98 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 52 | `LAURUSLABS` | ₹1344.90 | 51.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 53 | `AAKASH` | ₹8.91 | 51.16 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 54 | `EPACK` | ₹240.85 | 49.79 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 55 | `JUBLPHARMA` | ₹1010.95 | 51.33 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 56 | `ADANIGREEN` | ₹1377.80 | 51.44 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 57 | `KAUSHALYA` | ₹876.05 | 49.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 58 | `SCPL` | ₹442.80 | 51.48 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 59 | `NOVAAGRI` | ₹28.80 | 50.15 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 60 | `NAHARSPING` | ₹257.89 | 49.91 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 61 | `NILASPACES` | ₹13.15 | 49.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 62 | `NPST` | ₹1043.00 | 48.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 63 | `PTCIL` | ₹16221.00 | 49.03 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 64 | `LANDMARK` | ₹366.50 | 48.97 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 65 | `MODIRUBBER` | ₹132.16 | 49.84 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 66 | `SAMMAANCAP` | ₹138.25 | 49.25 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 67 | `HECPROJECT` | ₹125.50 | 50.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 68 | `RUPA` | ₹146.26 | 50.91 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 69 | `KALYANKJIL` | ₹344.15 | 48.73 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 70 | `NOCIL` | ₹171.62 | 50.9 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 71 | `GENESYS` | ₹209.50 | 48.84 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 72 | `ANDHRAPAP` | ₹63.26 | 49.75 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 73 | `LLOYDSENGG` | ₹68.44 | 51.51 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 74 | `SPIC` | ₹70.99 | 50.8 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 75 | `ALLCARGO` | ₹8.66 | 48.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 76 | `HEXATRADEX` | ₹166.87 | 50.76 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 77 | `SONACOMS` | ₹579.75 | 49.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 78 | `SANCO` | ₹3.75 | 51.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 79 | `SAMBHV` | ₹109.97 | 49.78 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 80 | `PKTEA` | ₹825.00 | 49.83 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 81 | `ELDEHSG` | ₹818.85 | 50.13 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 82 | `PREMIERENE` | ₹983.10 | 50.92 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 83 | `DENTA` | ₹262.95 | 49.75 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 84 | `ORIENTCEM` | ₹135.53 | 50.07 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 85 | `KPIGREEN` | ₹438.00 | 50.87 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 86 | `SMARTWORKS` | ₹429.50 | 50.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 87 | `GNFC` | ₹545.95 | 51.39 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 88 | `ORTEL` | ₹1.68 | 49.85 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 89 | `ASHAPURMIN` | ₹638.20 | 49.9 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 90 | `RPTECH` | ₹543.25 | 51.51 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 91 | `PRAENG` | ₹21.53 | 49.82 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 92 | `SAKAR` | ₹766.80 | 51.54 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 93 | `SPECIALITY` | ₹102.01 | 50.63 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 94 | `STARCEMENT` | ₹210.72 | 49.7 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 95 | `DEN` | ₹26.84 | 50.13 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 96 | `RAYMONDREL` | ₹579.60 | 51.22 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 97 | `ACC` | ₹1359.30 | 50.07 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 98 | `LEXUS` | ₹18.75 | 48.86 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 99 | `KAJARIACER` | ₹1054.40 | 49.77 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
+| 100 | `PSPPROJECT` | ₹773.00 | 49.88 | **NEUTRAL** | — | — | **—** | NO | **N/A** |
 
 ---
 
@@ -260,8 +260,8 @@ This ledger presents the entry price, target level, stop-loss, and the **actual 
 * Realized target hit ratio reflects true historical execution margins rather than biased random walks.
 
 ### System Settings Used
-* Short-Term SL Multiplier: **1.5 * ATR**, Target Multiplier: **2.5 * ATR** (RR: **1.67**)
-* Long-Term SL Multiplier: **2.0 * ATR**, Target Multiplier: **6.0 * ATR** (RR: **3.00**)
+* Short-Term SL Multiplier: **1.5 × ATR**, Target: **0.40–1.20 × ATR** (dynamic, conviction-scaled)
+* Long-Term SL Multiplier: **2.0 × ATR**, Target: **0.40–1.20 × ATR** (dynamic, conviction-scaled)
 
 **Audit Conducted by:** Antigravity AI Engine
-**Verification Date:** 2026-05-25
+**Verification Date:** 2026-05-26

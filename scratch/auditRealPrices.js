@@ -90,8 +90,8 @@ function calculateIndicatorsForSlice(candlesSlice, entryPrice) {
     ema200: emaRes.ok ? emaRes.data.ema200 : null,
     adx: adxRes.ok ? adxRes.data.adx : 25,
     prevDayChangePct: len >= 2 ? ((close_prices[len - 1] - close_prices[len - 2]) / close_prices[len - 2]) * 100 : 0,
-    marketRegime: "BULL",
-    sectorRegime: "BULL"
+    marketRegime: "NEUTRAL",
+    sectorRegime: "NEUTRAL"
   };
 }
 
@@ -406,8 +406,8 @@ This ledger presents the entry price, target level, stop-loss, and the **actual 
 * Realized target hit ratio reflects true historical execution margins rather than biased random walks.
 
 ### System Settings Used
-* Short-Term SL Multiplier: **1.5 * ATR**, Target Multiplier: **2.5 * ATR** (RR: **1.67**)
-* Long-Term SL Multiplier: **2.0 * ATR**, Target Multiplier: **6.0 * ATR** (RR: **3.00**)
+* Short-Term SL Multiplier: **1.5 × ATR**, Target: **0.40–1.20 × ATR** (dynamic, conviction-scaled)
+* Long-Term SL Multiplier: **2.0 × ATR**, Target: **0.40–1.20 × ATR** (dynamic, conviction-scaled)
 
 **Audit Conducted by:** Antigravity AI Engine
 **Verification Date:** ${new Date().toISOString().split('T')[0]}

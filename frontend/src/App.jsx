@@ -1012,6 +1012,329 @@ const getMathReasoning = (layerName, reason) => {
   return reason || "Computes normalized quantitative contribution to determine predictive model attribution.";
 };
 
+const BASELINE_WEIGHTS = {
+  INTRADAY: {
+    layer1_macro: 4,
+    layer2_microstructure: 15,
+    layer3_technicals: 15,
+    layer4_price_action: 8,
+    layer5_volume_profile: 12,
+    layer6_institutional: 3,
+    layer7_derivatives: 6,
+    layer8_fundamentals: 2,
+    layer9_forensic: 2,
+    layer10_valuation: 2,
+    layer11_predictive: 4,
+    layer15_sentiment: 3,
+    layer19_promoter_pledge: 2,
+    layer20_earnings_quality: 2,
+    layer21_rs_rating: 7,
+    layer22_mtf_coherence: 9,
+    layer23_peer_percentile: 2,
+    layer24_mgmt_quality: 2
+  },
+  INVESTMENT: {
+    layer1_macro: 8,
+    layer2_microstructure: 2,
+    layer3_technicals: 3,
+    layer4_price_action: 2,
+    layer5_volume_profile: 4,
+    layer6_institutional: 12,
+    layer7_derivatives: 2,
+    layer8_fundamentals: 8,
+    layer9_forensic: 6,
+    layer10_valuation: 9,
+    layer11_predictive: 2,
+    layer15_sentiment: 3,
+    layer19_promoter_pledge: 5,
+    layer20_earnings_quality: 8,
+    layer21_rs_rating: 5,
+    layer22_mtf_coherence: 3,
+    layer23_peer_percentile: 10,
+    layer24_mgmt_quality: 8
+  }
+};
+
+const LAYER_META = {
+  layer1_macro: { name: "L1: Macro Regime", source: "NSE/VIX" },
+  layer2_microstructure: { name: "L2: Order Book Imbalance", source: "NSE LIVE" },
+  layer3_technicals: { name: "L3: Momentum Technicals", source: "YAHOO LIVE" },
+  layer4_price_action: { name: "L4: Wyckoff & Elliott Waves", source: "ALGORITHMIC" },
+  layer5_volume_profile: { name: "L5: Volume Profile (POC)", source: "NSE LIVE" },
+  layer6_institutional: { name: "L6: Institutional FII/DII", source: "NSE LIVE" },
+  layer7_derivatives: { name: "L7: Put-Call Ratio (OI)", source: "NSE LIVE" },
+  layer8_fundamentals: { name: "L8: Fundamental Quality", source: "YAHOO LIVE" },
+  layer9_forensic: { name: "L9: Forensic & Governance", source: "AUDITED" },
+  layer10_valuation: { name: "L10: DCF Margin of Safety", source: "MODEL" },
+  layer11_predictive: { name: "L11: ML Predictive Signals", source: "PROBABILITY" },
+  layer15_sentiment: { name: "L15: FinBERT News Sentiment", source: "NLP NEWS" },
+  layer19_promoter_pledge: { name: "L19: Promoter Pledge Tracker", source: "GOVERNANCE" },
+  layer20_earnings_quality: { name: "L20: Sloan Accruals & CCC", source: "ACCOUNTING" },
+  layer21_rs_rating: { name: "L21: Relative Strength (IBD)", source: "CALCULATED" },
+  layer22_mtf_coherence: { name: "L22: Multi-TF Trend Alignment", source: "MULTIPLE TF" },
+  layer23_peer_percentile: { name: "L23: Peer Percentile Ranking", source: "INDUSTRY" },
+  layer24_mgmt_quality: { name: "L24: Capital Allocation Quality", source: "GOVERNANCE" }
+};
+
+const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
+  const layers = res.layers || {};
+  const scoreOut = layers.layer13?.scoreOut || {};
+  const rawScores = scoreOut.data?.rawScores || {};
+  const activeWeights = scoreOut.data?.weights || {};
+  const mode = res.mode || "ST";
+  const masterMode = mode === "LT" ? "INVESTMENT" : "INTRADAY";
+
+  // Volatility level for VIX regime matching
+  const vixLevel = layers.layer1?.data?.inputs?.vix_current ?? 15;
+  const vixRegime = vixLevel >= 19.0 ? 'HIGH_VIX' : 'LOW_VIX';
+  const baselineWeights = BASELINE_WEIGHTS[masterMode][vixRegime];
+  
+  const scoreBreakdown = [];
+  
+  // 1. Add Veto Engine / System checks
+  scoreBreakdown.push({
+    layer: "Layer 13 (Veto Engine)",
+    weight: "SYSTEM CHECK",
+    points: isVetoed ? -15 : 0,
+    reason: isVetoed ? `VETO triggered: ${vetoesList.join(', ')}` : "All structural veto checks clear."
+  });
+
+  // 2. Loop through all 18 layers and compute net points
+  let calculatedPointsSum = 0;
+  for (const [key, meta] of Object.entries(LAYER_META)) {
+    const weight = activeWeights[key] ?? baselineWeights[key] ?? 0;
+    if (weight === 0) continue;
+
+    let score = 50;
+    // Extract raw scores from scoreOut.data.rawScores or fallback to individual layer scores
+    if (rawScores[key] !== undefined) {
+      score = rawScores[key];
+    } else {
+      // Fallback direct checks from context layers
+      if (key === 'layer1_macro') score = layers.layer1?.data?.score ?? 50;
+      else if (key === 'layer2_microstructure') score = layers.layer2?.l2ObiOut?.data?.score ?? 50;
+      else if (key === 'layer3_technicals') score = layers.layer3?.data?.score ?? 50;
+      else if (key === 'layer4_price_action') score = layers.layer4?.data?.score ?? 50;
+      else if (key === 'layer5_volume_profile') score = layers.layer5?.data?.score ?? 50;
+      else if (key === 'layer6_institutional') score = layers.layer6?.data?.score ?? 50;
+      else if (key === 'layer7_derivatives') score = layers.layer7?.pcrOut?.data?.score ?? 50;
+      else if (key === 'layer8_fundamentals') score = layers.layer8?.data?.score ?? 50;
+      else if (key === 'layer9_forensic') score = layers.layer9?.forensicOut?.data?.score ?? 50;
+      else if (key === 'layer10_valuation') score = layers.layer10?.score ?? 50;
+      else if (key === 'layer11_predictive') score = layers.layer11?.data?.score ?? 50;
+      else if (key === 'layer15_sentiment') score = layers.layer15?.sentiment?.data?.score ?? 50;
+      else if (key === 'layer19_promoter_pledge') score = layers.layer19?.data?.score ?? 50;
+      else if (key === 'layer20_earnings_quality') score = layers.layer20?.data?.score ?? 50;
+      else if (key === 'layer21_rs_rating') score = layers.layer21?.data?.score ?? 50;
+      else if (key === 'layer22_mtf_coherence') score = layers.layer22?.data?.score ?? 50;
+      else if (key === 'layer23_peer_percentile') score = layers.layer23?.data?.score ?? 50;
+      else if (key === 'layer24_mgmt_quality') score = layers.layer24?.data?.score ?? 50;
+    }
+
+    const points = ((score - 50) * weight) / 100;
+    calculatedPointsSum += points;
+
+    // Reason details
+    let reason = `Layer score at ${score.toFixed(0)}. Net impact is neutral.`;
+    if (key === 'layer1_macro') {
+      reason = `VIX level is ${vixLevel.toFixed(1)}. Market regime is ${layers.layer1?.data?.inputs?.market_regime || 'NORMAL'}.`;
+    } else if (key === 'layer2_microstructure') {
+      const imbalance = layers.layer2?.l2ObiOut?.data?.weighted_obi ?? layers.layer2?.l2ObiOut?.data?.raw_obi ?? 0;
+      reason = `L2 Order Flow imbalance is ${imbalance.toFixed(1)}%.`;
+    } else if (key === 'layer3_technicals') {
+      const rsi = layers.layer3?.data?.indicators?.rsi14 ?? 50;
+      reason = `RSI at ${rsi.toFixed(1)}. Trend signals are ${score >= 55 ? 'bullish' : score <= 45 ? 'bearish' : 'neutral'}.`;
+    } else if (key === 'layer4_price_action') {
+      const phase = layers.layer4?.wyckoffOut?.data?.phase || 'NEUTRAL';
+      reason = `Wyckoff Phase is ${phase}. Waves: ${layers.layer4?.elliottOut?.data?.wavePosition || 'NEUTRAL'}.`;
+    } else if (key === 'layer5_volume_profile') {
+      const rvol = layers.layer5?.vpDetails?.rvol ?? 1.0;
+      reason = `Relative volume (RVOL) is ${rvol.toFixed(1)}x. POC at ₹${layers.layer5?.vpDetails?.pocPrice || 'N/A'}.`;
+    } else if (key === 'layer6_institutional') {
+      const fii = layers.layer6?.fiiDiiRes?.fiiNetValue ?? 0;
+      const dii = layers.layer6?.fiiDiiRes?.diiNetValue ?? 0;
+      reason = `FII: ₹${fii > 0 ? '+' : ''}${fii.toFixed(0)} Cr, DII: ₹${dii > 0 ? '+' : ''}${dii.toFixed(0)} Cr.`;
+    } else if (key === 'layer7_derivatives') {
+      const pcr = layers.layer7?.pcrOut?.data?.pcr ?? 1.0;
+      reason = `OI PCR is ${pcr.toFixed(2)}. Max Pain Strike is ₹${layers.layer7?.maxPainOut?.data?.maxPainStrike || 'N/A'}.`;
+    } else if (key === 'layer8_fundamentals') {
+      const roe = layers.layer8?.roe ?? 15;
+      const pe = layers.layer8?.peRatio ?? 20;
+      reason = `ROE is ${roe}%, P/E is ${pe}x. Value structure score: ${score.toFixed(0)}.`;
+    } else if (key === 'layer9_forensic') {
+      const mScore = layers.layer9?.forensicOut?.data?.mScore || 0;
+      reason = `M-Score: ${mScore.toFixed(2)} (${mScore > -1.78 ? 'MANIPULATION RISK' : 'CLEAN'}). F-Score: ${layers.layer9?.piotroskiOut?.data?.f_score || 5}/9.`;
+    } else if (key === 'layer10_valuation') {
+      const dcfMoS = layers.layer10?.dcfOut?.data?.margin_of_safety_pct ?? 0;
+      reason = `DCF Margin of Safety is ${dcfMoS}%. PB Ratio: ${layers.layer10?.valuationOut?.data?.pbRatio || 'N/A'}x.`;
+    } else if (key === 'layer11_predictive') {
+      reason = `ML Pattern Recognition returns probability score: ${score.toFixed(0)}/100.`;
+    } else if (key === 'layer15_sentiment') {
+      reason = `NLP News Sentiment Score is ${layers.layer15?.sentiment?.data?.score?.toFixed(1) || 'N/A'} from ${layers.layer15?.sentiment?.data?.articleCount || 0} articles.`;
+    } else if (key === 'layer19_promoter_pledge') {
+      const l19 = layers.layer19 || {};
+      reason = `Pledge: ${l19.data?.pledgePct || 0}%, Velocity: ${l19.data?.velocityQoQ || 0}% QoQ.`;
+    } else if (key === 'layer20_earnings_quality') {
+      const l20 = layers.layer20 || {};
+      reason = `Sloan Accruals: ${l20.data?.accrualRatio?.toFixed(3) || 0}, Organic Growth: ${l20.data?.organicGrowth || 0}%.`;
+    } else if (key === 'layer21_rs_rating') {
+      const l21 = layers.layer21 || {};
+      reason = `Relative Strength Percentile Rank: ${l21.data?.percentile || 'N/A'} (Confirmed Uptrend: ${l21.data?.isConfirmedUptrend ? 'YES' : 'NO'}).`;
+    } else if (key === 'layer22_mtf_coherence') {
+      const l22 = layers.layer22 || {};
+      reason = `Consensus: ${l22.data?.alignment || 'NEUTRAL'} (${l22.data?.dailyTrend || 'NEUTRAL'}/${l22.data?.weeklyTrend || 'NEUTRAL'}).`;
+    } else if (key === 'layer23_peer_percentile') {
+      const l23 = layers.layer23 || {};
+      reason = `Avg Peer Percentile Rank: ${l23.data?.avgPercentile || 0}% across ${l23.data?.peerCount || 0} sector peers.`;
+    } else if (key === 'layer24_mgmt_quality') {
+      const l24 = layers.layer24 || {};
+      reason = `ROCE Slope: ${l24.data?.roceSlope || 0}, Dividend Sustainability Ratio: ${l24.data?.dividendRatio || 0}.`;
+    }
+
+    scoreBreakdown.push({
+      layer: meta.name,
+      weight: `${weight}%`,
+      points: Math.round(points),
+      reason
+    });
+  }
+
+  // 3. Add Regime Baseline and adjust for rounding errors
+  const currentSum = scoreBreakdown.reduce((sum, item) => sum + item.points, 0);
+  const baselinePoints = masterScore - currentSum;
+  
+  // Insert Regime Baseline as the first scoring element (index 1 after Veto Engine)
+  scoreBreakdown.splice(1, 0, {
+    layer: "Regime Baseline",
+    weight: "SYSTEM",
+    points: baselinePoints,
+    reason: "Baseline starting conviction score."
+  });
+
+  return scoreBreakdown;
+};
+
+const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuyQty, displaySellQty, displaySpread, displayDelivery, pcr, l2Imbalance, volRegime, atrRoc, volCluster) => {
+  const layers = res.layers || {};
+  const l19 = layers.layer19 || {};
+  const l20 = layers.layer20 || {};
+  const l21 = layers.layer21 || {};
+  const l22 = layers.layer22 || {};
+  const l23 = layers.layer23 || {};
+  const l24 = layers.layer24 || {};
+  const scoreOut = layers.layer13?.scoreOut || {};
+  const engineResult = scoreOut.data?.engineResult || {};
+  const isVetoed = engineResult.isVetoed ?? false;
+  const vetoesList = engineResult.vetoReasons || [];
+
+  const list = [
+    { 
+      title: "Layer 13: System Veto Filters", 
+      badge: isVetoed ? "TRADE BLOCKED" : "ALL CLEAR", 
+      class: isVetoed ? "badge-negative" : "badge-positive", 
+      data: [
+        { l: "RVOL (Real)", v: `${liveAtr?.rvol || 1.0}x` }, 
+        { l: "Vetoes Triggered", v: `${vetoesList.length}` }, 
+        { l: "Veto Reasons", v: vetoesList.length > 0 ? vetoesList.join(', ') : "None" },
+        { l: "Data Quality Score", v: `${res.data?.data_quality_score || 100}%` }
+      ] 
+    },
+    { 
+      title: "Layer 2: L2 Order Book / Tape", 
+      badge: l2Imbalance > 0 ? "BUY WALLS" : "SELL WALLS", 
+      class: l2Imbalance > 0 ? "badge-positive" : "badge-negative", 
+      data: [
+        { l: "Buy Qty (LIVE)", v: displayBuyQty }, 
+        { l: "Sell Qty (LIVE)", v: displaySellQty }, 
+        { l: "Imbalance", v: `${l2Imbalance.toFixed(1)}%` },
+        { l: "Touchline Spread", v: displaySpread }
+      ] 
+    },
+    { 
+      title: "Layer 7: Derivatives (PCR)", 
+      badge: pcr > 1.0 ? "BULLISH" : pcr < 0.7 ? "BEARISH" : "NEUTRAL", 
+      class: pcr > 1.0 ? "badge-positive" : pcr < 0.7 ? "badge-negative" : "badge-neutral", 
+      data: [
+        { l: "PCR Ratio", v: pcr.toFixed(2) }, 
+        { l: "Max Pain Strike", v: displayMaxPain }
+      ] 
+    },
+    { 
+      title: "Layer 18: Volatility (ATR)", 
+      badge: volRegime, 
+      class: volRegime === "EXPANSION" ? "badge-negative" : "badge-positive", 
+      data: [
+        { l: "ATR ROC", v: `${atrRoc.toFixed(1)}%` }, 
+        { l: "Clustering", v: volCluster }
+      ] 
+    },
+    {
+      title: "Layer 19: Promoter Pledge Tracker",
+      badge: l19.data?.vetoTriggered ? "VETOED" : (l19.data?.pledgePct > 15 ? "WARNING" : "HEALTHY"),
+      class: l19.data?.vetoTriggered ? "badge-negative" : (l19.data?.pledgePct > 15 ? "badge-neutral" : "badge-positive"),
+      data: [
+        { l: "Pledged Shares", v: `${l19.data?.pledgePct?.toFixed(1) || 0}%` },
+        { l: "QoQ Velocity", v: `${l19.data?.velocityQoQ?.toFixed(2) || 0}% QoQ` },
+        { l: "Bulk Deal Alert", v: l19.data?.bulkDealAlert ? "ACTIVE ⚠️" : "NONE" }
+      ]
+    },
+    {
+      title: "Layer 20: Earnings Quality & Sloan",
+      badge: l20.data?.cautionTriggered ? "CAUTION" : "NORMAL",
+      class: l20.data?.cautionTriggered ? "badge-negative" : "badge-positive",
+      data: [
+        { l: "Sloan Accruals", v: `${l20.data?.accrualRatio?.toFixed(3) || "0.000"}` },
+        { l: "CCC Trend", v: `${l20.data?.cccTrend || 0} days` },
+        { l: "Organic Growth", v: `${l20.data?.organicGrowth || 0}%` }
+      ]
+    },
+    {
+      title: "Layer 21: Relative Strength (IBD)",
+      badge: l21.data?.isConfirmedUptrend ? "UPTREND" : "RANGE",
+      class: l21.data?.isConfirmedUptrend ? "badge-positive" : "badge-neutral",
+      data: [
+        { l: "RS Percentile Rank", v: `${l21.data?.percentile || "N/A"}` },
+        { l: "Confirmed Uptrend", v: `${l21.data?.isConfirmedUptrend ? "YES" : "NO"}` },
+        { l: "Cold Start", v: `${l21.data?.isColdStart ? "ACTIVE" : "NO"}` }
+      ]
+    },
+    {
+      title: "Layer 22: Multi-TF Coherence",
+      badge: l22.data?.alignment || "NEUTRAL",
+      class: l22.data?.alignment === "FULL_BULLISH" ? "badge-positive" : l22.data?.alignment === "MISALIGNED" ? "badge-negative" : "badge-neutral",
+      data: [
+        { l: "Trend Consensus", v: `${l22.data?.alignment || "NEUTRAL"}` },
+        { l: "Daily Trend", v: `${l22.data?.dailyTrend || "NEUTRAL"}` },
+        { l: "Weekly Trend", v: `${l22.data?.weeklyTrend || "NEUTRAL"}` },
+        { l: "Monthly Trend", v: `${l22.data?.monthlyTrend || "NEUTRAL"}` }
+      ]
+    },
+    {
+      title: "Layer 23: Peer Percentile Ranking",
+      badge: l23.data?.isFallback ? "FALLBACK" : "ACTIVE",
+      class: l23.data?.isFallback ? "badge-neutral" : "badge-positive",
+      data: [
+        { l: "Composite Percentile", v: `${l23.data?.avgPercentile?.toFixed(1) || 0}%` },
+        { l: "Sector Peers Count", v: `${l23.data?.peerCount || 0}` },
+        { l: "Blending Value (θ)", v: `${l23.data?.theta?.toFixed(2) || 0}` },
+        { l: "Sector Used", v: `${l23.data?.sectorUsed || "N/A"}` }
+      ]
+    },
+    {
+      title: "Layer 24: Management Quality",
+      badge: l24.data?.roceSlope > 0 ? "GROWING" : "STABLE",
+      class: l24.data?.roceSlope > 0 ? "badge-positive" : "badge-neutral",
+      data: [
+        { l: "5Y ROCE Slope", v: `${l24.data?.roceSlope?.toFixed(2) || 0}` },
+        { l: "Dividend Sustainability", v: `${l24.data?.dividendRatio?.toFixed(2) || 0}` },
+        { l: "Auditor Tier", v: `${l24.data?.auditorTier || "N/A"}` }
+      ]
+    }
+  ];
+
+  return list;
+};
+
 const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
   const result = res;
   const layers = result.layers || {};
@@ -1074,40 +1397,13 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const geminiOpinion = aiReasoning;
 
-  const scoreBreakdown = [
-    { layer: "Layer 13 (Veto Engine)", weight: "REAL DATA", points: isVetoed ? -15 : 5, reason: isVetoed ? `VETO triggered: ${vetoesList.join(', ')}` : "All structural veto checks clear." },
-    { layer: "Layer 3 (RSI Momentum)", weight: "YAHOO LIVE", points: Math.round(engineResult.signals?.momEx ?? 0), reason: `RSI at ${rsi.toFixed(1)}. Sentiment bias is ${engineResult.signals?.momEx >= 0 ? 'bullish' : 'bearish'}.` },
-    { layer: "Layer 5 (5-Day Momentum)", weight: "YAHOO LIVE", points: Math.round((liveAtr?.momentum || 0) * 6), reason: `5-day rate of change momentum is ${liveAtr?.momentum > 0 ? 'positive' : 'negative'}.` },
-    { layer: "Layer 7 (Put-Call Ratio)", weight: l7Data.pcr ? "NSE LIVE" : "Estimated", points: Math.round(engineResult.signals?.flow ?? 0), reason: `PCR is ${pcr.toFixed(2)}. Max Pain: ${displayMaxPain}.` },
-    { layer: "Layer 2 (L2 Order Book)", weight: depthData.source === 'NSE_LIVE' ? "NSE LIVE" : "Estimated", points: Math.round(l2Imbalance), reason: `L2 Order flow imbalance is ${l2Imbalance.toFixed(1)}%.` },
-    { layer: "Layer 18 (ATR Predictor)", weight: "YAHOO LIVE", points: Math.round((l18Atr.confidence || 80) * 0.12), reason: `ATR Vol regime is ${volRegime}. Clustering: ${volCluster}.` },
-    { layer: "Layer 4 (EMA Trend Analysis)", weight: "YAHOO LIVE", points: Math.round(engineResult.signals?.trend ?? 0), reason: `Exponential crossovers are ${engineResult.signals?.trend >= 0 ? 'bullish' : 'bearish'}.` },
-    { layer: "Layer 6 (Multi-TF Momentum)", weight: "YAHOO LIVE", points: Math.round((liveAtr?.mtfAlignment || 0) * 3), reason: `Timeframe alignment: ${liveAtr?.mtfAlignment || 0}/3.` },
-    { layer: "Layer 8 (ADX Trend Strength)", weight: "YAHOO LIVE", points: 4, reason: `Trend strength ADX is ${adx.toFixed(1)} (${adx > 25 ? 'trending' : 'ranging'}).` },
-    { layer: "Layer 15 (Sentiment Index)", weight: "FinBERT NLP", points: Math.round(engineResult.signals?.sentiment ?? 0), reason: `NLP News Sentiment analysis points: ${engineResult.signals?.sentiment || 0}` },
-    { layer: "Layer 9 (Smart Entry Advisor)", weight: "YAHOO LIVE", points: 4, reason: `Optimal recommended entry at ₹${recommendedEntry.toFixed(2)}.` },
-    { layer: "Layer 12 (Smart Short Advisor)", weight: "YAHOO LIVE", points: 4, reason: `Short setup: ${l18Short.signal || 'NO_SHORT'} (Conviction: ${l18Short.short_conviction || 0}/100)` }
-  ];
-
-  // Mathematically adjust points to equal the composite score perfectly
-  const currentSum = scoreBreakdown.reduce((sum, item) => sum + item.points, 0);
-  const difference = masterScore - currentSum;
-  if (difference !== 0) {
-    scoreBreakdown[0].points += difference;
-  }
+  const scoreBreakdown = getDynamicScoreBreakdown(result, masterScore, isVetoed, vetoesList);
+  const layersList = getDynamicLayersList(result, liveAtr, realData, displayMaxPain, displayBuyQty, displaySellQty, displaySpread, displayDelivery, pcr, l2Imbalance, volRegime, atrRoc, volCluster);
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
     points: `${item.points >= 0 ? '+' : ''}${item.points}`
   }));
-
-  const layersList = [
-    { title: "Layer 13: System Veto Filters", badge: isVetoed ? "TRADE BLOCKED" : "ALL CLEAR", class: isVetoed ? "badge-negative" : "badge-positive", data: [{ l: "RVOL (Real)", v: `${liveAtr?.rvol || 1.0}x` }, { l: "Vetoes Triggered", v: `${vetoesList.length}` }, { l: "Veto Reasons", v: vetoesList.length > 0 ? vetoesList.join(', ') : "None" }] },
-    { title: "Layer 2: L2 Order Book / Tape", badge: l2Imbalance > 0 ? "BUY WALLS" : "SELL WALLS", class: l2Imbalance > 0 ? "badge-positive" : "badge-negative", data: [{ l: "Buy Qty (LIVE)", v: displayBuyQty }, { l: "Sell Qty (LIVE)", v: displaySellQty }, { l: "Imbalance", v: `${l2Imbalance.toFixed(1)}%` }] },
-    { title: "Layer 3: RSI Momentum", badge: rsi > 70 ? "OVERBOUGHT" : rsi < 30 ? "OVERSOLD" : "NORMAL", class: rsi > 70 ? "badge-negative" : rsi < 30 ? "badge-positive" : "badge-neutral", data: [{ l: "RSI Value", v: rsi.toFixed(1) }, { l: "ADX Value", v: adx.toFixed(1) }] },
-    { title: "Layer 7: Derivatives (PCR)", badge: pcr > 1.0 ? "BULLISH" : pcr < 0.7 ? "BEARISH" : "NEUTRAL", class: pcr > 1.0 ? "badge-positive" : pcr < 0.7 ? "badge-negative" : "badge-neutral", data: [{ l: "PCR Ratio", v: pcr.toFixed(2) }, { l: "Max Pain", v: displayMaxPain }] },
-    { title: "Layer 18: Volatility (ATR)", badge: volRegime, class: volRegime === "EXPANSION" ? "badge-negative" : "badge-positive", data: [{ l: "ATR ROC", v: `${atrRoc.toFixed(1)}%` }, { l: "Clustering", v: volCluster }] }
-  ];
 
   return {
     score: masterScore,
@@ -1143,7 +1439,8 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
     atrRoc,
     volRegime,
     volCluster,
-    mtfAlignment: liveAtr?.mtfAlignment || 0
+    mtfAlignment: liveAtr?.mtfAlignment || 0,
+    activeWeights: scoreOut.data?.weights
   };
 };
 
@@ -1165,7 +1462,6 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
   const l8Data = layers.layer8?.data || {};
   const l10Data = layers.layer10?.data || {};
   const l6Data = layers.layer6?.data || {};
-  const l17Data = layers.layer17 || {};
   
   const closes = (liveAtr && liveAtr.closes) || [];
 
@@ -1225,67 +1521,17 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
   };
   const timeframe = getIntelligentTimeframeLocal(score, computedRiskRating);
 
-  const fundBadge = roe != null ? 'YAHOO LIVE' : 'Estimated';
-  const instBadge = fiiNet != null ? 'NSE LIVE' : 'Estimated';
-  const depthBadge = deliveryPct != null ? 'NSE LIVE' : 'Estimated';
+  const displayMaxPain = 'N/A';
+  const displaySpread = 'N/A';
+  const displayDelivery = delDisplay;
+  const pcr = 1.0;
+  const l2Imbalance = 0;
+  const volRegime = 'NORMAL';
+  const atrRoc = 0;
+  const volCluster = 'STABLE';
 
-  const layersList = [
-    { title: "Investment Timeframe", badge: timeframe.split(' (')[0], class: score >= 55 ? "badge-positive" : score >= 40 ? "badge-neutral" : "badge-negative", data: [
-      {l: "Suggested Horizon", v: timeframe},
-      {l: "Risk Rating", v: computedRiskRating},
-      {l: "Annualized Vol", v: monthlyVol != null ? monthlyVol.toFixed(1) + '%' : 'N/A'},
-      {l: "1-Month Return", v: closes.length >= 20 ? ((closes[closes.length-1] - closes[0])/closes[0]*100).toFixed(2) + '%' : 'N/A'}
-    ]},
-    { title: "Layer 8: Fundamentals", badge: roe != null ? (roe > 15 ? "STRONG" : roe > 8 ? "FAIR" : "WEAK") : "N/A", class: roe != null ? (roe > 15 ? "badge-positive" : roe > 8 ? "badge-neutral" : "badge-negative") : "badge-neutral", data: [
-      {l: pe != null ? "P/E (LIVE)" : "P/E Ratio", v: pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : "N/A"},
-      {l: roe != null ? "ROE (LIVE)" : "Return on Eq.", v: roe != null ? `${roe}%` : "N/A"},
-      {l: debtToEquity != null ? "D/E (LIVE)" : "Debt/Equity", v: debtToEquity != null ? debtToEquity.toFixed(1) : "N/A"},
-      ...(earningsGrowth != null ? [{l: "Earnings Growth", v: `${earningsGrowth}%`}] : []),
-      ...(revenueGrowth != null ? [{l: "Revenue Growth", v: `${revenueGrowth}%`}] : []),
-      ...(profitMargin != null ? [{l: "Profit Margin", v: `${profitMargin}%`}] : []),
-      ...(currentRatio != null ? [{l: "Current Ratio", v: currentRatio.toFixed(2)}] : [])
-    ]},
-    { title: "Layer 10: Valuation", badge: dcfMargin > 0 ? "UNDERVALUED" : "OVERVALUED", class: dcfMargin > 0 ? "badge-positive" : "badge-negative", data: [
-      {l: pb ? "P/B (LIVE)" : "DCF Margin", v: pb ? pb.toFixed(2) + 'x' : `${dcfMargin}%`},
-      {l: "PEG Ratio", v: pegRatio ? pegRatio.toFixed(2) : "N/A"},
-      {l: "EV/EBITDA", v: evEbitda ? evEbitda.toFixed(1) : "N/A"},
-      ...(divYield != null ? [{l: "Div Yield", v: `${divYield}%`}] : []),
-      ...(w52High ? [{l: "52W High", v: `₹${w52High.toFixed(2)}`}] : []),
-      ...(w52Low ? [{l: "52W Low", v: `₹${w52Low.toFixed(2)}`}] : [])
-    ]},
-    { title: "Layer 6: Institutional Flow", badge: fiiNet > 0 ? "ACCUMULATION" : "DISTRIBUTION", class: fiiNet > 0 ? "badge-positive" : "badge-negative", data: [
-      {l: fiiNet != null ? "FII Net (LIVE)" : "FII Flow", v: fiiDisplay},
-      {l: diiNet != null ? "DII Net (LIVE)" : "DII Flow", v: diiDisplay},
-      {l: deliveryPct != null ? "Delivery % (LIVE)" : "Delivery", v: delDisplay},
-      {l: "Institutional Bias", v: fiiNet > 0 ? "Accumulation" : "Distribution"}
-    ]},
-    { title: "Long-Term Technicals", badge: ema20 && ema50 ? (ema20 > ema50 ? "BULLISH STRUCTURE" : "BEARISH STRUCTURE") : "N/A", class: ema20 && ema50 ? (ema20 > ema50 ? "badge-positive" : "badge-negative") : "badge-neutral", data: [
-      {l: "EMA20", v: ema20 ? `₹${ema20.toFixed(2)}` : 'N/A'},
-      {l: "EMA50", v: ema50 ? `₹${ema50.toFixed(2)}` : 'N/A'},
-      {l: "RSI (14)", v: rsi.toFixed(1)},
-      {l: "ADX", v: adx.toFixed(1)},
-      {l: "MTF Alignment", v: `${mtf > 0 ? '+' : ''}${mtf}/3`}
-    ]}
-  ];
-
-  const scoreBreakdown = [
-    { layer: "Fundamental Quality (ROE)", weight: fundBadge, points: Math.round(score * 0.25), reason: roe != null ? `ROE is verified at ${roe}%.` : "Fundamental ROE estimated." },
-    { layer: "Fundamental Growth", weight: fundBadge, points: Math.round(score * 0.1), reason: `Earnings growth: ${earningsGrowth || '12'}%, revenue growth: ${revenueGrowth || '10'}%.` },
-    { layer: "Multiple Valuation (P/E & P/B)", weight: fundBadge, points: Math.round(score * 0.15), reason: `P/E ratio at ${pe || 'N/A'}x, P/B ratio at ${pb || 'N/A'}x.` },
-    { layer: "DCF Margin of Safety", weight: fundBadge, points: Math.round(score * 0.1), reason: `DCF model indicates a margin of safety of ${dcfMargin}%.` },
-    { layer: "Institutional Net Flow", weight: instBadge, points: Math.round(score * 0.15), reason: `FII flows: ${fiiDisplay}, DII flows: ${diiDisplay}.` },
-    { layer: "Delivery & Depth Support", weight: depthBadge, points: Math.round(score * 0.1), reason: `Delivery volume average is ${delDisplay}.` },
-    { layer: "RSI Momentum (Layer 3)", weight: "YAHOO LIVE", points: Math.round(score * 0.05), reason: `Long term RSI value: ${rsi.toFixed(1)}.` },
-    { layer: "EMA Trend Analysis (Layer 4)", weight: "YAHOO LIVE", points: Math.round(score * 0.05), reason: `EMA structure crossover is ${ema20 > ema50 ? 'bullish' : 'bearish'}.` },
-    { layer: "Multi-TF Momentum (Layer 6)", weight: "YAHOO LIVE", points: Math.round(score * 0.02), reason: `Multi-timeframe EMA alignment score is ${mtf}/3.` },
-    { layer: "ADX Trend Strength (Layer 8)", weight: "YAHOO LIVE", points: Math.round(score * 0.03), reason: `ADX trend conviction score: ${adx.toFixed(1)}.` }
-  ];
-
-  const currentSum = scoreBreakdown.reduce((sum, item) => sum + item.points, 0);
-  const difference = score - currentSum;
-  if (difference !== 0) {
-    scoreBreakdown[0].points += difference;
-  }
+  const scoreBreakdown = getDynamicScoreBreakdown(result, score, isVetoed, vetoesList);
+  const layersList = getDynamicLayersList(result, liveAtr, realData, displayMaxPain, fiiDisplay, diiDisplay, displaySpread, displayDelivery, pcr, l2Imbalance, volRegime, atrRoc, volCluster);
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
@@ -1299,11 +1545,12 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
     aiReasoning,
     scoreBreakdown: formattedScoreBreakdown,
     layers: layersList,
-    dataSources: { fundamentals: fundBadge, institutional: instBadge, depth: depthBadge },
+    dataSources: { fundamentals: roe != null ? 'YAHOO LIVE' : 'Estimated', institutional: fiiNet != null ? 'NSE LIVE' : 'Estimated', depth: deliveryPct != null ? 'NSE LIVE' : 'Estimated' },
     timeframe,
     riskRating: computedRiskRating,
     isVetoed,
-    vetoesList
+    vetoesList,
+    activeWeights: scoreOut.data?.weights
   };
 };
 
@@ -1419,6 +1666,44 @@ export default function App() {
   const [realData, setRealData] = useState(null); // NSE Option Chain, Market Depth, Yahoo Fundamentals, FII/DII
   const [stBackendData, setStBackendData] = useState(null);
   const [ltBackendData, setLtBackendData] = useState(null);
+
+  // System Diagnostics and Health States
+  const [healthData, setHealthData] = useState(null);
+  const [isHealthLoading, setIsHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState(null);
+
+  const fetchHealth = async () => {
+    setIsHealthLoading(true);
+    setHealthError(null);
+    try {
+      const res = await fetch('/api/health', {
+        headers: {
+          'x-api-key': 'stocksense-secret-api-key'
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+      const data = await res.json();
+      setHealthData(data);
+    } catch (err) {
+      setHealthError(err.message);
+    } finally {
+      setIsHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'diagnostics') {
+      fetchHealth();
+    }
+  }, [activeTab]);
 
   // Fetch real-time price directly from Yahoo Finance
   useEffect(() => {
@@ -2249,6 +2534,7 @@ export default function App() {
                   <button className={`center-tab ${activeTab === 'smartMoney' ? 'active' : ''}`} onClick={() => setActiveTab('smartMoney')}>Smart Money & PEAD</button>
                   <button className={`center-tab ${activeTab === 'technicals' ? 'active' : ''}`} onClick={() => setActiveTab('technicals')}>Technicals & Volatility</button>
                   <button className={`center-tab ${activeTab === 'aiBriefing' ? 'active' : ''}`} onClick={() => setActiveTab('aiBriefing')}>AI Briefing</button>
+                  <button className={`center-tab ${activeTab === 'diagnostics' ? 'active' : ''}`} onClick={() => setActiveTab('diagnostics')}>Self-Learning Diagnostics</button>
                 </div>
 
                 {/* TAB 1: PILLAR CONFLUENCE (SHAP EXPLAINER) */}
@@ -2291,6 +2577,30 @@ export default function App() {
                           </div>
                         );
                       })}
+                    </div>
+                    {/* Detailed Analytical Layers Grid */}
+                    <div style={{ marginTop: '1.5rem' }}>
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif' }}>Detailed Analytical Layer Cards</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                        {(currentData.layers || []).map((layer, idx) => (
+                          <div key={idx} className="glass-panel-premium" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', transition: 'transform 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)' }}>{layer.title}</span>
+                              <span className={layer.class || 'badge-neutral'} style={{ fontSize: '0.55rem', padding: '2px 6px', borderRadius: '3px', fontWeight: 800 }}>
+                                {layer.badge}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+                              {(layer.data || []).map((d, dIdx) => (
+                                <div key={dIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '2px' }}>
+                                  <span style={{ color: 'var(--text-muted)' }}>{d.l}</span>
+                                  <strong style={{ color: 'var(--text-secondary)' }}>{d.v}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2550,6 +2860,228 @@ export default function App() {
                           <p className="ai-briefing-text" style={{ fontSize: '0.8rem', lineHeight: '1.5', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
                             {currentData.geminiOpinion}
                           </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+ 
+                {/* TAB 5: SELF-LEARNING DIAGNOSTICS */}
+                {activeTab === 'diagnostics' && (() => {
+                  if (isHealthLoading && !healthData) {
+                    return (
+                      <div className="glass-panel-premium fade-in" style={{ padding: '3rem', textAlign: 'center' }}>
+                        <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '1rem' }}>⚙️</span>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Polling health diagnostic daemons & calibration logs...</p>
+                      </div>
+                    );
+                  }
+                  if (healthError) {
+                    return (
+                      <div className="glass-panel-premium fade-in" style={{ padding: '2rem', borderLeft: '5px solid var(--danger)' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--danger)', display: 'block', marginBottom: '0.5rem' }}>⚠️ Diagnostics Sync Failed</span>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>Error details: {healthError}</p>
+                      </div>
+                    );
+                  }
+                  if (!healthData) return null;
+
+                  const status = healthData.status || "UNKNOWN";
+                  const isDegraded = status === "DEGRADED";
+                  const reasons = healthData.reasons || [];
+                  const details = healthData.details || {};
+                  const jobs = details.jobs || {};
+                  const wf = details.walk_forward || {};
+                  const calib = details.calibration || {};
+                  const corp = details.corporate_actions || {};
+
+                  // Get active weights vs baseline comparison
+                  const activeWeights = currentData.activeWeights || BASELINE_WEIGHTS[mode === "LONG_TERM" ? "INVESTMENT" : "INTRADAY"];
+                  const baseline = BASELINE_WEIGHTS[mode === "LONG_TERM" ? "INVESTMENT" : "INTRADAY"];
+
+                  return (
+                    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {/* Master Health Alert Banner */}
+                      <div className="glass-panel-premium" style={{ padding: '1.25rem', borderLeft: `5px solid ${isDegraded ? 'var(--danger)' : 'var(--accent)'}`, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Scoring Engine Status Check
+                          </span>
+                          <span className={isDegraded ? "badge-negative" : "badge-positive"} style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '4px', fontWeight: 800 }}>
+                            {status}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                          Last diagnostics sync: {new Date(healthData.timestamp).toLocaleString()}
+                        </p>
+                        {isDegraded && reasons.length > 0 && (
+                          <div style={{ marginTop: '0.5rem', padding: '0.65rem', background: 'rgba(244,63,94,0.05)', border: '1px solid rgba(244,63,94,0.15)', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--danger)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Warnings Detected:</span>
+                            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              {reasons.map((r, i) => <li key={i}>{r}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Main Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                        
+                        {/* WIDGET A: Walk-Forward Optimization (L26) */}
+                        <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>L26: Walk-Forward Validation</span>
+                            <span className="data-source-live" style={{ fontSize: '0.52rem' }}>Engine Diagnostics</span>
+                          </div>
+                          
+                          {/* Intraday Mode */}
+                          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Intraday Predictor</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>OOS WFE Score:</span>
+                              <strong style={{ color: (wf.INTRADAY?.wfe_score ?? 0) >= 0.55 ? 'var(--accent)' : 'var(--danger)' }}>
+                                {wf.INTRADAY?.wfe_score != null ? wf.INTRADAY.wfe_score.toFixed(3) : 'N/A'}
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Alpha Decay Slope:</span>
+                              <strong style={{ color: (wf.INTRADAY?.decay_rate ?? 0) >= -0.10 ? 'var(--text-primary)' : 'var(--danger)' }}>
+                                {wf.INTRADAY?.decay_rate != null ? wf.INTRADAY.decay_rate.toFixed(4) : '0.0000'}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {/* Investment Mode */}
+                          <div>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Investment Predictor</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>OOS WFE Score:</span>
+                              <strong style={{ color: (wf.INVESTMENT?.wfe_score ?? 0) >= 0.55 ? 'var(--accent)' : 'var(--danger)' }}>
+                                {wf.INVESTMENT?.wfe_score != null ? wf.INVESTMENT.wfe_score.toFixed(3) : 'N/A'}
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Alpha Decay Slope:</span>
+                              <strong style={{ color: (wf.INVESTMENT?.decay_rate ?? 0) >= -0.10 ? 'var(--text-primary)' : 'var(--danger)' }}>
+                                {wf.INVESTMENT?.decay_rate != null ? wf.INVESTMENT.decay_rate.toFixed(4) : '0.0000'}
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* WIDGET B: Dynamic Weight Shifts (L25) */}
+                        <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>L25: Weight Calibration</span>
+                            <span className={calib.enabled ? "data-source-live" : "data-source-estimated"} style={{ fontSize: '0.52rem' }}>
+                              {calib.enabled ? "ACTIVE" : "STATIC BASELINE"}
+                            </span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Calibration System:</span>
+                            <strong style={{ color: calib.enabled ? 'var(--accent)' : 'var(--warning)' }}>
+                              {calib.enabled ? "Dirichlet Tuner Enabled" : "Baseline Locked"}
+                            </strong>
+                          </div>
+                          {calib.reset_at && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                              <span style={{ color: 'var(--text-muted)' }}>Safety Rollback:</span>
+                              <strong style={{ color: 'var(--danger)' }}>{new Date(calib.reset_at).toLocaleDateString()}</strong>
+                            </div>
+                          )}
+
+                          {/* Dynamic Shifts Miniature Table */}
+                          <div style={{ maxHeight: '180px', overflowY: 'auto', marginTop: '0.25rem', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', textAlign: 'left' }}>
+                              <thead>
+                                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
+                                  <th style={{ padding: '4px 6px' }}>Layer</th>
+                                  <th style={{ padding: '4px 6px', textAlign: 'right' }}>Active</th>
+                                  <th style={{ padding: '4px 6px', textAlign: 'right' }}>Baseline</th>
+                                  <th style={{ padding: '4px 6px', textAlign: 'right' }}>Drift</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(baseline).map(([key, baseVal]) => {
+                                  const activeVal = activeWeights[key] ?? baseVal;
+                                  const drift = activeVal - baseVal;
+                                  const driftColor = drift > 0 ? 'var(--accent)' : drift < 0 ? 'var(--danger)' : 'var(--text-muted)';
+                                  return (
+                                    <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.01)' }}>
+                                      <td style={{ padding: '3px 6px', color: 'var(--text-muted)' }}>{LAYER_META[key]?.name?.split(': ')[0] || key}</td>
+                                      <td style={{ padding: '3px 6px', textAlign: 'right', fontWeight: 700 }}>{activeVal}%</td>
+                                      <td style={{ padding: '3px 6px', textAlign: 'right', color: 'var(--text-muted)' }}>{baseVal}%</td>
+                                      <td style={{ padding: '3px 6px', textAlign: 'right', color: driftColor, fontWeight: 800 }}>
+                                        {drift > 0 ? '+' : ''}{drift !== 0 ? drift + '%' : '—'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* WIDGET C: Background Job Daemon Health Table */}
+                      <div className="glass-panel-premium" style={{ padding: '1.25rem' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>Background Cron Daemons & Scrapers</span>
+                          <span className="data-source-live" style={{ fontSize: '0.52rem' }}>Scheduler Logs</span>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem', textAlign: 'left' }}>
+                            <thead>
+                              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 800 }}>
+                                <th style={{ padding: '6px 8px' }}>Daemon Name</th>
+                                <th style={{ padding: '6px 8px' }}>Status</th>
+                                <th style={{ padding: '6px 8px' }}>Last Success Run</th>
+                                <th style={{ padding: '6px 8px' }}>Last Attempt Run</th>
+                                <th style={{ padding: '6px 8px' }}>Error Details</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(jobs).map(([name, job]) => {
+                                const formattedSuccess = job.last_success ? new Date(job.last_success).toLocaleString() : 'Never Succeeded';
+                                const formattedAttempt = job.last_attempt ? new Date(job.last_attempt).toLocaleString() : 'N/A';
+                                return (
+                                  <tr key={name} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.01)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                    <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--text-primary)' }}>{name}</td>
+                                    <td style={{ padding: '6px 8px' }}>
+                                      <span className={job.status === 'OK' ? "badge-positive" : "badge-negative"} style={{ fontSize: '0.55rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
+                                        {job.status}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '6px 8px', color: 'var(--text-secondary)' }}>{formattedSuccess}</td>
+                                    <td style={{ padding: '6px 8px', color: 'var(--text-muted)' }}>{formattedAttempt}</td>
+                                    <td style={{ padding: '6px 8px', color: 'var(--danger)', fontSize: '0.65rem' }}>{job.error_message || 'None'}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* WIDGET D: Feeds Freshness & Corporate Actions */}
+                      <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>Exchanges & Corporate Actions Feed Freshness</span>
+                          <span className="data-source-live" style={{ fontSize: '0.52rem' }}>API Data Quality</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', fontSize: '0.75rem' }}>
+                          <div style={{ padding: '0.65rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.25rem' }}>Corporate Actions Freshness</span>
+                            <span>Last sync: <strong>{corp.last_action ? new Date(corp.last_action).toLocaleString() : 'N/A'}</strong></span>
+                            <span style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '2px' }}>({corp.elapsed_hours ? `${corp.elapsed_hours.toFixed(1)}h ago` : 'Staleness unknown'})</span>
+                          </div>
+                          <div style={{ padding: '0.65rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.25rem' }}>Manual Overrides Status</span>
+                            <span>Regime Override: <strong>Locked to Baselines</strong></span>
+                            <span style={{ display: 'block', color: 'var(--text-secondary)', marginTop: '2px' }}>Override expired or auto-dormant.</span>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -9,12 +9,12 @@ const {
 } = require("./masterScoring");
 
 function getVerdict(score) {
-  if (score >= 75) return "STRONGLY BUY";
-  if (score >= 58) return "BUY";
-  if (score >= 50) return "NEUTRAL";
-  if (score >= 38) return "HOLD";
-  if (score >= 28) return "AVOID";
-  return "STRONGLY AVOID";
+  if (score >= 68) return "STRONG_CONVICTION_BUY";
+  if (score >= 60) return "BUY";
+  if (score >= 53) return "ACCUMULATE_ON_DIPS";
+  if (score >= 47) return "NEUTRAL_WATCH";
+  if (score >= 40) return "SELL_ON_RALLIES";
+  return "STRONG_CONVICTION_SELL";
 }
 
 function clamp(x, min, max) {
@@ -58,7 +58,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice) {
   // 3. Technicals
   let l3 = 50;
   const rsi = indicators.rsi ?? 50;
-  l3 += (rsi - 50) * 1.2;
+  l3 += (rsi - 50) * 0.7;  // Reduced from 1.2 to prevent RSI dominating MACD/EMA signals
   if (indicators.macd) {
     if (indicators.macd.crossover === "BULLISH") l3 += 10;
     else if (indicators.macd.crossover === "BEARISH") l3 -= 10;
@@ -110,8 +110,7 @@ function getLayerScoresFromIndicators(indicators, currentPrice) {
   const deliv = indicators.deliveryPct ?? 45;
   if (deliv > 50) l6 += 10;
   else if (deliv < 35) l6 -= 10;
-  if (indicators.sentimentPts > 0) l6 += 10;
-  else if (indicators.sentimentPts < 0) l6 -= 10;
+  // sentimentPts moved exclusively to layer15_sentiment to prevent double-counting
 
   if (indicators.mfFlowPts !== undefined && indicators.mfFlowPts !== null) l6 += indicators.mfFlowPts;
   if (indicators.fiiDiiPts !== undefined && indicators.fiiDiiPts !== null) l6 += indicators.fiiDiiPts;
@@ -312,9 +311,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   // STEP 4: Apply ADX Compression
   let adxMultiplier = 1.00;
-  if (adx < 15) adxMultiplier = 0.55;
-  else if (adx < 18) adxMultiplier = 0.70;
-  else if (adx < 20) adxMultiplier = 0.85;
+  if (adx < 12) adxMultiplier = 0.70;
+  else if (adx < 15) adxMultiplier = 0.80;
+  else if (adx < 18) adxMultiplier = 0.90;
   else if (adx > 35) adxMultiplier = 1.12;
 
   let S_3 = 50 + (S_2 - 50) * adxMultiplier;
@@ -350,8 +349,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
 
   // Determine direction based on S_5b
-  const isBullish = S_5b >= 58;
-  const isBearish = S_5b < 38;
+  const isBullish = S_5b >= 55;
+  const isBearish = S_5b < 42;
   const isStrongShort = S_5b < 30;
 
   // Count directional layer agreement for Conviction Gating & Weak Bear check
@@ -377,15 +376,15 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const trendVeto = isStrongShort && isMacroUptrend && isLongTermUptrend;
   const oversoldOverride = isStrongShort && rsi < 25 && adx > 25 && isLongTermUptrend;
   const shortNoVolume = isStrongShort && rvol < 0.5;
-  const longNoVolume = isBullish && rvol < 0.40;
+  const longNoVolume = isBullish && rvol < 0.25;
   const anyDirNoVolume = (isBullish || isBearish) && rvol < 0.35;
   const bearMarketLong = isBullish && marketRegime === 'BEAR' && adx > 25;
   const forensicDistress = isBullish && altmanZone === 'DISTRESS_ZONE';
   const oversoldShort = isBearish && rsi < 30 && !(adx > 30 && momentumPct < -3);
   const trendingOverboughtShort = isBearish && rsi > 70 && adx > 25 && momentumPct > 0;
-  const momDisagreeLong = isBullish && momentumPct < -1.0 && rsi > 25;
+  const momDisagreeLong = isBullish && momentumPct < -3.0 && rsi > 40;
   const momDisagreeShort = isBearish && momentumPct > 1.0 && rsi < 75;
-  const overboughtLong = isBullish && S_5b < 75 && rsi > 60;
+  const overboughtLong = isBullish && S_5b < 75 && rsi > 78;
   const oversoldTrendLong = isBullish && rsi < 30 && adx > 25;
 
   let candleVetoLong = false;
@@ -475,21 +474,25 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     'TREND_MISALIGNMENT': 0.65
   };
 
-  let cautionMultiplier = 1.0;
+  // Worst-of-N caution model: use the single worst multiplier, then apply
+  // a small diminishing penalty for each additional caution beyond the first.
+  let worstMultiplier = 1.0;
   for (const code of cautionVetoes) {
+    let factor;
     if (code === 'EARNINGS_BINARY_EVENT' || code === 'EARNINGS_ANNOUNCEMENT_BINARY_RISK') {
-      const factor = (S_5b >= 50) ? 0.70 : 0.85;
-      cautionMultiplier *= factor;
-    } else if (cautionMultipliers[code] !== undefined) {
-      cautionMultiplier *= cautionMultipliers[code];
+      factor = (S_5b >= 50) ? 0.70 : 0.85;
+    } else {
+      factor = cautionMultipliers[code] ?? 1.0;
     }
+    worstMultiplier = Math.min(worstMultiplier, factor);
   }
-  const cautionMultiplierClamped = clamp(cautionMultiplier, 0.40, 1.00);
+  const additionalPenalty = Math.max(0, cautionVetoes.length - 1) * 0.03;
+  const cautionMultiplierClamped = clamp(worstMultiplier - additionalPenalty, 0.55, 1.00);
   let S_6 = 50 + (S_5b - 50) * cautionMultiplierClamped;
 
   // STEP 8: Apply Multi-Layer Conviction Gating (With Safety Floor)
   let agreeing_layers = S_6 > 50 ? long_agreeing_layers : bear_agreeing_layers;
-  const convictionMultiplier = Math.max(0.33, Math.min(1.0, agreeing_layers / 3));
+  const convictionMultiplier = Math.max(0.50, Math.min(1.0, agreeing_layers / 2));
   let S_7 = 50 + (S_6 - 50) * convictionMultiplier;
 
   // STEP 9: Final Clamping Boundary
@@ -497,11 +500,11 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const score = Number(finalScore.toFixed(2));
 
   // REGIME-AWARE DYNAMIC TARGET SCALING
-  let baseMultiplier = 0.15 + (Math.abs(score - 50) / 50) * 0.25; 
-  if (rvol < 0.7) baseMultiplier *= 0.85;  
-  if (adx < 15) baseMultiplier = Math.min(baseMultiplier, 0.18); 
+  let baseMultiplier = 0.40 + (Math.abs(score - 50) / 50) * 0.80;
+  // Removed redundant rvol pre-compression (handled by headroom compression below)
+  if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.45);
   
-  let atrMultiplier = Math.max(0.12, Math.min(0.45, baseMultiplier));
+  let atrMultiplier = Math.max(0.35, Math.min(1.20, baseMultiplier));
   let headroom = atrValue * atrMultiplier;
 
   // Volatile regime compression
@@ -520,8 +523,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // Intraday 1D trade cap
   if (timeHorizon === '1D') {
     const atrPct = atrValue / currentPrice;
-    const dailyCap = Math.min(atrPct * 0.55, 0.018); 
-    const maxIntraday = currentPrice * Math.max(dailyCap, 0.004); 
+    const dailyCap = Math.min(atrPct * 0.75, 0.035);
+    const maxIntraday = currentPrice * Math.max(dailyCap, 0.008);
     headroom = Math.min(headroom, maxIntraday);
   }
   
@@ -530,8 +533,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   let direction = "NEUTRAL";
   if (!hasFatalVeto) {
-    if (score >= 58) direction = "UP";
-    else if (score < 38) direction = "DOWN";
+    if (score >= 55) direction = "UP";
+    else if (score < 42) direction = "DOWN";
   }
 
   // Use verdictClassifierEngine for official verdict with conviction gating
@@ -544,7 +547,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   return {
     score,
-    isBullish: score >= 58,
+    isBullish: score >= 55,
     isVetoed: hasFatalVeto,
     vetoReasons: allVetoCodes,
     vetoTier: vetoResult.data.tier,
@@ -559,6 +562,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     downTarget,
     vixRegime,
     weights,
+    layerScores,
     signals: {
       trend: layerScores.layer3_technicals - 50,
       flow: layerScores.layer2_microstructure - 50,
@@ -638,7 +642,7 @@ function scoreEngine({ mode, stock, currentPrice, indicators, inputs }) {
   return {
     ok: true,
     data: {
-      rawScores: indicators ? getLayerScoresFromIndicators(indicators, currentPrice) : scoreFromInputs(inputs),
+      rawScores: indicators ? engineResult?.layerScores : scoreFromInputs(inputs),
       weights,
       totalScore: Number(totalScore.toFixed(2)),
       engineResult,
