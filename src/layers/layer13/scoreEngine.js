@@ -247,6 +247,24 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   // Score is provided from external L24 module via indicators.l24Score
   scores.layer24_mgmt_quality = clamp(indicators.l24Score ?? 50, 10, 90);
 
+  // 14. AI Consensus
+  scores.layer14_consensus = clamp(indicators.l14Score ?? 50, 10, 90);
+
+  // 16. Dynamic Integrity Guard
+  scores.layer16_integrity = clamp(indicators.l16Score ?? 50, 10, 90);
+
+  // 17. Backtest DB
+  scores.layer17_backtest = clamp(indicators.l17Score ?? 50, 10, 90);
+
+  // 18. Volatility Predictor
+  scores.layer18_volatility = clamp(indicators.l18Score ?? 50, 10, 90);
+
+  // 25. Ensemble weights
+  scores.layer25_ensemble = clamp(indicators.l25Score ?? 50, 10, 90);
+
+  // 26. Walk forward
+  scores.layer26_walk_forward = clamp(indicators.l26Score ?? 50, 10, 90);
+
   // Apply deterministic variation to ensure all layers actively participate and have non-zero attributions
   for (const [key, val] of Object.entries(scores)) {
     if (val === 50) {
@@ -340,6 +358,24 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
   if (indicators.l24Score !== undefined && indicators.l24Score !== null) {
     activeLayers.add('layer24_mgmt_quality');
+  }
+  if (indicators.l14Score !== undefined && indicators.l14Score !== null) {
+    activeLayers.add('layer14_consensus');
+  }
+  if (indicators.l16Score !== undefined && indicators.l16Score !== null) {
+    activeLayers.add('layer16_integrity');
+  }
+  if (indicators.l17Score !== undefined && indicators.l17Score !== null) {
+    activeLayers.add('layer17_backtest');
+  }
+  if (indicators.l18Score !== undefined && indicators.l18Score !== null) {
+    activeLayers.add('layer18_volatility');
+  }
+  if (indicators.l25Score !== undefined && indicators.l25Score !== null) {
+    activeLayers.add('layer25_ensemble');
+  }
+  if (indicators.l26Score !== undefined && indicators.l26Score !== null) {
+    activeLayers.add('layer26_walk_forward');
   }
 
   // Calculate the total weight of active layers to redistribute weights

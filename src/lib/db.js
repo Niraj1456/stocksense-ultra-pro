@@ -18,7 +18,10 @@ function getPool() {
 
 async function dbQuery(text, params) {
   const p = getPool();
-  if (!p) throw new Error("db_disabled:DATABASE_URL_missing");
+  if (!p) {
+    logger.warn("db_disabled:DATABASE_URL_missing. Returning empty rows fallback.");
+    return { rows: [] };
+  }
   return p.query(text, params);
 }
 

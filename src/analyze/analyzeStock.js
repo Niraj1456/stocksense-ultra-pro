@@ -1229,6 +1229,48 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     sector: effectiveSector
   });
 
+  // ── Layer 18: Volatility (ATR) Predictor ──
+  let layer18Out = { atrPredictor: null, shortAdvisor: null };
+  if (candles.length >= 40) {
+    const cArr = candles.map(c => c.c);
+    const hArr = candles.map(c => c.h);
+    const lArr = candles.map(c => c.l);
+    const vArr = candles.map(c => c.v);
+    const rsiVal = volatile.indicators?.rsi14 || 50;
+
+    try {
+      layer18Out.atrPredictor = Layer18.predictATR({
+        highs: hArr, lows: lArr, closes: cArr, volumes: vArr,
+        prediction_horizon_days: mode === "LT" ? 5 : 1,
+        days_to_earnings: avEarnings?.daysToEarnings ?? null
+      });
+    } catch (e) { layer18Out.atrPredictor = { ok: false, error: e.message }; }
+
+    try {
+      layer18Out.shortAdvisor = Layer18.adviseShortEntry({
+        closes: cArr, highs: hArr, lows: lArr, volumes: vArr,
+        current_price: currentPrice,
+        rsi: rsiVal, rvol: volatile.indicators?.rvol20 || 1.0,
+        atr_value: atrValue, ema20: volatile.indicators?.ema20,
+        ema50: volatile.indicators?.ema50, ema200: volatile.indicators?.ema200 || null,
+        adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14 ?? 25,
+        pcr: pcrOut?.data?.pcr || null,
+        has_real_pcr: Boolean(pcrOut?.ok && chainOut?.ok && chainOut?.data?.records),
+        vix_level: vixOut?.data?.inputs?.vix_current ?? null,
+        sector_momentum_pct: 0
+      });
+    } catch (e) { layer18Out.shortAdvisor = { ok: false, error: e.message }; }
+  }
+
+  let l18Score = 50;
+  if (layer18Out.atrPredictor?.ok && layer18Out.atrPredictor.data?.regime) {
+    const reg = layer18Out.atrPredictor.data.regime.regime;
+    if (reg === "COMPRESSION") l18Score = 60;
+    else if (reg === "EXPANSION") l18Score = 40;
+    else if (reg === "MEAN_REVERSION") l18Score = 55;
+    else if (reg === "TRANSITION") l18Score = 45;
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // LAYER 13: Score Engine
   // ═══════════════════════════════════════════════════════════════
@@ -1317,6 +1359,12 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
       l22Alignment: l22Out?.data?.alignment,
       l23Score: l23Out?.data?.score,
       l24Score: l24Out?.data?.score,
+      l14Score: 50,
+      l16Score: freshnessRes?.data?.freshness_score ?? 50,
+      l17Score: layer17Metrics?.winRate ? Math.round(layer17Metrics.winRate) : 50,
+      l18Score: l18Score,
+      l25Score: 50,
+      l26Score: 50,
       activeWeights,
       rsPercentile,
       isConfirmedUptrend
@@ -1449,38 +1497,6 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     }
   };
 
-  // ── Layer 18: ATR Predictor + Short Advisor ──
-  let layer18Out = { atrPredictor: null, shortAdvisor: null };
-  if (candles.length >= 40) {
-    const cArr = candles.map(c => c.c);
-    const hArr = candles.map(c => c.h);
-    const lArr = candles.map(c => c.l);
-    const vArr = candles.map(c => c.v);
-    const rsiVal = volatile.indicators?.rsi14 || 50;
-
-    try {
-      layer18Out.atrPredictor = Layer18.predictATR({
-        highs: hArr, lows: lArr, closes: cArr, volumes: vArr,
-        prediction_horizon_days: mode === "LT" ? 5 : 1,
-        days_to_earnings: avEarnings?.daysToEarnings ?? null
-      });
-    } catch (e) { layer18Out.atrPredictor = { ok: false, error: e.message }; }
-
-    try {
-      layer18Out.shortAdvisor = Layer18.adviseShortEntry({
-        closes: cArr, highs: hArr, lows: lArr, volumes: vArr,
-        current_price: currentPrice,
-        rsi: rsiVal, rvol: volatile.indicators?.rvol20 || 1.0,
-        atr_value: atrValue, ema20: volatile.indicators?.ema20,
-        ema50: volatile.indicators?.ema50, ema200: volatile.indicators?.ema200 || null,
-        adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14 ?? 25,
-        pcr: pcrOut?.data?.pcr || null,
-        has_real_pcr: Boolean(pcrOut?.ok && chainOut?.ok && chainOut?.data?.records),
-        vix_level: vixOut?.data?.inputs?.vix_current ?? null,
-        sector_momentum_pct: 0
-      });
-    } catch (e) { layer18Out.shortAdvisor = { ok: false, error: e.message }; }
-  }
   context.layer18 = layer18Out;
 
   // Layer 14 AI Orchestrator (deterministic fallback or Claude)

@@ -1100,7 +1100,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
   const layers = res.layers || {};
   const scoreOut = layers.layer13?.scoreOut || {};
   const rawScores = scoreOut.data?.rawScores || {};
-  const activeWeights = scoreOut.data?.weights || {};
+  const activeWeights = scoreOut.data?.engineResult?.weights || scoreOut.data?.weights || {};
   const mode = res.mode || "ST";
   const masterMode = mode === "LT" ? "INVESTMENT" : "INTRADAY";
 
@@ -1236,7 +1236,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
     scoreBreakdown.push({
       layer: meta.name,
       weight: `${weight}%`,
-      points: Math.round(points),
+      points: Number(points.toFixed(2)),
       reason
     });
   }
@@ -1249,7 +1249,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
   scoreBreakdown.splice(1, 0, {
     layer: "Regime Baseline",
     weight: "SYSTEM",
-    points: baselinePoints,
+    points: Number(baselinePoints.toFixed(2)),
     reason: "Baseline starting conviction score."
   });
 
@@ -1623,7 +1623,7 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
-    points: `${item.points >= 0 ? '+' : ''}${item.points}`
+    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
   }));
 
   return {
@@ -1661,7 +1661,7 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
     volRegime,
     volCluster,
     mtfAlignment: liveAtr?.mtfAlignment || 0,
-    activeWeights: scoreOut.data?.weights
+    activeWeights: scoreOut.data?.engineResult?.weights || scoreOut.data?.weights
   };
 };
 
@@ -1756,7 +1756,7 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const formattedScoreBreakdown = scoreBreakdown.map(item => ({
     ...item,
-    points: `${item.points >= 0 ? '+' : ''}${item.points}`
+    points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
   }));
 
   return {
@@ -1771,7 +1771,7 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
     riskRating: computedRiskRating,
     isVetoed,
     vetoesList,
-    activeWeights: scoreOut.data?.weights
+    activeWeights: scoreOut.data?.engineResult?.weights || scoreOut.data?.weights
   };
 };
 
@@ -2488,7 +2488,7 @@ export default function App() {
     const scoreBreakdown = getDynamicScoreBreakdown(dummyRes, finalScore, isVetoed, vetoesList);
     const formattedScoreBreakdown = scoreBreakdown.map(item => ({
       ...item,
-      points: `${item.points >= 0 ? '+' : ''}${item.points}`
+      points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
     }));
 
     return {
@@ -2858,11 +2858,11 @@ export default function App() {
                       </div>
                       <div className="status-grid" style={{ gap: '0.35rem' }}>
                         {(currentData.scoreBreakdown || []).map((item, idx) => {
-                          const pts = parseInt(item.points) || 0;
+                          const pts = parseFloat(item.points) || 0;
                           let statusClass = "offline";
-                          if (pts > 0) statusClass = "positive";
-                          else if (pts < 0) statusClass = "negative";
-                          else if (item.points.includes('+') || pts === 0) statusClass = "neutral";
+                          if (pts > 0.05) statusClass = "positive";
+                          else if (pts < -0.05) statusClass = "negative";
+                          else if (item.points.includes('+') || Math.abs(pts) <= 0.05) statusClass = "neutral";
                           
                           return (
                             <div 
@@ -2901,7 +2901,7 @@ export default function App() {
                     </p>
                     <div className="shap-chart-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {currentData.scoreBreakdown.map((item, i) => {
-                        const pts = parseInt(item.points) || 0;
+                        const pts = parseFloat(item.points) || 0;
                         const isPos = pts >= 0;
                         const fillWidth = Math.min(100, (Math.abs(pts) / 22) * 100);
                         return (
@@ -2923,7 +2923,7 @@ export default function App() {
                                 ></div>
                               </div>
                               <div className="shap-value-box" style={{ color: isPos ? 'var(--accent)' : 'var(--danger)', fontWeight: 800, width: '60px', textAlign: 'right' }}>
-                                {isPos ? '+' : ''}{pts} pts
+                                {isPos ? '+' : ''}{pts.toFixed(1)} pts
                               </div>
                             </div>
                             <div className="shap-reason-row" style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.3' }}>
