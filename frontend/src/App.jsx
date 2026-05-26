@@ -1166,7 +1166,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
     }
 
     score = applyDeterministicVariation(score, stockSymbol, key);
-    const points = ((score - 50) * weight) / 100;
+    const points = ((score - 50) * weight) / 100 * 2.0;
     calculatedPointsSum += points;
     rawLayerPoints[key] = { points, score, weight };
   }
@@ -2493,7 +2493,7 @@ export default function App() {
     for (const [key, score] of Object.entries(clientScores)) {
       if (key === 'layer12_risk' || key === 'key13_veto' || key === 'layer13_veto') continue;
       const weight = baselineWeights[key] ?? 0;
-      weightedSumPoints += ((score - 50) * weight) / 100;
+      weightedSumPoints += ((score - 50) * weight) / 100 * 2.0;
     }
     const finalScore = Math.max(5, Math.min(95, Math.round(50 + weightedSumPoints)));
 
@@ -2923,10 +2923,10 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* 15-Node rapid recognition status grid */}
+                    {/* 26-Node rapid recognition status grid */}
                     <div className="status-grid-container" style={{ margin: 0, padding: 0, border: 'none', background: 'none' }}>
                       <div className="status-grid-header" style={{ marginBottom: '0.35rem' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Pillar Health Signature (15 Layers)</span>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Pillar Health Signature (26 Layers)</span>
                       </div>
                       <div className="status-grid" style={{ gap: '0.35rem' }}>
                         {(currentData.scoreBreakdown || []).map((item, idx) => {
@@ -2944,7 +2944,7 @@ export default function App() {
                             ></div>
                           );
                         })}
-                        {Array.from({ length: Math.max(0, 15 - (currentData.scoreBreakdown || []).length) }).map((_, idx) => (
+                        {Array.from({ length: Math.max(0, 26 - (currentData.scoreBreakdown || []).length) }).map((_, idx) => (
                           <div key={`fill-${idx}`} className="status-node offline" title="Analytical Layer Standby"></div>
                         ))}
                       </div>
