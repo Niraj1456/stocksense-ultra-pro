@@ -109,7 +109,7 @@ async function runRealAudit() {
     low: { count: 0, wins: 0 }
   };
 
-  const targetSamplesCount = 100;
+  const targetSamplesCount = parseInt(process.argv[2], 10) || 100;
   let processedCount = 0;
   let attemptIdx = 0;
 
