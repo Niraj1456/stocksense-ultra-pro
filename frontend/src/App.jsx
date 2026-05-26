@@ -1094,8 +1094,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
 
   // Volatility level for VIX regime matching
   const vixLevel = layers.layer1?.data?.inputs?.vix_current ?? 15;
-  const vixRegime = vixLevel >= 19.0 ? 'HIGH_VIX' : 'LOW_VIX';
-  const baselineWeights = BASELINE_WEIGHTS[masterMode][vixRegime];
+  const baselineWeights = BASELINE_WEIGHTS[masterMode] || {};
   
   const scoreBreakdown = [];
   
