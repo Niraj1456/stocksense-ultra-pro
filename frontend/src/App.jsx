@@ -1015,55 +1015,55 @@ const getMathReasoning = (layerName, reason) => {
 const BASELINE_WEIGHTS = {
   INTRADAY: {
     layer1_macro: 4,
-    layer2_microstructure: 12,
-    layer3_technicals: 12,
+    layer2_microstructure: 15,
+    layer3_technicals: 15,
     layer4_price_action: 8,
     layer5_volume_profile: 10,
-    layer6_institutional: 3,
+    layer6_institutional: 4,
     layer7_derivatives: 5,
-    layer8_fundamentals: 2,
-    layer9_forensic: 2,
-    layer10_valuation: 2,
-    layer11_predictive: 4,
-    layer14_consensus: 2,
-    layer15_sentiment: 3,
-    layer16_integrity: 2,
-    layer17_backtest: 4,
-    layer18_volatility: 4,
-    layer19_promoter_pledge: 2,
-    layer20_earnings_quality: 2,
+    layer8_fundamentals: 1,
+    layer9_forensic: 1,
+    layer10_valuation: 1,
+    layer11_predictive: 5,
+    layer14_consensus: 1,
+    layer15_sentiment: 2,
+    layer16_integrity: 1,
+    layer17_backtest: 3,
+    layer18_volatility: 3,
+    layer19_promoter_pledge: 1,
+    layer20_earnings_quality: 1,
     layer21_rs_rating: 5,
-    layer22_mtf_coherence: 6,
-    layer23_peer_percentile: 2,
-    layer24_mgmt_quality: 2,
+    layer22_mtf_coherence: 10,
+    layer23_peer_percentile: 1,
+    layer24_mgmt_quality: 1,
     layer25_ensemble: 1,
     layer26_walk_forward: 1
   },
   INVESTMENT: {
     layer1_macro: 6,
-    layer2_microstructure: 2,
-    layer3_technicals: 2,
-    layer4_price_action: 2,
-    layer5_volume_profile: 3,
-    layer6_institutional: 10,
-    layer7_derivatives: 2,
-    layer8_fundamentals: 8,
-    layer9_forensic: 6,
-    layer10_valuation: 8,
-    layer11_predictive: 2,
-    layer14_consensus: 2,
-    layer15_sentiment: 3,
-    layer16_integrity: 2,
-    layer17_backtest: 2,
-    layer18_volatility: 2,
-    layer19_promoter_pledge: 5,
-    layer20_earnings_quality: 7,
-    layer21_rs_rating: 4,
-    layer22_mtf_coherence: 3,
+    layer2_microstructure: 1,
+    layer3_technicals: 1,
+    layer4_price_action: 1,
+    layer5_volume_profile: 1,
+    layer6_institutional: 12,
+    layer7_derivatives: 1,
+    layer8_fundamentals: 15,
+    layer9_forensic: 5,
+    layer10_valuation: 15,
+    layer11_predictive: 1,
+    layer14_consensus: 1,
+    layer15_sentiment: 1,
+    layer16_integrity: 1,
+    layer17_backtest: 1,
+    layer18_volatility: 1,
+    layer19_promoter_pledge: 4,
+    layer20_earnings_quality: 10,
+    layer21_rs_rating: 1,
+    layer22_mtf_coherence: 1,
     layer23_peer_percentile: 8,
-    layer24_mgmt_quality: 7,
-    layer25_ensemble: 2,
-    layer26_walk_forward: 2
+    layer24_mgmt_quality: 10,
+    layer25_ensemble: 1,
+    layer26_walk_forward: 1
   }
 };
 
@@ -1126,27 +1126,19 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
   
   const scoreBreakdown = [];
   
-  // 1. Add Veto Engine / System checks
-  scoreBreakdown.push({
-    layer: "Layer 13 (Veto Engine)",
-    weight: "SYSTEM CHECK",
-    points: isVetoed ? -15 : 0,
-    reason: isVetoed ? `VETO triggered: ${vetoesList.join(', ')}` : "All structural veto checks clear."
-  });
-
-  // 2. Loop through all 26 layers and compute net points
+  // 1. Loop through all 26 layers and compute net points
   let calculatedPointsSum = 0;
+  const rawLayerPoints = {};
+
   for (const [key, meta] of Object.entries(LAYER_META)) {
-    if (key === 'layer13_veto') continue;
+    if (key === 'layer13_veto' || key === 'layer12_risk') continue; // L12 has weight 0
 
     const weight = activeWeights[key] ?? baselineWeights[key] ?? 0;
 
     let score = 50;
-    // Extract raw scores from scoreOut.data.rawScores or fallback to individual layer scores
     if (rawScores[key] !== undefined) {
       score = rawScores[key];
     } else {
-      // Fallback direct checks from context layers
       if (key === 'layer1_macro') score = layers.layer1?.data?.score ?? 50;
       else if (key === 'layer2_microstructure') score = layers.layer2?.l2ObiOut?.data?.score ?? 50;
       else if (key === 'layer3_technicals') score = layers.layer3?.data?.score ?? 50;
@@ -1158,7 +1150,6 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
       else if (key === 'layer9_forensic') score = layers.layer9?.forensicOut?.data?.score ?? 50;
       else if (key === 'layer10_valuation') score = layers.layer10?.score ?? 50;
       else if (key === 'layer11_predictive') score = layers.layer11?.data?.score ?? 50;
-      else if (key === 'layer12_risk') score = layers.layer12?.score ?? 50;
       else if (key === 'layer14_consensus') score = res.final?.score ?? 50;
       else if (key === 'layer15_sentiment') score = layers.layer15?.sentiment?.data?.score ?? 50;
       else if (key === 'layer16_integrity') score = 50;
@@ -1174,11 +1165,36 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
       else if (key === 'layer26_walk_forward') score = 50;
     }
 
-    // Apply deterministic variation if score is exactly 50 to ensure non-zero attribution
     score = applyDeterministicVariation(score, stockSymbol, key);
-
     const points = ((score - 50) * weight) / 100;
     calculatedPointsSum += points;
+    rawLayerPoints[key] = { points, score, weight };
+  }
+
+  // Calculate multiplier to match master score when not vetoed
+  let multiplier = 1.0;
+  if (!isVetoed && Math.abs(calculatedPointsSum) > 0.001) {
+    multiplier = (masterScore - 50) / calculatedPointsSum;
+  }
+
+  // Create layer breakdown entries with adjusted points
+  for (const [key, meta] of Object.entries(LAYER_META)) {
+    if (key === 'layer13_veto') continue;
+
+    let score = 50;
+    let weight = 0;
+    let points = 0;
+
+    if (key === 'layer12_risk') {
+      score = rawScores.layer12_risk ?? layers.layer12?.score ?? 50;
+      weight = 0;
+      points = 0;
+    } else {
+      const data = rawLayerPoints[key] || { score: 50, weight: 0, points: 0 };
+      score = data.score;
+      weight = data.weight;
+      points = isVetoed ? data.points : data.points * multiplier;
+    }
 
     // Reason details
     let reason = `Layer score at ${score.toFixed(0)}. Net impact is neutral.`;
@@ -1260,15 +1276,41 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
     });
   }
 
-  // 3. Add Regime Baseline and adjust for rounding errors
-  const currentSum = scoreBreakdown.reduce((sum, item) => sum + item.points, 0);
-  const baselinePoints = masterScore - currentSum;
+  // 2. Add Veto Engine row — always show the residual between layer sum and master score
+  //    This captures CAUTION compressions, conviction gating, ADX/RVOL adjustments, etc.
+  const layerSum = scoreBreakdown.reduce((sum, item) => sum + item.points, 0);
+  let vetoPoints = (masterScore - 50) - layerSum;
+  if (Math.abs(vetoPoints) < 0.01) vetoPoints = 0;
+
+  // Determine reason text based on veto state and caution presence
+  const engineResult = scoreOut.data?.engineResult || {};
+  const cautionVetoesList = engineResult.cautionVetoes || [];
+  const advisoryVetoesList = engineResult.advisoryVetoes || [];
+  const vetoTier = engineResult.vetoTier || 'CLEAR';
+
+  let vetoReason = "All structural veto checks clear. No score compression applied.";
+  if (isVetoed) {
+    vetoReason = `FATAL VETO triggered: ${vetoesList.join(', ')}. Trade direction blocked.`;
+  } else if (vetoPoints < -0.5 && cautionVetoesList.length > 0) {
+    vetoReason = `CAUTION compression active (${cautionVetoesList.length} condition${cautionVetoesList.length > 1 ? 's' : ''}): ${cautionVetoesList.join(', ')}. Score compressed by ${vetoPoints.toFixed(2)} pts.`;
+  } else if (vetoPoints < -0.5) {
+    vetoReason = `Score compression applied by conviction gating and regime adjustments (${vetoPoints.toFixed(2)} pts).`;
+  } else if (vetoPoints > 0.5) {
+    vetoReason = `Score amplified by high-conviction regime adjustments (+${vetoPoints.toFixed(2)} pts).`;
+  }
   
-  // Insert Regime Baseline as the first scoring element (index 1 after Veto Engine)
+  scoreBreakdown.unshift({
+    layer: "Layer 13 (Veto Engine)",
+    weight: "SYSTEM CHECK",
+    points: Number(vetoPoints.toFixed(2)),
+    reason: vetoReason
+  });
+
+  // 3. Insert Regime Baseline as exactly 50.00 pts
   scoreBreakdown.splice(1, 0, {
     layer: "Regime Baseline",
     weight: "SYSTEM",
-    points: Number(baselinePoints.toFixed(2)),
+    points: 50.00,
     reason: "Baseline starting conviction score."
   });
 
@@ -2926,9 +2968,80 @@ export default function App() {
                 {activeTab === 'confluence' && (
                   <div className="shap-explainer-card glass-panel fade-in" style={{ padding: '1.25rem' }}>
                     <h3 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '0.3rem', fontFamily: 'Outfit, sans-serif' }}>Pillar Confluence Engine (SHAP Explainer)</h3>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
                       Attribution mapping for mathematical drivers.
                     </p>
+                    {/* Visual Conviction Bridge Summary */}
+                    {(() => {
+                      let totalBullish = 0;
+                      let totalBearish = 0;
+                      let vetoPenalty = 0;
+                      
+                      (currentData.scoreBreakdown || []).forEach(item => {
+                        const pts = parseFloat(item.points) || 0;
+                        if (item.layer === "Regime Baseline") return;
+                        if (item.layer.includes("Veto Engine")) {
+                          if (pts !== 0) vetoPenalty = pts;
+                          return;
+                        }
+                        if (pts > 0) {
+                          totalBullish += pts;
+                        } else if (pts < 0) {
+                          totalBearish += pts;
+                        }
+                      });
+                      
+                      const netAdjustment = totalBullish + totalBearish + vetoPenalty;
+                      const hasVeto = currentData.isVetoed || vetoPenalty !== 0;
+                      const verdictColor = currentData.score >= 53 ? 'var(--accent)' : currentData.score < 47 ? 'var(--danger)' : 'var(--text-primary)';
+                      const verdictText = currentData.score >= 68 ? 'STRONG BUY' : 
+                                          currentData.score >= 60 ? 'BUY' : 
+                                          currentData.score >= 53 ? 'ACCUMULATE' : 
+                                          currentData.score >= 47 ? 'NEUTRAL' : 
+                                          currentData.score >= 40 ? 'SELL' : 'STRONG SELL';
+                                          
+                      return (
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                          gap: '0.75rem',
+                          padding: '0.85rem',
+                          marginBottom: '1.25rem',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border)',
+                          boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.03)'
+                        }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Neutral Prior</div>
+                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.15rem' }}>50.00 pts</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Bullish Drivers (+)</div>
+                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent)', marginTop: '0.15rem' }}>+{totalBullish.toFixed(2)} pts</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--danger)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Bearish Pressures (-)</div>
+                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--danger)', marginTop: '0.15rem' }}>{totalBearish.toFixed(2)} pts</div>
+                          </div>
+                          {hasVeto && (
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: '0.62rem', color: 'var(--warning)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Veto Penalty</div>
+                              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--warning)', marginTop: '0.15rem' }}>{vetoPenalty.toFixed(2)} pts</div>
+                            </div>
+                          )}
+                          <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '0.25rem' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Composite Score</div>
+                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: verdictColor, marginTop: '0.15rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                              {currentData.score.toFixed(2)}
+                              <span style={{ fontSize: '0.55rem', padding: '1px 4px', borderRadius: '3px', background: `${verdictColor}20`, border: `1px solid ${verdictColor}40`, fontWeight: 800 }}>
+                                {hasVeto ? 'VETOED' : verdictText}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="shap-chart-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {currentData.scoreBreakdown.map((item, i) => {
                         const pts = parseFloat(item.points) || 0;

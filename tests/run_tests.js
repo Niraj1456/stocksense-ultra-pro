@@ -583,7 +583,7 @@ async function runTests() {
 
   let currentWeights = { ...customStaticWeights };
 
-  for (let cycle = 1; cycle <= 4; cycle++) {
+  for (let cycle = 1; cycle <= 5; cycle++) {
     // Run calibration iteration
     const mockResult = Layer25.calibrateWeights({
       staticWeights: currentWeights,

@@ -104,13 +104,14 @@ async function main() {
   console.log("--------------------------------------------------------------------------------");
   
   const thresholds = [
+    { bull: 53.0, bear: 47.0 },
+    { bull: 53.5, bear: 46.5 },
+    { bull: 54.0, bear: 46.0 },
+    { bull: 54.5, bear: 45.5 },
     { bull: 55.0, bear: 42.0 },
     { bull: 55.5, bear: 41.5 },
     { bull: 56.0, bear: 41.0 },
-    { bull: 56.5, bear: 40.5 },
-    { bull: 57.0, bear: 40.0 },
-    { bull: 57.5, bear: 39.5 },
-    { bull: 58.0, bear: 39.0 }
+    { bull: 56.5, bear: 40.5 }
   ];
   
   for (const t of thresholds) {
@@ -138,8 +139,8 @@ async function main() {
       stActive++;
       
       const deviation = Math.abs(res.score - 50) / 50;
-      const start = 0.06;
-      const slope = 0.12;
+      const start = 0.05;
+      const slope = 0.10;
       const cap = 0.010;
       
       let baseMultiplier = start + deviation * slope;

@@ -595,6 +595,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     'CANDLE_STRUCTURE_SHORT': 0.75,
     'CANDLE_VETO_LONG': 0.75,
     'CANDLE_VETO_SHORT': 0.75,
+    'TRENDING_OB_SHORT': 0.75,
     'STRONGLY_BEARISH_SENTIMENT': 0.70,
     'EARNINGS_IMMINENT_VETO': 0.70,
     'INSIDER_VETO': 0.70,
