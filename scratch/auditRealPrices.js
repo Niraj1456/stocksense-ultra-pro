@@ -118,8 +118,8 @@ async function runRealAudit() {
   console.log("Loading real stock list from stocks.js...");
   const allStocks = loadNseStocks();
   
-  // Shuffle list
-  const shuffled = [...allStocks].sort(() => 0.5 - Math.random());
+  // Keep list deterministic (no shuffle) for reproducible systems audit
+  const shuffled = [...allStocks];
   
   const auditSamples = [];
   let stActive = 0, stWins = 0, stLosses = 0, stTimeouts = 0, stVetoes = 0, stDirCorrect = 0;

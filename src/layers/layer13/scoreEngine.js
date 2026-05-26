@@ -307,7 +307,14 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const vixRegime = vixLevel >= 19.0 ? 'HIGH_VIX' : (vixLevel <= 16.5 ? 'LOW_VIX' : (options.activeRegime || indicators._prevVixRegime || 'LOW_VIX'));
 
   // Get weights (dynamic override or static baseline)
-  const baseWeights = indicators.activeWeights || getWeights(timeHorizon === '5D' ? 'INVESTMENT' : 'INTRADAY', vixRegime);
+  let baseWeights;
+  if (indicators.activeWeights) {
+    baseWeights = indicators.activeWeights;
+  } else {
+    // 5D swing trades are short-term setups driven by Technicals, Price Action, and Volume Flow.
+    // We use the INTRADAY weights profile (instead of INVESTMENT weights) for both 1D and 5D horizons.
+    baseWeights = getWeights('INTRADAY', vixRegime);
+  }
 
   // Dynamic Weight Normalization: Identify which layers have active non-default data
   const activeLayers = new Set([
@@ -688,12 +695,33 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   let direction = "NEUTRAL";
   if (!hasFatalVeto) {
-    if (score >= 53.0) {
-      if (rsi > 45 && momentum >= 0) {
+    const bullThreshold = 60.0;
+    const bearThreshold = 40.0;
+
+    if (score >= bullThreshold) {
+      let trendAlign = true;
+      if (indicators.ema20 && indicators.ema50) {
+        trendAlign = indicators.ema20 >= indicators.ema50;
+      }
+      const adxValid = adx >= 20;
+      const macdValid = macd ? macd.histogram_direction === 'EXPANDING' : true;
+      // For 1D intraday, we require positive momentum and not overextended. For 5D swing, we allow buy-on-dips.
+      const rsiValid = rsi > (timeHorizon === '5D' ? 40 : 45);
+      const momValid = timeHorizon === '5D' ? true : (momentum >= 0 && momentumPct < 12.0);
+      if (rsiValid && momValid && trendAlign && adxValid && macdValid) {
         direction = "UP";
       }
-    } else if (score < 47.0) {
-      if (rsi < 55 && momentum <= 0) {
+    } else if (score < bearThreshold) {
+      let trendAlign = true;
+      if (indicators.ema20 && indicators.ema50) {
+        trendAlign = indicators.ema20 <= indicators.ema50;
+      }
+      const adxValid = adx >= 20;
+      const macdValid = macd ? macd.histogram_direction === 'CONTRACTING' : true;
+      // For 1D intraday, we require negative momentum. For 5D swing, we allow sell-on-rallies.
+      const rsiValid = (rsi < (timeHorizon === '5D' ? 60 : 55)) && rsi > 32;
+      const momValid = timeHorizon === '5D' ? true : momentum <= 0;
+      if (rsiValid && momValid && trendAlign && adxValid && macdValid) {
         direction = "DOWN";
       }
     }
