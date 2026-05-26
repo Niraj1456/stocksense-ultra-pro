@@ -27,6 +27,8 @@ function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
 
 // MODULE 13.2 — SCORE AGGREGATION ENGINE
 // Updated to use point-based aggregation (baseline 50) and un-normalized weights
+// SENSITIVITY amplifies layer deviations so realistic scores span the full 0-100 range.
+const SENSITIVITY = 2.0;
 function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
   let total_score = 50;
   const score_breakdown = {};
@@ -51,7 +53,7 @@ function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
 
     // layer_scores should provide a normalized score (0 to 100) for each layer
     const layer_score = Number(layer_scores[layer]) || 50; // Default neutral if missing
-    const points = ((layer_score - 50) * normalizedWeight) / 100;
+    const points = ((layer_score - 50) * normalizedWeight) / 100 * SENSITIVITY;
     
     total_score += points;
     score_breakdown[layer] = {

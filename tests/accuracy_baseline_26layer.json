@@ -1,818 +1,822 @@
 {
   "RELIANCE": {
-    "masterScore": 51.93,
+    "masterScore": 52.74,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 2319.708216345323,
-    "downTarget": 2318.291783654677
+    "upTarget": 2319.7295180623564,
+    "downTarget": 2318.2704819376436
   },
   "TCS": {
-    "masterScore": 58.23,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2984.8740135370117,
-    "downTarget": 2983.1259864629883
-  },
-  "HDFCBANK": {
-    "masterScore": 49.42,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 4041.819019137674,
-    "downTarget": 4040.180980862326
-  },
-  "BHARTIENT": {
-    "masterScore": 55.85,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1263.9757277540677,
-    "downTarget": 1262.0242722459323
-  },
-  "INFY": {
-    "masterScore": 56.04,
-    "verdict": "SYSTEM_VETO",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "PROMOTER_PLEDGE_DISTRESS_VETO"
-    ],
-    "upTarget": 2060.976936391198,
-    "downTarget": 2059.023063608802
-  },
-  "ICICIBANK": {
-    "masterScore": 52.54,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3857.8960387953316,
-    "downTarget": 3856.1039612046684
-  },
-  "HINDUNILVR": {
-    "masterScore": 52.92,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 671.7599209559453,
-    "downTarget": 670.2400790440547
-  },
-  "ITC": {
-    "masterScore": 52.09,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2924.85552785732,
-    "downTarget": 2923.14447214268
-  },
-  "SBI": {
-    "masterScore": 48.88,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1982.8089694351254,
-    "downTarget": 1981.1910305648746
-  },
-  "L&T": {
-    "masterScore": 56.73,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 4398.994197313712,
-    "downTarget": 4397.005802686288
-  },
-  "TATAMOTORS": {
-    "masterScore": 51.93,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3592.751910450593,
-    "downTarget": 3591.248089549407
-  },
-  "BAJFINANCE": {
-    "masterScore": 54.23,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1215.9443903256235,
-    "downTarget": 1214.0556096743765
-  },
-  "BHARTIARTL": {
-    "masterScore": 54.13,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 92.5,
-    "vetoReasons": [],
-    "upTarget": 2809.8095286843604,
-    "downTarget": 2808.1904713156396
-  },
-  "KOTAKBANK": {
-    "masterScore": 51.99,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2202.841844146055,
-    "downTarget": 2201.158155853945
-  },
-  "AXISBANK": {
-    "masterScore": 50.04,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2673.6590741296573,
-    "downTarget": 2672.3409258703427
-  },
-  "ASIANPAINT": {
-    "masterScore": 54.89,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 314.93308559628736,
-    "downTarget": 313.06691440371264
-  },
-  "MARUTI": {
-    "masterScore": 53.39,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 816.8971713649076,
-    "downTarget": 815.1028286350924
-  },
-  "SUNPHARMA": {
-    "masterScore": 53,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2617.8842678375036,
-    "downTarget": 2616.1157321624964
-  },
-  "TITAN": {
-    "masterScore": 56.03,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3424.961495743473,
-    "downTarget": 3423.038504256527
-  },
-  "ULTRACEMCO": {
-    "masterScore": 50.88,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2271.8011969169147,
-    "downTarget": 2270.1988030830853
-  },
-  "ADANIENT": {
-    "masterScore": 51.33,
-    "verdict": "SYSTEM_VETO",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "PROMOTER_PLEDGE_DISTRESS_VETO"
-    ],
-    "upTarget": 630.8337476122912,
-    "downTarget": 629.1662523877088
-  },
-  "ADANIPORTS": {
-    "masterScore": 51.31,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3817.8255069327415,
-    "downTarget": 3816.1744930672585
-  },
-  "WIPRO": {
-    "masterScore": 55.75,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 671.8212374681166,
-    "downTarget": 670.1787625318834
-  },
-  "HCLTECH": {
-    "masterScore": 56.67,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1847.9974484429204,
-    "downTarget": 1846.0025515570796
-  },
-  "ONGC": {
-    "masterScore": 55.29,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 815.9858485685497,
-    "downTarget": 814.0141514314503
-  },
-  "NTPC": {
-    "masterScore": 52.14,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 92.5,
-    "vetoReasons": [],
-    "upTarget": 2169.7542002554437,
-    "downTarget": 2168.2457997445563
-  },
-  "POWERGRID": {
-    "masterScore": 52.69,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1931.8883504486716,
-    "downTarget": 1930.1116495513284
-  },
-  "JSWSTEEL": {
-    "masterScore": 56.33,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 4285.977310082148,
-    "downTarget": 4284.022689917852
-  },
-  "TATASTEEL": {
-    "masterScore": 52.48,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 92.5,
-    "vetoReasons": [],
-    "upTarget": 4689.747182337481,
-    "downTarget": 4688.252817662519
-  },
-  "COALINDIA": {
-    "masterScore": 54.1,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1664.939186881124,
-    "downTarget": 1663.060813118876
-  },
-  "HINDALCO": {
-    "masterScore": 60.73,
+    "masterScore": 64.87,
     "verdict": "BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4719.140955796023,
-    "downTarget": 4716.859044203977
+    "upTarget": 2985.0486584327614,
+    "downTarget": 2982.9513415672386
   },
-  "GRASIM": {
-    "masterScore": 56.08,
+  "HDFCBANK": {
+    "masterScore": 53.23,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2161.830046501549,
-    "downTarget": 2160.169953498451
+    "upTarget": 4041.903866702757,
+    "downTarget": 4040.096133297243
   },
-  "NESTLEIND": {
-    "masterScore": 56.24,
-    "verdict": "ACCUMULATE_ON_DIPS",
+  "BHARTIENT": {
+    "masterScore": 63.23,
+    "verdict": "BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4178.969367286767,
-    "downTarget": 4177.030632713233
+    "upTarget": 1264.2091433399678,
+    "downTarget": 1261.7908566600322
   },
-  "M&M": {
-    "masterScore": 54.72,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 452.79423594081396,
-    "downTarget": 451.20576405918604
-  },
-  "INDUSINDBK": {
-    "masterScore": 53.95,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 4747.914271490029,
-    "downTarget": 4746.085728509971
-  },
-  "BAJAJ-AUTO": {
-    "masterScore": 49.94,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3032.65866271987,
-    "downTarget": 3031.34133728013
-  },
-  "CIPLA": {
-    "masterScore": 51.62,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 251.71853310347603,
-    "downTarget": 250.28146689652397
-  },
-  "DRREDDY": {
-    "masterScore": 49.2,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2636.715905888776,
-    "downTarget": 2635.284094111224
-  },
-  "SBILIFE": {
-    "masterScore": 50.21,
+  "INFY": {
+    "masterScore": 59.18,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
       "PROMOTER_PLEDGE_DISTRESS_VETO"
     ],
-    "upTarget": 3130.6856155208293,
-    "downTarget": 3129.3143844791707
+    "upTarget": 2061.0757630751013,
+    "downTarget": 2058.9242369248987
   },
-  "HDFCLIFE": {
-    "masterScore": 50.24,
+  "ICICIBANK": {
+    "masterScore": 59.99,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3858.1384312799073,
+    "downTarget": 3855.8615687200927
+  },
+  "HINDUNILVR": {
+    "masterScore": 53.47,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 671.7748907455502,
+    "downTarget": 670.2251092544498
+  },
+  "ITC": {
+    "masterScore": 53.35,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2924.8953198506833,
+    "downTarget": 2923.1046801493167
+  },
+  "SBI": {
+    "masterScore": 47.63,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4485.682261543478,
-    "downTarget": 4484.317738456522
+    "upTarget": 1982.8476835160561,
+    "downTarget": 1981.1523164839439
   },
-  "BPCL": {
-    "masterScore": 54.2,
+  "L&T": {
+    "masterScore": 65.21,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4399.2533215426565,
+    "downTarget": 4396.7466784573435
+  },
+  "TATAMOTORS": {
+    "masterScore": 52.88,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3592.7784353272386,
+    "downTarget": 3591.2215646727614
+  },
+  "BAJFINANCE": {
+    "masterScore": 59.01,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1216.0988270603646,
+    "downTarget": 1213.9011729396354
+  },
+  "BHARTIARTL": {
+    "masterScore": 53.7,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 439.8039717288549,
-    "downTarget": 438.1960282711451
+    "upTarget": 2809.797578896023,
+    "downTarget": 2808.202421103977
   },
-  "IOC": {
-    "masterScore": 51.79,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 92.5,
+  "KOTAKBANK": {
+    "masterScore": 55.23,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2769.7384558943454,
-    "downTarget": 2768.2615441056546
+    "upTarget": 2202.9429028727395,
+    "downTarget": 2201.0570971272605
   },
-  "DIVISLAB": {
-    "masterScore": 56.72,
+  "AXISBANK": {
+    "masterScore": 52.07,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2673.7125054588587,
+    "downTarget": 2672.2874945411413
+  },
+  "ASIANPAINT": {
+    "masterScore": 64.05,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 315.2190362172975,
+    "downTarget": 312.7809637827025
+  },
+  "MARUTI": {
+    "masterScore": 61.53,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 817.154408945406,
+    "downTarget": 814.845591054594
+  },
+  "SUNPHARMA": {
+    "masterScore": 54.28,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2617.924691510075,
+    "downTarget": 2616.075308489925
+  },
+  "TITAN": {
+    "masterScore": 60.43,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3425.097834166653,
+    "downTarget": 3422.902165833347
+  },
+  "ULTRACEMCO": {
+    "masterScore": 51.68,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2271.825963436758,
+    "downTarget": 2270.174036563242
+  },
+  "ADANIENT": {
+    "masterScore": 55.42,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
       "PROMOTER_PLEDGE_DISTRESS_VETO"
     ],
-    "upTarget": 151.00375648802512,
-    "downTarget": 148.99624351197488
+    "upTarget": 630.9632587301899,
+    "downTarget": 629.0367412698101
   },
-  "APOLLOHOSP": {
-    "masterScore": 52.76,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 92.5,
-    "vetoReasons": [],
-    "upTarget": 679.7714692388543,
-    "downTarget": 678.2285307611457
-  },
-  "EICHERMOT": {
-    "masterScore": 51.48,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1472.708216875898,
-    "downTarget": 1471.291783124102
-  },
-  "BRITANNIA": {
-    "masterScore": 56.79,
+  "ADANIPORTS": {
+    "masterScore": 55.42,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 654.9850634727048,
-    "downTarget": 653.0149365272952
+    "upTarget": 3817.9544629758266,
+    "downTarget": 3816.0455370241734
   },
-  "TATACONSUM": {
-    "masterScore": 55.88,
+  "WIPRO": {
+    "masterScore": 59.08,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2167.972743373541,
-    "downTarget": 2166.027256626459
+    "upTarget": 671.9101714768589,
+    "downTarget": 670.0898285231411
   },
-  "HEROMOTOCO": {
-    "masterScore": 56.5,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3047.975592939923,
-    "downTarget": 3046.024407060077
-  },
-  "SHRIRAMFIN": {
-    "masterScore": 55.51,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 125.9569574794603,
-    "downTarget": 124.0430425205397
-  },
-  "JIOFIN": {
-    "masterScore": 56.07,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2507.978690415191,
-    "downTarget": 2506.021309584809
-  },
-  "LTIM": {
-    "masterScore": 52.67,
-    "verdict": "SYSTEM_VETO",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "PROMOTER_PLEDGE_DISTRESS_VETO"
-    ],
-    "upTarget": 2380.753413879423,
-    "downTarget": 2379.246586120577
-  },
-  "BEL": {
-    "masterScore": 57.43,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 842.0551051842839,
-    "downTarget": 839.9448948157161
-  },
-  "HAL": {
-    "masterScore": 53.74,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1383.9173565146493,
-    "downTarget": 1382.0826434853507
-  },
-  "DLF": {
-    "masterScore": 51.28,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2974.842698368744,
-    "downTarget": 2973.157301631256
-  },
-  "VBL": {
-    "masterScore": 54.5,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 4868.934997865822,
-    "downTarget": 4867.065002134178
-  },
-  "PFC": {
+  "HCLTECH": {
     "masterScore": 59.13,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4317.8987424686175,
-    "downTarget": 4316.1012575313825
+    "upTarget": 1848.0749262821873,
+    "downTarget": 1845.9250737178127
   },
-  "RECL": {
-    "masterScore": 54.69,
+  "ONGC": {
+    "masterScore": 58.38,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1424.9497101441214,
-    "downTarget": 1423.0502898558786
+    "upTarget": 816.0864187922809,
+    "downTarget": 813.9135812077191
   },
-  "TRENT": {
-    "masterScore": 48.57,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2637.7378513684857,
-    "downTarget": 2636.2621486315143
-  },
-  "ZOMATO": {
-    "masterScore": 54.87,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 904.9455292869691,
-    "downTarget": 903.0544707130309
-  },
-  "DMART": {
-    "masterScore": 57.96,
-    "verdict": "ACCUMULATE_ON_DIPS",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3627.025998008089,
-    "downTarget": 3624.974001991911
-  },
-  "BAJAJHLDNG": {
-    "masterScore": 47.23,
+  "NTPC": {
+    "masterScore": 51.94,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 4169.759877637455,
-    "downTarget": 4168.240122362545
+    "upTarget": 2169.748642405367,
+    "downTarget": 2168.251357594633
   },
-  "CHOLAFIN": {
-    "masterScore": 50.73,
+  "POWERGRID": {
+    "masterScore": 54.37,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1931.9422482007037,
+    "downTarget": 1930.0577517992963
+  },
+  "JSWSTEEL": {
+    "masterScore": 59.54,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4286.077443033431,
+    "downTarget": 4283.922556966569
+  },
+  "TATASTEEL": {
+    "masterScore": 52.12,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 92.5,
+    "vetoReasons": [],
+    "upTarget": 4689.737393922579,
+    "downTarget": 4688.262606077421
+  },
+  "COALINDIA": {
+    "masterScore": 63.45,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1665.2409531126877,
+    "downTarget": 1662.7590468873123
+  },
+  "HINDALCO": {
+    "masterScore": 62.03,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4719.182468321487,
+    "downTarget": 4716.817531678513
+  },
+  "GRASIM": {
+    "masterScore": 59.78,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2161.9288615612572,
+    "downTarget": 2160.0711384387428
+  },
+  "NESTLEIND": {
+    "masterScore": 65.22,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4179.241187307,
+    "downTarget": 4176.758812693
+  },
+  "M&M": {
+    "masterScore": 58.56,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 452.8968559277832,
+    "downTarget": 451.1031440722168
+  },
+  "INDUSINDBK": {
+    "masterScore": 56.74,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4748.002382628446,
+    "downTarget": 4745.997617371554
+  },
+  "BAJAJ-AUTO": {
+    "masterScore": 47.59,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT"
+    ],
+    "upTarget": 3032.7204287770005,
+    "downTarget": 3031.2795712229995
+  },
+  "CIPLA": {
+    "masterScore": 50.82,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 251.69693932125287,
+    "downTarget": 250.30306067874713
+  },
+  "DRREDDY": {
+    "masterScore": 50.98,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2636.720900581023,
+    "downTarget": 2635.279099418977
+  },
+  "SBILIFE": {
+    "masterScore": 48.07,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
       "PROMOTER_PLEDGE_DISTRESS_VETO"
     ],
-    "upTarget": 2220.700284402512,
-    "downTarget": 2219.299715597488
+    "upTarget": 3130.732392938355,
+    "downTarget": 3129.267607061645
+  },
+  "HDFCLIFE": {
+    "masterScore": 54.43,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4485.795521284649,
+    "downTarget": 4484.204478715351
+  },
+  "BPCL": {
+    "masterScore": 56.66,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 92.5,
+    "vetoReasons": [],
+    "upTarget": 439.8717035936831,
+    "downTarget": 438.1282964063169
+  },
+  "IOC": {
+    "masterScore": 54.16,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 92.5,
+    "vetoReasons": [],
+    "upTarget": 2769.8037840193774,
+    "downTarget": 2768.1962159806226
+  },
+  "DIVISLAB": {
+    "masterScore": 63.64,
+    "verdict": "SYSTEM_VETO",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "PROMOTER_PLEDGE_DISTRESS_VETO"
+    ],
+    "upTarget": 151.2227348895741,
+    "downTarget": 148.7772651104259
+  },
+  "APOLLOHOSP": {
+    "masterScore": 58.52,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 92.5,
+    "vetoReasons": [],
+    "upTarget": 679.9315435477807,
+    "downTarget": 678.0684564522193
+  },
+  "EICHERMOT": {
+    "masterScore": 49.99,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1472.6689012109593,
+    "downTarget": 1471.3310987890407
+  },
+  "BRITANNIA": {
+    "masterScore": 63.48,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 655.1923637127928,
+    "downTarget": 652.8076362872072
+  },
+  "TATACONSUM": {
+    "masterScore": 57.19,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2168.0140093651,
+    "downTarget": 2165.9859906349
+  },
+  "HEROMOTOCO": {
+    "masterScore": 60.72,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3048.106291422668,
+    "downTarget": 3045.893708577332
+  },
+  "SHRIRAMFIN": {
+    "masterScore": 60.51,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 126.11378433614011,
+    "downTarget": 123.88621566385989
+  },
+  "JIOFIN": {
+    "masterScore": 58.66,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2508.0602741993994,
+    "downTarget": 2505.9397258006006
+  },
+  "LTIM": {
+    "masterScore": 53.5,
+    "verdict": "SYSTEM_VETO",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "PROMOTER_PLEDGE_DISTRESS_VETO"
+    ],
+    "upTarget": 2380.776013572951,
+    "downTarget": 2379.223986427049
+  },
+  "BEL": {
+    "masterScore": 61.11,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 842.1748334321459,
+    "downTarget": 839.8251665678541
+  },
+  "HAL": {
+    "masterScore": 56.6,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1384.0086452979442,
+    "downTarget": 1381.9913547020558
+  },
+  "DLF": {
+    "masterScore": 52.18,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2974.8715579019204,
+    "downTarget": 2973.1284420980796
+  },
+  "VBL": {
+    "masterScore": 61.36,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4869.152424488179,
+    "downTarget": 4866.847575511821
+  },
+  "PFC": {
+    "masterScore": 60.86,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4317.944298415606,
+    "downTarget": 4316.055701584394
+  },
+  "RECL": {
+    "masterScore": 58.13,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1425.0597472911666,
+    "downTarget": 1422.9402527088334
+  },
+  "TRENT": {
+    "masterScore": 46.28,
+    "verdict": "SELL_ON_RALLIES",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT"
+    ],
+    "upTarget": 2637.8017817367727,
+    "downTarget": 2636.1982182632273
+  },
+  "ZOMATO": {
+    "masterScore": 57.83,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 905.0392275356945,
+    "downTarget": 902.9607724643055
+  },
+  "DMART": {
+    "masterScore": 59.04,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3627.0596168748593,
+    "downTarget": 3624.9403831251407
+  },
+  "BAJAJHLDNG": {
+    "masterScore": 47.7,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 92.5,
+    "vetoReasons": [],
+    "upTarget": 4169.747016906825,
+    "downTarget": 4168.252983093175
+  },
+  "CHOLAFIN": {
+    "masterScore": 55.68,
+    "verdict": "SYSTEM_VETO",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "PROMOTER_PLEDGE_DISTRESS_VETO"
+    ],
+    "upTarget": 2220.8350068196296,
+    "downTarget": 2219.1649931803704
   },
   "TATACOMM": {
-    "masterScore": 51.47,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1718.7063491619642,
-    "downTarget": 1717.2936508380358
-  },
-  "KPITTECH": {
-    "masterScore": 52.56,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2694.878056885404,
-    "downTarget": 2693.121943114596
-  },
-  "PERSISTENT": {
-    "masterScore": 51.33,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1355.7160818517,
-    "downTarget": 1354.2839181483
-  },
-  "COFORGE": {
     "masterScore": 51.66,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 687.8314338524607,
-    "downTarget": 686.1685661475393
+    "upTarget": 1718.7114192919519,
+    "downTarget": 1717.2885807080481
+  },
+  "KPITTECH": {
+    "masterScore": 55.67,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2694.977140953387,
+    "downTarget": 2693.022859046613
+  },
+  "PERSISTENT": {
+    "masterScore": 51.94,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 1355.7326716705202,
+    "downTarget": 1354.2673283294798
+  },
+  "COFORGE": {
+    "masterScore": 53.18,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 687.878837432946,
+    "downTarget": 686.121162567054
   },
   "MPHASIS": {
-    "masterScore": 57.86,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 68.39,
+    "verdict": "STRONG_CONVICTION_BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2754.054082453011,
-    "downTarget": 2751.945917546989
+    "upTarget": 2754.2831192367753,
+    "downTarget": 2751.7168807632247
   },
   "LTTS": {
-    "masterScore": 57.53,
+    "masterScore": 59.09,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2728.0297026492644,
-    "downTarget": 2725.9702973507356
+    "upTarget": 2728.0790827947562,
+    "downTarget": 2725.9209172052438
   },
   "DIXON": {
-    "masterScore": 51.55,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 54.29,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1366.703200624297,
-    "downTarget": 1365.296799375703
+    "upTarget": 1366.7757719881606,
+    "downTarget": 1365.2242280118394
   },
   "POLYCAB": {
-    "masterScore": 56.69,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 63.29,
+    "verdict": "BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2973.0128144157907,
-    "downTarget": 2970.9871855842093
+    "upTarget": 2973.2237508356147,
+    "downTarget": 2970.7762491643853
   },
   "KEI": {
-    "masterScore": 52.05,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 54.09,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4387.880862398717,
-    "downTarget": 4386.119137601283
+    "upTarget": 4387.947293426199,
+    "downTarget": 4386.052706573801
   },
   "HAVELLS": {
-    "masterScore": 55.79,
+    "masterScore": 59.82,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 3807.8169701911647,
-    "downTarget": 3806.1830298088353
+    "upTarget": 3807.92390068387,
+    "downTarget": 3806.07609931613
   },
   "VOLTAS": {
-    "masterScore": 50.89,
+    "masterScore": 52.19,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2183.801368983264,
-    "downTarget": 2182.198631016736
+    "upTarget": 2183.841607673038,
+    "downTarget": 2182.158392326962
   },
   "BLUESTARCO": {
-    "masterScore": 49.91,
+    "masterScore": 51.07,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1096.6700735472218,
-    "downTarget": 1095.3299264527782
+    "upTarget": 1096.6962462086917,
+    "downTarget": 1095.3037537913083
   },
   "BHEL": {
-    "masterScore": 50.6,
+    "masterScore": 50.25,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2813.8382968387227,
-    "downTarget": 2812.1617031612773
+    "upTarget": 2813.8268357491306,
+    "downTarget": 2812.1731642508694
   },
   "SAIL": {
-    "masterScore": 56.28,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 65.38,
+    "verdict": "BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2658.01002436836,
-    "downTarget": 2655.98997563164
+    "upTarget": 2658.2915912638873,
+    "downTarget": 2655.7084087361127
   },
   "NMDC": {
-    "masterScore": 55.27,
+    "masterScore": 61.61,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
       "PROMOTER_PLEDGE_DISTRESS_VETO"
     ],
-    "upTarget": 170.81074333024037,
-    "downTarget": 169.18925666975963
+    "upTarget": 170.9805521413974,
+    "downTarget": 169.0194478586026
   },
   "GMRINFRA": {
-    "masterScore": 59.23,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 61.26,
+    "verdict": "BUY",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1509.0804304261794,
-    "downTarget": 1506.9195695738206
+    "upTarget": 1509.144505032231,
+    "downTarget": 1506.855494967769
   },
   "IRFC": {
-    "masterScore": 53.72,
+    "masterScore": 54.93,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 982.7819055637574,
-    "downTarget": 981.2180944362426
+    "upTarget": 982.8148479639018,
+    "downTarget": 981.1851520360982
   },
   "RVNL": {
-    "masterScore": 53.12,
+    "masterScore": 55.91,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 3202.8894478164407,
-    "downTarget": 3201.1105521835593
+    "upTarget": 3202.977696728527,
+    "downTarget": 3201.022303271473
   },
   "IRCON": {
-    "masterScore": 51.82,
+    "masterScore": 49.5,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 2009.7317626811405,
-    "downTarget": 2008.2682373188595
+    "upTarget": 2009.6957475156257,
+    "downTarget": 2008.3042524843743
   },
   "HUDCO": {
-    "masterScore": 52.56,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3351.863521080573,
-    "downTarget": 3350.136478919427
-  },
-  "NBCC": {
-    "masterScore": 57.59,
+    "masterScore": 53.6,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4469.021231441209,
-    "downTarget": 4466.978768558791
+    "upTarget": 3351.8961067817263,
+    "downTarget": 3350.1038932182737
+  },
+  "NBCC": {
+    "masterScore": 59.29,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 4469.074502182236,
+    "downTarget": 4466.925497817764
   },
   "PATANJALI": {
-    "masterScore": 50.23,
+    "masterScore": 56.09,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
       "PROMOTER_PLEDGE_DISTRESS_VETO"
     ],
-    "upTarget": 680.8181135775486,
-    "downTarget": 679.1818864224514
+    "upTarget": 681.0081312376531,
+    "downTarget": 678.9918687623469
   },
   "AWL": {
-    "masterScore": 52.75,
+    "masterScore": 52.33,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 438.90666653722695,
-    "downTarget": 437.09333346277305
+    "upTarget": 438.89294401666353,
+    "downTarget": 437.10705598333647
   },
   "NYKAA": {
-    "masterScore": 50.07,
+    "masterScore": 47.92,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 292.79291100218376,
-    "downTarget": 291.20708899781624
+    "upTarget": 292.85648304503934,
+    "downTarget": 291.14351695496066
   },
   "PAYTM": {
-    "masterScore": 55.43,
+    "masterScore": 58.49,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1505.9596557604516,
-    "downTarget": 1504.0403442395484
+    "upTarget": 1506.0561574570331,
+    "downTarget": 1503.9438425429669
   },
   "LIC": {
-    "masterScore": 55.07,
+    "masterScore": 66.03,
+    "verdict": "BUY",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 567.238345488648,
+    "downTarget": 564.761654511352
+  },
+  "GICRE": {
+    "masterScore": 54.14,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 566.9309262210911,
-    "downTarget": 565.0690737789089
-  },
-  "GICRE": {
-    "masterScore": 52.27,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1832.8898997078936,
-    "downTarget": 1831.1101002921064
+    "upTarget": 1832.9509232668875,
+    "downTarget": 1831.0490767331125
   },
   "NIACL": {
-    "masterScore": 50.74,
+    "masterScore": 48.29,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 4099.692573725954,
-    "downTarget": 4098.307426274046
+    "upTarget": 4099.718673046629,
+    "downTarget": 4098.281326953371
   },
   "NHPC": {
-    "masterScore": 50.66,
+    "masterScore": 51.32,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 637.8262983299625,
-    "downTarget": 636.1737016700375
+    "upTarget": 637.8475515216138,
+    "downTarget": 636.1524484783862
   },
   "SJVN": {
-    "masterScore": 51.24,
+    "masterScore": 50.65,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 1711.7097930024672,
-    "downTarget": 1710.2902069975328
+    "upTarget": 1711.693833479927,
+    "downTarget": 1710.306166520073
   },
   "NLCINDIA": {
-    "masterScore": 54.89,
+    "masterScore": 56.34,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2038.9399742793612,
-    "downTarget": 2037.0600257206388
+    "upTarget": 2038.985573566918,
+    "downTarget": 2037.014426433082
   },
   "TATAELXSI": {
-    "masterScore": 49.64,
+    "masterScore": 48.56,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 657.8297524322247,
-    "downTarget": 656.1702475677753
+    "upTarget": 657.8650888922721,
+    "downTarget": 656.1349111077279
   },
   "TATAINVEST": {
-    "masterScore": 51.34,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 57.47,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 3471.702749817567,
-    "downTarget": 3470.297250182433
+    "upTarget": 3471.866297895839,
+    "downTarget": 3470.133702104161
   },
   "CDSL": {
-    "masterScore": 55.05,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 52.3,
+    "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4094.976964774722,
-    "downTarget": 4093.023035225278
+    "upTarget": 4094.8875586805293,
+    "downTarget": 4093.1124413194707
   },
   "MCX": {
-    "masterScore": 52.51,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1362.8780372447118,
-    "downTarget": 1361.1219627552882
-  },
-  "BSE": {
-    "masterScore": 51.21,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 1268.7080422524618,
-    "downTarget": 1267.2919577475382
-  },
-  "MUTHOOTFIN": {
-    "masterScore": 55.44,
+    "masterScore": 57.17,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2851.9725808002313,
-    "downTarget": 2850.0274191997687
+    "upTarget": 1363.026770562064,
+    "downTarget": 1360.973229437936
   },
-  "MANAPPURAM": {
-    "masterScore": 50.95,
+  "BSE": {
+    "masterScore": 52.55,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2244.8303440071795,
-    "downTarget": 2243.1696559928205
+    "upTarget": 1268.7442412840644,
+    "downTarget": 1267.2557587159356
+  },
+  "MUTHOOTFIN": {
+    "masterScore": 55.88,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2851.986639129801,
+    "downTarget": 2850.013360870199
+  },
+  "MANAPPURAM": {
+    "masterScore": 52.48,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 2244.879300705869,
+    "downTarget": 2243.120699294131
   }
 }

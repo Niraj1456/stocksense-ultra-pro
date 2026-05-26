@@ -420,6 +420,11 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   }
 
   // STEP 1: Calculate Base Weighted Sum using point-based aggregation (baseline 50)
+  // SENSITIVITY amplifies layer deviations so realistic scores span the full 0-100 range.
+  // Without it, weights summing to 100 and dividing by 100 mathematically cap total
+  // contribution at ±50, but real-world layer scores (55-80) only produce ±10-20 deviation,
+  // compressing all outputs into a narrow 45-65 band.
+  const SENSITIVITY = 2.0;
   let S_base = 50;
   for (const [layer, weight] of Object.entries(weights)) {
     if (layer === 'layer12_risk') continue;
@@ -427,7 +432,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     if (layer === 'layer3_technicals') {
       l_val = l3;
     }
-    S_base += ((l_val - 50) * weight) / 100;
+    S_base += ((l_val - 50) * weight) / 100 * SENSITIVITY;
   }
 
   // STEP 2: Apply Multi-Timeframe Coherence compression
