@@ -1,77 +1,41 @@
+const { getWeights } = require("./weightTable");
+
 // MODULE 13.1 — DYNAMIC WEIGHT TABLE ENGINE
+// Updated to use the 4-regime static weight table from weightTable.js
 function weightTableEngine({ mode = "SWING", market_regime = "NORMAL" }) {
-  // Base Weights
-  let weights = {
-    layer1_macro: 5,
-    layer2_microstructure: 10,
-    layer3_technicals: 15,
-    layer4_price_action: 15,
-    layer5_volume_profile: 10,
-    layer6_institutional: 10,
-    layer7_derivatives: 10,
-    layer8_fundamentals: 5,
-    layer9_forensic: 5,
-    layer10_valuation: 5,
-    layer11_predictive: 5,
-    layer15_sentiment: 5, // Sentiment & Catalysts
-    layer12_risk: 0 // Risk doesn't add to conviction score, it handles sizing
-  };
-
-  // Adjustments based on Mode
-  if (mode === "INTRADAY" || mode === "SCALP") {
-    weights.layer2_microstructure += 10;
-    weights.layer5_volume_profile += 10;
-    weights.layer7_derivatives += 5;
-    
-    weights.layer8_fundamentals = 0;
-    weights.layer9_forensic = 0;
-    weights.layer10_valuation = 0;
-    weights.layer4_price_action -= 5;
-    weights.layer1_macro -= 5;
-  } else if (mode === "INVESTMENT" || mode === "POSITIONAL") {
-    weights.layer8_fundamentals += 15;
-    weights.layer10_valuation += 15;
-    weights.layer9_forensic += 10;
-    weights.layer1_macro += 5;
-    weights.layer15_sentiment += 5; // Higher weight for long term sentiment
-
-    weights.layer2_microstructure = 0;
-    weights.layer7_derivatives = 0;
-    weights.layer3_technicals -= 10;
-    weights.layer5_volume_profile -= 5;
-    weights.layer11_predictive -= 5;
+  // Map market_regime to VIX regime
+  let vixRegime = 'LOW_VIX';
+  if (market_regime === 'HIGH_VOLATILITY' || market_regime === 'FEAR' || market_regime === 'BEAR' || market_regime === 'HIGH_VIX') {
+    vixRegime = 'HIGH_VIX';
   }
 
-  // Adjustments based on Market Regime (VIX/Macro)
-  if (market_regime === "HIGH_VOLATILITY" || market_regime === "FEAR" || market_regime === "BEAR") {
-    weights.layer1_macro += 5;
-    weights.layer9_forensic += 5;
-    // Reduce noise from fast indicators
-    weights.layer3_technicals -= 5;
-    weights.layer2_microstructure -= 5;
+  // Map mode to standard format
+  let normalizedMode = 'INTRADAY';
+  if (mode === 'INVESTMENT' || mode === 'POSITIONAL' || mode === 'LT') {
+    normalizedMode = 'INVESTMENT';
   }
 
-  // Normalize weights to sum exactly to 100
-  const total_weight = Object.values(weights).reduce((a, b) => a + b, 0);
-  Object.keys(weights).forEach(k => {
-    weights[k] = (weights[k] / total_weight) * 100;
-  });
+  // Fetch weights from the 26-layer static weight table
+  const weights = { ...getWeights(normalizedMode, vixRegime) };
 
   return {
     ok: true,
-    data: { weights, mode, market_regime },
-    meta: { fetchedAt: new Date().toISOString(), source: "calc:weightTableEngine" }
+    data: { weights, mode: normalizedMode, market_regime, vix_regime: vixRegime },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:weightTableEngine:v2" }
   };
 }
 
 // MODULE 13.2 — SCORE AGGREGATION ENGINE
+// Updated to handle 26 layers and skip layer12_risk (weight=0, used for sizing only)
 function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
   let total_score = 0;
   const score_breakdown = {};
 
   for (const [layer, weight] of Object.entries(weights)) {
-    // layer_scores should provide a normalized score (0 to 100) for each layer
-    const layer_score = Number(layer_scores[layer]) || 0;
+    if (layer === 'layer12_risk') continue; // Risk layer doesn't contribute to conviction score
+    
+    // layer_scores should provide a normalized score (10 to 90) for each layer
+    const layer_score = Number(layer_scores[layer]) || 50; // Default neutral if missing
     const weighted_contribution = (layer_score * weight) / 100;
     
     total_score += weighted_contribution;
@@ -85,72 +49,167 @@ function scoreAggregationEngine({ layer_scores = {}, weights = {} }) {
   return {
     ok: true,
     data: { total_score, score_breakdown },
-    meta: { fetchedAt: new Date().toISOString(), source: "calc:scoreAggregationEngine" }
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:scoreAggregationEngine:v2" }
   };
 }
 
-// MODULE 13.3 — VETO VERIFICATION ENGINE
-function vetoVerificationEngine({ layer_vetoes = [] }) {
-  // Scans all layers for any active veto triggers
-  const active_vetoes = layer_vetoes.filter(v => v.active === true);
-  
-  const veto_triggered = active_vetoes.length > 0;
-  const veto_reasons = active_vetoes.map(v => v.reason);
+// MODULE 13.3 — TIERED VETO VERIFICATION ENGINE
+// Replaces flat veto system with FATAL/CAUTION/ADVISORY tiers
+const VETO_TIERS = {
+  FATAL: [
+    'CIRCUIT_BREAKER_TRIPPED',
+    'PROMOTER_PLEDGE_DISTRESS_VETO',
+    'ALPHA_DECAY_HALT_VETO',
+    'ALPHA_DECAY_HALT',
+    'AUDITOR_RESIGNATION',
+    'BENEISH_M_SCORE_MANIPULATION_RISK',
+    'BENEISH_M_SCORE_MANIPULATION',
+    'PROMOTER_DISTRESS_SELL'
+  ],
+  CAUTION: [
+    'BEAR_MARKET_LONG',
+    'WEAK_BEAR_CONVICTION',
+    'EARNINGS_ANNOUNCEMENT_BINARY_RISK',
+    'EARNINGS_BINARY_EVENT',
+    'EARNINGS_QUALITY_MANIPULATION',
+    'STRONGLY_BEARISH_SENTIMENT',
+    'EARNINGS_IMMINENT_VETO',
+    'INSIDER_VETO',
+    'TREND_MISALIGNMENT',
+    'LOW_VOLUME_LONG',
+    'LOW_VOLUME_SHORT',
+    'UNIVERSAL_LOW_VOLUME',
+    'LOW_VOL_LONG',
+    'LOW_VOL_SHORT',
+    'LOW_VOL_ANY',
+    'MOMENTUM_DISAGREEMENT_LONG',
+    'MOMENTUM_DISAGREEMENT_SHORT',
+    'MOM_DISAGREE_LONG',
+    'MOM_DISAGREE_SHORT',
+    'TREND_ALIGNMENT_SHORT',
+    'OVERSOLD_OVERRIDE',
+    'OVERSOLD_SHORT',
+    'OVERBOUGHT_LONG',
+    'OVERSOLD_TREND_LONG',
+    'CANDLE_STRUCTURE_LONG',
+    'CANDLE_STRUCTURE_SHORT',
+    'CANDLE_VETO_LONG',
+    'CANDLE_VETO_SHORT'
+  ],
+  ADVISORY: [
+    'TREND_VETO',
+    'FORENSIC_DISTRESS',
+    'PEER_PERCENTILE_FALLBACK'
+  ]
+};
 
+function vetoVerificationEngine({ layer_vetoes = [], veto_codes = [] }) {
+  // Support both legacy array-of-objects and new string-code arrays
+  const activeCodes = [];
+  
+  // Legacy format: [{ active: true, reason: 'CODE' }]
+  if (layer_vetoes.length > 0) {
+    const active = layer_vetoes.filter(v => v.active === true);
+    activeCodes.push(...active.map(v => v.reason));
+  }
+  
+  // New format: string array of veto codes
+  if (veto_codes.length > 0) {
+    activeCodes.push(...veto_codes);
+  }
+  
+  const uniqueCodes = [...new Set(activeCodes)];
+  
+  // Classify into tiers
+  const fatalVetoes = uniqueCodes.filter(c => VETO_TIERS.FATAL.includes(c));
+  const cautionVetoes = uniqueCodes.filter(c => VETO_TIERS.CAUTION.includes(c));
+  const advisoryVetoes = uniqueCodes.filter(c => 
+    VETO_TIERS.ADVISORY.includes(c) || 
+    (!VETO_TIERS.FATAL.includes(c) && !VETO_TIERS.CAUTION.includes(c))
+  );
+  
+  const hasFatalVeto = fatalVetoes.length > 0;
+  const hasCautionVeto = cautionVetoes.length > 0;
+  
   return {
     ok: true,
-    data: { veto_triggered, veto_reasons },
-    meta: { fetchedAt: new Date().toISOString(), source: "calc:vetoVerificationEngine" }
+    data: {
+      veto_triggered: hasFatalVeto,
+      caution_triggered: hasCautionVeto,
+      fatal_vetoes: fatalVetoes,
+      caution_vetoes: cautionVetoes,
+      advisory_vetoes: advisoryVetoes,
+      all_veto_codes: uniqueCodes,
+      veto_reasons: uniqueCodes, // backward compat
+      tier: hasFatalVeto ? 'FATAL' : (hasCautionVeto ? 'CAUTION' : (advisoryVetoes.length > 0 ? 'ADVISORY' : 'CLEAR'))
+    },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:vetoVerificationEngine:v2" }
   };
 }
 
-// MODULE 13.4 — VERDICT CLASSIFIER
-function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered: false }, rr_valid = true }) {
+// MODULE 13.4 — CONVICTION-GATED VERDICT CLASSIFIER
+// Updated with conviction floor of 0.33 and caution penalty
+// Thresholds recalibrated to match compressed scores range (Strong Buy >= 68, Buy >= 60, etc.)
+function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered: false }, rr_valid = true, caution_count = 0 }) {
   let verdict = "NO_TRADE";
   let conviction_level = "NONE";
   let action = "SIDELINED";
+  let conviction_multiplier = 1.0;
 
   if (veto_data.veto_triggered) {
     verdict = "SYSTEM_VETO";
     conviction_level = "CRITICAL_REJECTION";
-    action = `DO_NOT_TRADE: ${veto_data.veto_reasons.join(", ")}`;
+    action = `DO_NOT_TRADE: ${(veto_data.veto_reasons || []).join(", ")}`;
+    conviction_multiplier = 0.0;
   } else if (!rr_valid) {
     verdict = "INVALID_RISK_REWARD";
     conviction_level = "REJECTED";
     action = "AWAIT_BETTER_ENTRY";
+    conviction_multiplier = 0.0;
   } else {
-    // Score based logic
-    if (total_score >= 85) {
+    // Apply caution penalty: each CAUTION veto reduces conviction by 10%
+    const cautionPenalty = Math.min(0.40, caution_count * 0.10);
+    conviction_multiplier = Math.max(0.33, 1.0 - cautionPenalty);
+    
+    // Score based logic with conviction gating
+    if (total_score >= 68) {
       verdict = "STRONG_CONVICTION_BUY";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_IMMEDIATELY_AT_MARKET";
-    } else if (total_score >= 70 && total_score < 85) {
+    } else if (total_score >= 60 && total_score < 68) {
       verdict = "BUY";
       conviction_level = "HIGH";
       action = "EXECUTE_WITH_LIMIT_ORDERS";
-    } else if (total_score >= 55 && total_score < 70) {
+    } else if (total_score >= 53 && total_score < 60) {
       verdict = "ACCUMULATE_ON_DIPS";
       conviction_level = "MODERATE";
       action = "SCALE_IN_SLOWLY";
-    } else if (total_score >= 40 && total_score < 55) {
+    } else if (total_score >= 47 && total_score < 53) {
       verdict = "NEUTRAL_WATCH";
       conviction_level = "LOW";
       action = "MONITOR_FOR_SETUP";
-    } else if (total_score >= 25 && total_score < 40) {
+    } else if (total_score >= 40 && total_score < 47) {
       verdict = "SELL_ON_RALLIES";
       conviction_level = "MODERATE";
       action = "LOOK_FOR_SHORT_ENTRIES";
-    } else if (total_score < 25) {
+    } else if (total_score < 40) {
       verdict = "STRONG_CONVICTION_SELL";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_SHORT_OR_LIQUIDATE";
+    }
+    
+    // Downgrade verdict if conviction is floored
+    if (conviction_multiplier <= 0.33 && (verdict === "STRONG_CONVICTION_BUY" || verdict === "BUY")) {
+      verdict = "ACCUMULATE_ON_DIPS";
+      conviction_level = "REDUCED_BY_CAUTIONS";
+      action = "SCALE_IN_SLOWLY_WITH_CAUTION";
     }
   }
 
   return {
     ok: true,
-    data: { verdict, conviction_level, action, final_score: total_score },
-    meta: { fetchedAt: new Date().toISOString(), source: "calc:verdictClassifierEngine" }
+    data: { verdict, conviction_level, action, final_score: total_score, conviction_multiplier },
+    meta: { fetchedAt: new Date().toISOString(), source: "calc:verdictClassifierEngine:v2" }
   };
 }
 
@@ -158,5 +217,6 @@ module.exports = {
   weightTableEngine,
   scoreAggregationEngine,
   vetoVerificationEngine,
-  verdictClassifierEngine
+  verdictClassifierEngine,
+  VETO_TIERS
 };

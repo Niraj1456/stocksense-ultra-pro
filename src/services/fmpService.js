@@ -299,6 +299,19 @@ async function getFullProfile(symbol) {
   };
 }
 
+async function getSegmentRevenue(symbol) {
+  const ticker = toFmpTicker(symbol);
+  const cacheKey = `segmentRevenue:${ticker}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const data = await fmpGet(`/revenue-product-segment?symbol=${ticker}`);
+  if (!data || !Array.isArray(data)) return null;
+
+  setCache(cacheKey, data, TTL.financials);
+  return data;
+}
+
 module.exports = {
   getFinancialStatements,
   getKeyMetrics,
@@ -308,5 +321,6 @@ module.exports = {
   getEarningsSurprises,
   getProfile,
   getAnalystEstimates,
-  getFullProfile
+  getFullProfile,
+  getSegmentRevenue
 };

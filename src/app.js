@@ -13,6 +13,7 @@ const { layer16Router } = require("./routes/layer16");
 const { layer17Router } = require("./routes/layer17");
 const { analyzeRouter } = require("./routes/analyze");
 const { kiteRouter } = require("./routes/kite");
+const { apiRouter } = require("./routes/api");
 const { logger } = require("./lib/logger");
 
 function createApp() {
@@ -41,6 +42,7 @@ function createApp() {
   app.use("/api/analyze", analyzeRouter);
   app.use("/api/v1/analyze", analyzeRouter);
   app.use("/api/kite", kiteRouter);
+  app.use("/api", apiRouter);
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     logger.error("unhandled_error", { message: err?.message, stack: err?.stack });

@@ -16,6 +16,118 @@ const Layer4 = require("../layers/layer4");
 const Layer5 = require("../layers/layer5");
 const Layer6 = require("../layers/layer6");
 
+// Upgraded 26-Layer modules
+const Layer19 = require("../layers/layer19");
+const Layer20 = require("../layers/layer20");
+const Layer21 = require("../layers/layer21");
+const Layer22 = require("../layers/layer22");
+const Layer23 = require("../layers/layer23");
+const Layer24 = require("../layers/layer24");
+
+const { dbQuery } = require("../lib/db");
+const { BROAD_SECTOR_MAP } = require("../config/sectorConstants");
+
+// ── TECHNICAL AGGREGATION & INDICATORS HELPERS ────────────────────────────
+
+function calculateEMA(prices, period) {
+  if (!Array.isArray(prices) || prices.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = prices[0];
+  for (let i = 1; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+
+function calculateMACDCrossover(prices) {
+  if (!Array.isArray(prices) || prices.length < 26) return 'NEUTRAL';
+  const ema12 = [];
+  const ema26 = [];
+  
+  let val12 = prices[0];
+  let val26 = prices[0];
+  const k12 = 2 / 13;
+  const k26 = 2 / 27;
+  
+  for (let i = 0; i < prices.length; i++) {
+    val12 = prices[i] * k12 + val12 * (1 - k12);
+    val26 = prices[i] * k26 + val26 * (1 - k26);
+    ema12.push(val12);
+    ema26.push(val26);
+  }
+  
+  const macdLine = ema12.map((v, idx) => v - ema26[idx]);
+  const signalLine = [];
+  let sigVal = macdLine[0];
+  const kSig = 2 / 10;
+  for (let i = 0; i < macdLine.length; i++) {
+    sigVal = macdLine[i] * kSig + sigVal * (1 - kSig);
+    signalLine.push(sigVal);
+  }
+  
+  const len = macdLine.length;
+  if (len < 2) return 'NEUTRAL';
+  
+  const prevMacd = macdLine[len - 2];
+  const prevSig = signalLine[len - 2];
+  const currMacd = macdLine[len - 1];
+  const currSig = signalLine[len - 1];
+  
+  if (prevMacd <= prevSig && currMacd > currSig) return 'BULLISH';
+  if (prevMacd >= prevSig && currMacd < currSig) return 'BEARISH';
+  return 'NEUTRAL';
+}
+
+function aggregateCandles(candles, type = 'weekly') {
+  if (!Array.isArray(candles) || candles.length === 0) return [];
+  
+  const aggregated = [];
+  let currentGroup = [];
+  let lastGroupKey = null;
+  
+  for (const c of candles) {
+    if (!c || !c.t) continue;
+    const date = new Date(c.t);
+    let groupKey;
+    if (type === 'weekly') {
+      const oneJan = new Date(date.getFullYear(), 0, 1);
+      const numberOfDays = Math.floor((date - oneJan) / (24 * 60 * 60 * 1000));
+      const weekNumber = Math.ceil((date.getDay() + 1 + numberOfDays) / 7);
+      groupKey = `${date.getFullYear()}-W${weekNumber}`;
+    } else {
+      groupKey = `${date.getFullYear()}-M${date.getMonth()}`;
+    }
+    
+    if (lastGroupKey !== groupKey) {
+      if (currentGroup.length > 0) {
+        aggregated.push(currentGroup);
+      }
+      currentGroup = [];
+      lastGroupKey = groupKey;
+    }
+    currentGroup.push(c);
+  }
+  if (currentGroup.length > 0) {
+    aggregated.push(currentGroup);
+  }
+  
+  return aggregated.map(group => {
+    const closes = group.map(c => c.c);
+    const highs = group.map(c => c.h);
+    const lows = group.map(c => c.l);
+    const volumes = group.map(c => c.v);
+    
+    return {
+      o: group[0].o,
+      h: Math.max(...highs),
+      l: Math.min(...lows),
+      c: closes[closes.length - 1],
+      v: volumes.reduce((a, b) => a + b, 0),
+      t: group[group.length - 1].t
+    };
+  });
+}
+
 const { cacheGet } = require("../lib/cacheRedis");
 const VolatileCacheManager = require("../lib/volatileCache");
 const { SECTOR_MAP } = require("../layers/layer13/sectorNormalization");
@@ -117,7 +229,7 @@ function calculateBeneishMScore(fmpData) {
  * Achieves latency <15ms by retrieving fundamental/slow data from Redis
  * and fast/volatile data from the in-memory WebSocket Cache.
  */
-async function analyzeStock(symbol, mode = "ST") {
+async function analyzeStock(symbol, mode = "ST", options = {}) {
   const cleanSymbol = String(symbol).trim().toUpperCase().replace(".NS", "").replace(".BO", "");
 
   // 1. Fetch Slow, Static fundamental data from Redis Cache
@@ -875,6 +987,230 @@ async function analyzeStock(symbol, mode = "ST") {
   const sentimentConfidence = avSentiment?.dataConfidence || 'LOW';
 
   // ═══════════════════════════════════════════════════════════════
+  // EXECUTE UPGRADED LAYERS 19-24 (v14 26-Layer Engine Upgrade)
+  // ═══════════════════════════════════════════════════════════════
+
+  // Resolve run date for PIT queries
+  const runDate = (options && options.isBacktestMode && options.backtestDate)
+    ? new Date(options.backtestDate)
+    : new Date();
+  const runDateStr = runDate.toISOString().split('T')[0];
+
+  // 1. Query universe registry for ISIN and database sector
+  const registryRes = await dbQuery(
+    `SELECT isin, sector FROM universe_registry 
+     WHERE symbol = $1 AND listed_at <= $2 AND (delisted_at IS NULL OR delisted_at >= $2) 
+     ORDER BY listed_at DESC LIMIT 1`,
+    [cleanSymbol, runDateStr]
+  );
+  const isin = registryRes && registryRes.rows && registryRes.rows.length > 0 ? registryRes.rows[0].isin : null;
+  const dbSector = registryRes && registryRes.rows && registryRes.rows.length > 0 ? registryRes.rows[0].sector : null;
+  const effectiveSector = dbSector || sector || mergedFundamentals.sector || 'GENERAL';
+
+  // 2. Query Promoter Pledge Cache
+  const pledgeRes = await dbQuery(
+    `SELECT pledged_shares_pct, promoter_holding_pct, pledge_velocity_qoq, bulk_deal_alert 
+     FROM promoter_pledge WHERE symbol = $1 LIMIT 1`,
+    [cleanSymbol]
+  );
+  const pledgeRow = pledgeRes && pledgeRes.rows && pledgeRes.rows.length > 0 ? pledgeRes.rows[0] : null;
+
+  // 3. Query Corporate Actions Mask for L19
+  let hasCorporateActionMask = false;
+  if (isin) {
+    const year = runDate.getFullYear();
+    const quarter = Math.floor(runDate.getMonth() / 3);
+    const qStart = new Date(year, quarter * 3, 1);
+    const qEnd = new Date(year, (quarter + 1) * 3, 0);
+    const caResult = await dbQuery(
+      `SELECT 1 FROM corporate_actions 
+       WHERE isin = $1 AND ex_date BETWEEN $2 AND $3 
+       AND action_type IN ('QIP', 'RIGHTS') LIMIT 1`,
+      [isin, qStart, qEnd]
+    );
+    hasCorporateActionMask = caResult && caResult.rows && caResult.rows.length > 0;
+  }
+
+  // 4. Query RS Percentile
+  const rsRes = await dbQuery(
+    `SELECT rs_percentile, is_confirmed_uptrend FROM rs_ratings 
+     WHERE symbol = $1 AND snapshot_date <= $2 
+     ORDER BY snapshot_date DESC LIMIT 1`,
+    [cleanSymbol, runDateStr]
+  );
+  const rsPercentile = rsRes && rsRes.rows && rsRes.rows.length > 0 ? rsRes.rows[0].rs_percentile : null;
+  const isConfirmedUptrend = rsRes && rsRes.rows && rsRes.rows.length > 0 ? rsRes.rows[0].is_confirmed_uptrend : false;
+
+  // Fetch active calibrated weights
+  const masterMode = mode === "LT" ? "INVESTMENT" : "INTRADAY";
+  const vixLevelVal = vixOut?.data?.inputs?.vix_current ?? 15;
+  const activeRegime = vixLevelVal >= 19.0 ? 'HIGH_VIX' : (vixLevelVal <= 16.5 ? 'LOW_VIX' : 'LOW_VIX');
+
+  const activeWeightsRes = await dbQuery(
+    `SELECT id, calibrated_weights FROM weight_calibration_log 
+     WHERE mode = $1 AND regime = $2 AND is_active = TRUE 
+     LIMIT 1`,
+    [masterMode, activeRegime]
+  );
+  let activeWeights = null;
+  let appliedWeightsLogId = null;
+  if (activeWeightsRes && activeWeightsRes.rows && activeWeightsRes.rows.length > 0) {
+    activeWeights = activeWeightsRes.rows[0].calibrated_weights;
+    appliedWeightsLogId = activeWeightsRes.rows[0].id;
+  }
+
+  // 5. Query Peer Metrics (L23)
+  let peerMetrics = [];
+  let peerCount = 0;
+  let sectorUsed = effectiveSector;
+
+  // First try the specific sector/sub-sector
+  const peerDateRes = await dbQuery(
+    `SELECT snapshot_date FROM peer_metrics 
+     WHERE sector = $1 AND snapshot_date <= $2 
+     ORDER BY snapshot_date DESC LIMIT 1`,
+    [effectiveSector, runDateStr]
+  );
+
+  let effectiveDate = null;
+  if (peerDateRes && peerDateRes.rows && peerDateRes.rows.length > 0) {
+    effectiveDate = peerDateRes.rows[0].snapshot_date;
+    const peerRes = await dbQuery(
+      `SELECT roe, roce, debt_to_equity, fcf_yield 
+       FROM peer_metrics 
+       WHERE sector = $1 AND snapshot_date = $2`,
+      [effectiveSector, effectiveDate]
+    );
+    peerMetrics = peerRes ? peerRes.rows : [];
+    peerCount = peerMetrics.length;
+  }
+
+  // Fallback to broad sector if peerCount < 5
+  if (peerCount < 5) {
+    const broadSector = BROAD_SECTOR_MAP[effectiveSector] || effectiveSector;
+    if (broadSector !== effectiveSector) {
+      const broadDateRes = await dbQuery(
+        `SELECT snapshot_date FROM peer_metrics 
+         WHERE sector = $1 AND snapshot_date <= $2 
+         ORDER BY snapshot_date DESC LIMIT 1`,
+        [broadSector, runDateStr]
+      );
+      if (broadDateRes && broadDateRes.rows && broadDateRes.rows.length > 0) {
+        effectiveDate = broadDateRes.rows[0].snapshot_date;
+        const broadPeerRes = await dbQuery(
+          `SELECT roe, roce, debt_to_equity, fcf_yield 
+           FROM peer_metrics 
+           WHERE sector = $1 AND snapshot_date = $2`,
+          [broadSector, effectiveDate]
+        );
+        peerMetrics = broadPeerRes ? broadPeerRes.rows : [];
+        peerCount = peerMetrics.length;
+        sectorUsed = broadSector;
+      }
+    }
+  }
+
+  // Format peerMetrics for calculatePeerPercentileScore
+  const formattedPeerMetrics = peerMetrics.map(p => ({
+    roe: p.roe != null ? Number(p.roe) : null,
+    roce: p.roce != null ? Number(p.roce) : null,
+    debtToEquity: p.debt_to_equity != null ? Number(p.debt_to_equity) : null,
+    fcfYield: p.fcf_yield != null ? Number(p.fcf_yield) : null
+  }));
+
+  // Run new layers: L19-L24
+  const l19Out = Layer19.calculatePromoterPledgeScore({
+    pledgedSharesPct: pledgeRow ? Number(pledgeRow.pledged_shares_pct) : null,
+    promoterHoldingPct: pledgeRow ? Number(pledgeRow.promoter_holding_pct) : null,
+    pledgeVelocityQoQ: pledgeRow ? Number(pledgeRow.pledge_velocity_qoq) : null,
+    hasCorporateActionMask,
+    bulkDealAlert: pledgeRow ? Boolean(pledgeRow.bulk_deal_alert) : false
+  });
+
+  let revenueGrowthVal = null;
+  if (fmpData?.financials?.income?.length >= 2) {
+    const rev_t = fmpData.financials.income[0].revenue;
+    const rev_t1 = fmpData.financials.income[1].revenue;
+    if (rev_t1 && rev_t1 > 0) {
+      revenueGrowthVal = ((rev_t - rev_t1) / rev_t1) * 100;
+    }
+  }
+  const l20Out = Layer20.calculateEarningsQualityScore({
+    netIncome: fmpData?.financials?.income?.[0]?.netIncome ?? null,
+    cfo: fmpData?.financials?.cashflow?.[0]?.operatingCashFlow ?? null,
+    totalAssets_t: fmpData?.financials?.balance?.[0]?.totalAssets ?? null,
+    totalAssets_t1: fmpData?.financials?.balance?.[1]?.totalAssets ?? null,
+    daysReceivable: fmpData?.metrics?.[0]?.daysSalesOutstanding ?? null,
+    daysInventory: fmpData?.metrics?.[0]?.daysInventoryOutstanding ?? null,
+    daysPayable: fmpData?.metrics?.[0]?.daysPayableOutstanding ?? null,
+    revenueGrowth: revenueGrowthVal,
+    acquisitionRevenueGrowth: 0,
+    sector: effectiveSector
+  });
+
+  const l21Out = Layer21.calculateRSScore({
+    rsPercentile,
+    isConfirmedUptrend
+  });
+
+  const weeklyCandles = aggregateCandles(candles, 'weekly');
+  const monthlyCandles = aggregateCandles(candles, 'monthly');
+  const dailyCloses = candles.map(c => c.c);
+  const weeklyCloses = weeklyCandles.map(c => c.c);
+  const monthlyCloses = monthlyCandles.map(c => c.c);
+
+  const dailyIndicators = {
+    ema20: calculateEMA(dailyCloses, 20),
+    ema50: calculateEMA(dailyCloses, 50),
+    macdCrossover: calculateMACDCrossover(dailyCloses)
+  };
+  const weeklyIndicators = {
+    ema20: calculateEMA(weeklyCloses, 20),
+    ema50: calculateEMA(weeklyCloses, 50),
+    macdCrossover: calculateMACDCrossover(weeklyCloses)
+  };
+  const monthlyIndicators = {
+    ema20: calculateEMA(monthlyCloses, 20),
+    ema50: calculateEMA(monthlyCloses, 50),
+    macdCrossover: calculateMACDCrossover(monthlyCloses)
+  };
+  const l22Out = Layer22.calculateMTFCoherence({
+    daily: dailyIndicators,
+    weekly: weeklyIndicators,
+    monthly: monthlyIndicators
+  });
+
+  const stockMetrics = {
+    roe: mergedFundamentals.roe,
+    roce: fmpData?.metrics?.[0]?.roce ? fmpData.metrics[0].roce * 100 : (mergedFundamentals.roce || mergedFundamentals.roe),
+    debtToEquity: mergedFundamentals.debtToEquity,
+    fcfYield: mergedFundamentals.fcfYield ? mergedFundamentals.fcfYield * 100 : null
+  };
+  const l23Out = Layer23.calculatePeerPercentileScore({
+    stockMetrics,
+    peerMetrics: formattedPeerMetrics,
+    sector: effectiveSector
+  });
+
+  const roceHistory = [];
+  if (fmpData && Array.isArray(fmpData.metrics)) {
+    for (const m of fmpData.metrics) {
+      const roceVal = m.roce ?? m.roic ?? m.returnOnCapitalEmployed ?? null;
+      if (roceVal != null) {
+        roceHistory.push(roceVal * 100);
+      }
+    }
+  }
+  roceHistory.reverse();
+  const l24Out = Layer24.calculateManagementQualityScore({
+    roceHistory,
+    dividendsPaid: fmpData?.financials?.cashflow?.[0]?.dividendsPaid ? Math.abs(fmpData.financials.cashflow[0].dividendsPaid) : null,
+    freeCashFlow: mergedFundamentals.freeCashFlow,
+    auditorName: fmpData?.profile?.auditor || null,
+    sector: effectiveSector
+  });
+
+  // ═══════════════════════════════════════════════════════════════
   // LAYER 13: Score Engine
   // ═══════════════════════════════════════════════════════════════
   const scoreOut = Layer13.scoreEngine({
@@ -949,7 +1285,21 @@ async function analyzeStock(symbol, mode = "ST") {
       triggerCandleLow: len >= 1 ? candles[len - 1].l : null,
       prevCandleOpen: len >= 2 ? candles[len - 2].o : null,
       prevCandleClose: len >= 2 ? candles[len - 2].c : null,
-      rrValid: rrOut?.data?.valid ?? true
+      rrValid: rrOut?.data?.valid ?? true,
+      
+      // Pass upgraded layers outputs
+      l19Score: l19Out?.data?.score,
+      l19VetoCode: l19Out?.data?.vetoTriggered ? l19Out.data.vetoCode : null,
+      l20Score: l20Out?.data?.score,
+      l20CautionCode: l20Out?.data?.cautionTriggered ? l20Out.data.cautionCode : null,
+      l21Score: l21Out?.data?.score,
+      l22Score: l22Out?.data?.score,
+      l22Alignment: l22Out?.data?.alignment,
+      l23Score: l23Out?.data?.score,
+      l24Score: l24Out?.data?.score,
+      activeWeights,
+      rsPercentile,
+      isConfirmedUptrend
     },
     inputs: {
       l1RiskBand: (vixOut?.data?.inputs?.vix_current ?? 15) <= 12 ? "LOW" : (vixOut?.data?.inputs?.vix_current ?? 15) <= 20 ? "MODERATE" : "HIGH",
@@ -960,13 +1310,81 @@ async function analyzeStock(symbol, mode = "ST") {
       valuationBand: valuationOut?.data?.valuationBand,
       predictiveHints: predictiveOut?.data?.hints,
       rrValid: rrOut?.data?.valid
-    }
+    },
+    options
   });
+
+  // Calculate overall data quality score
+  function getLayerQuality(layerKey) {
+    switch (layerKey) {
+      case 'layer1_macro':
+        return vixOut?.ok ? 1.0 : 0.0;
+      case 'layer2_microstructure':
+        return hasRealL2 ? 1.0 : 0.0;
+      case 'layer3_technicals':
+        return volatile.indicators ? 1.0 : 0.0;
+      case 'layer4_price_action':
+        return (wyckoffOut?.ok || elliottOut?.ok || fibConfluenceOut?.ok) ? 1.0 : 0.0;
+      case 'layer5_volume_profile':
+        return vpDetails ? 1.0 : 0.0;
+      case 'layer6_institutional':
+        return fiiDiiOut?.ok ? 1.0 : 0.0;
+      case 'layer7_derivatives':
+        return chainOut?.ok ? 1.0 : 0.0;
+      case 'layer8_fundamentals':
+        return finOut?.ok ? 1.0 : (mergedFundamentals.peRatio ? 0.7 : 0.0);
+      case 'layer9_forensic':
+        return fmpData ? 1.0 : 0.0;
+      case 'layer10_valuation':
+        return dcfOut?.ok ? 1.0 : 0.0;
+      case 'layer11_predictive':
+        return predictiveOut?.ok ? 1.0 : 0.0;
+      case 'layer15_sentiment':
+        if (sentimentOut?.data?.source === 'ALPHA_VANTAGE_NLP') return 1.0;
+        if (sentimentOut?.data?.source === 'GOOGLE_NEWS_FALLBACK') return 0.7;
+        return 0.0;
+      case 'layer19_promoter_pledge':
+        return l19Out?.data?.dataSource === 'promoter_pledge_table' ? 1.0 : 0.0;
+      case 'layer20_earnings_quality':
+        return l20Out?.data?.dataSource === 'financial_statements' ? 1.0 : 0.0;
+      case 'layer21_rs_rating':
+        return l21Out?.data?.dataSource === 'rs_ratings_cache' ? 1.0 : 0.0;
+      case 'layer22_mtf_coherence':
+        return l22Out?.data?.dataSource === 'technical_indicators' ? 1.0 : 0.0;
+      case 'layer23_peer_percentile':
+        return l23Out?.data?.dataSource === 'peer_fundamentals' ? 1.0 : 0.0;
+      case 'layer24_mgmt_quality':
+        return l24Out?.data?.dataSource === 'management_quality_analysis' ? 1.0 : 0.0;
+      default:
+        return 0.5;
+    }
+  }
+
+  let weightedQualitySum = 0;
+  let totalWeight = 0;
+  const weights = scoreOut?.data?.weights || {};
+  for (const [layerKey, w] of Object.entries(weights)) {
+    if (layerKey === 'layer12_risk' || w === 0) continue;
+    weightedQualitySum += w * getLayerQuality(layerKey);
+    totalWeight += w;
+  }
+  const dataQualityScore = totalWeight > 0 ? (weightedQualitySum / totalWeight) * 100 : 100;
+  
+  if (dataQualityScore < 60.0) {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      event_code: 'LOW_DATA_QUALITY_SCORE_ALERT',
+      severity: 'WARN',
+      message: `Overall transaction data quality score is low: ${dataQualityScore.toFixed(1)}%`,
+      details: { dataQualityScore }
+    }));
+  }
 
   const verdictOut = Layer13.verdictClassifierEngine({
     total_score: scoreOut?.data?.totalScore || 50,
     veto_data: scoreOut?.data?.engineResult?.isVetoed ? { veto_triggered: true, veto_reasons: scoreOut.data.engineResult.vetoReasons } : { veto_triggered: false, veto_reasons: [] },
-    rr_valid: rrOut?.data?.valid ?? true
+    rr_valid: rrOut?.data?.valid ?? true,
+    caution_count: scoreOut?.data?.engineResult?.cautionVetoes?.length ?? 0
   });
 
   // Assemble full decoupled context
@@ -998,6 +1416,12 @@ async function analyzeStock(symbol, mode = "ST") {
       circuitBreaker: circuitBreakerRes
     },
     layer17: layer17Metrics,
+    layer19: l19Out,
+    layer20: l20Out,
+    layer21: l21Out,
+    layer22: l22Out,
+    layer23: l23Out,
+    layer24: l24Out,
     dataConfidence: {
       fmp: fmpData?.dataConfidence || { score: 0 },
       sentiment: avSentiment ? "ACTIVE" : "UNAVAILABLE",
@@ -1057,7 +1481,9 @@ async function analyzeStock(symbol, mode = "ST") {
     data: {
       masterScore: scoreOut.data?.totalScore || 50,
       verdict: scoreOut.data?.engineResult?.verdict || verdictOut.data?.verdict || "NEUTRAL",
-      aiReasoning: layer14.data?.response_text || "Analysis complete."
+      aiReasoning: layer14.data?.response_text || "Analysis complete.",
+      data_quality_score: Number(dataQualityScore.toFixed(2)),
+      applied_weights_log_id: appliedWeightsLogId
     }
   };
 }

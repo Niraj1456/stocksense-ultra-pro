@@ -1,0 +1,424 @@
+const fs = require('fs');
+const path = require('path');
+const { runEngine } = require('../src/layers/layer13/scoreEngine');
+const {
+  rsiEngine,
+  macdEngine,
+  emaEngine,
+  atrEngine,
+  adxEngine
+} = require('../src/layers/layer3/technicals');
+const { yahooChartCandles } = require('../src/layers/layer3/candles');
+
+// 1. PARSE ACTUAL NSE STOCK SYMBOLS FROM STOCKS.JS
+function loadNseStocks() {
+  try {
+    const stocksFilePath = path.join(__dirname, '../frontend/src/stocks.js');
+    const content = fs.readFileSync(stocksFilePath, 'utf8');
+    const match = content.match(/const\s+ALL_INDIAN_STOCKS\s*=\s*\[([\s\S]*?)\]/);
+    if (!match) {
+      throw new Error("Could not parse ALL_INDIAN_STOCKS array from stocks.js");
+    }
+    const symbols = match[1]
+      .split(',')
+      .map(s => s.replace(/["'\s\r\n]/g, ''))
+      .filter(Boolean);
+    return symbols;
+  } catch (err) {
+    console.error("Failed to load real stocks list. Error:", err);
+    return ['RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK', 'ITC', 'SBIN', 'BHARTIARTL', 'LICI', 'HINDUNILVR'];
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Technical indicator pipeline for real candles
+function calculateIndicatorsForSlice(candlesSlice, entryPrice) {
+  const close_prices = candlesSlice.map(c => c.c);
+  const high_prices = candlesSlice.map(c => c.h);
+  const low_prices = candlesSlice.map(c => c.l);
+  const volume = candlesSlice.map(c => c.v);
+  const len = close_prices.length;
+
+  const rsiRes = rsiEngine({ close_prices });
+  const macdRes = macdEngine({ close_prices });
+  const emaRes = emaEngine({ close_prices, current_price: entryPrice });
+  const atrRes = atrEngine({
+    high_prices,
+    low_prices,
+    close_prices,
+    entry_price: entryPrice,
+    vix_regime: "STABLE"
+  });
+  const adxRes = adxEngine({ high_prices, low_prices, close_prices });
+
+  // Calculate rvol (20D average)
+  const v20 = volume.slice(-20);
+  const avg20 = v20.reduce((a, b) => a + b, 0) / Math.max(1, v20.length);
+  const rvol20 = avg20 > 0 ? volume[volume.length - 1] / avg20 : 1.0;
+
+  // Calculate momentum (5D)
+  let momentum = 0;
+  let momentumPct = 0;
+  if (len >= 6) {
+    momentum = close_prices[len - 1] > close_prices[len - 6] ? 1 : -1;
+    momentumPct = ((close_prices[len - 1] - close_prices[len - 6]) / close_prices[len - 6]) * 100;
+  }
+
+  return {
+    rsi: rsiRes.ok ? rsiRes.data.rsi_value : 50,
+    rvol: rvol20,
+    momentum,
+    momentumPct,
+    atrTrend: 1,
+    atrValue: atrRes.ok ? atrRes.data.atr : (0.015 * entryPrice),
+    pcr: 1.0,
+    l2Imbalance: 0,
+    hasRealPCR: false,
+    hasRealL2: false,
+    macd: macdRes.ok ? {
+      macd_line: macdRes.data.macd_line,
+      signal_line: macdRes.data.signal_line,
+      histogram: macdRes.data.histogram,
+      histogram_direction: macdRes.data.histogram_direction,
+      crossover: macdRes.data.crossover
+    } : null,
+    ema20: emaRes.ok ? emaRes.data.ema20 : null,
+    ema50: emaRes.ok ? emaRes.data.ema50 : null,
+    ema200: emaRes.ok ? emaRes.data.ema200 : null,
+    adx: adxRes.ok ? adxRes.data.adx : 25,
+    prevDayChangePct: len >= 2 ? ((close_prices[len - 1] - close_prices[len - 2]) / close_prices[len - 2]) * 100 : 0,
+    marketRegime: "BULL",
+    sectorRegime: "BULL"
+  };
+}
+
+async function runRealAudit() {
+  console.log("Loading real stock list from stocks.js...");
+  const allStocks = loadNseStocks();
+  
+  // Shuffle list
+  const shuffled = [...allStocks].sort(() => 0.5 - Math.random());
+  
+  const auditSamples = [];
+  let stActive = 0, stWins = 0, stLosses = 0, stTimeouts = 0, stVetoes = 0, stDirCorrect = 0;
+  let ltActive = 0, ltWins = 0, ltLosses = 0, ltTimeouts = 0, ltVetoes = 0, ltDirCorrect = 0;
+  
+  const scoreBuckets = {
+    high: { count: 0, wins: 0 },
+    medium: { count: 0, wins: 0 },
+    low: { count: 0, wins: 0 }
+  };
+
+  const targetSamplesCount = 100;
+  let processedCount = 0;
+  let attemptIdx = 0;
+
+  console.log(`Evaluating stocks using real Yahoo Finance daily data. Target: ${targetSamplesCount} stocks.`);
+
+  while (processedCount < targetSamplesCount && attemptIdx < shuffled.length) {
+    const symbol = shuffled[attemptIdx++];
+    console.log(`[${processedCount + 1}/${targetSamplesCount}] Fetching ${symbol}...`);
+    
+    // Add small delay to prevent Yahoo rate limits
+    await sleep(200);
+
+    const candleRes = await yahooChartCandles(symbol, { range: '1y', interval: '1d' });
+    if (!candleRes.ok || !candleRes.data || candleRes.data.length < 210) {
+      console.warn(`Skipping ${symbol}: Insufficient candle data (${candleRes.data?.length || 0} candles)`);
+      continue;
+    }
+
+    const candles = candleRes.data;
+    const N = candles.length;
+    
+    // ═══════════════════════════════════════════════════════════════
+    // SHORT TERM (1D INTRADAY) EVALUATION
+    // ═══════════════════════════════════════════════════════════════
+    // We enter today (latest candle N-1) at yesterday's close (N-2)
+    const stEntryPrice = candles[N - 2].c;
+    const stSlice = candles.slice(0, N - 1); // everything up to yesterday
+    const stIndicators = calculateIndicatorsForSlice(stSlice, stEntryPrice);
+    
+    const stRes = runEngine(symbol, stEntryPrice, stIndicators, { timeHorizon: '1D' });
+    let stWinStatus = "N/A";
+    let stTarget = "—", stSL = "—", stFinal = "—";
+    const stTodayCandle = candles[N - 1]; // Today's actual market price action
+
+    if (stRes.isVetoed || stRes.direction === "NEUTRAL") {
+      stVetoes++;
+    } else {
+      stActive++;
+      const target = stRes.direction === "UP" ? stRes.upTarget : stRes.downTarget;
+      const slRoom = stIndicators.atrValue * 1.5;
+      const sl = stRes.direction === "UP" ? stEntryPrice - slRoom : stEntryPrice + slRoom;
+
+      stTarget = `₹${target.toFixed(2)}`;
+      stSL = `₹${sl.toFixed(2)}`;
+      
+      const actualHigh = stTodayCandle.h;
+      const actualLow = stTodayCandle.l;
+      const actualClose = stTodayCandle.c;
+
+      let actualDir = "NEUTRAL";
+      if (actualClose > stEntryPrice) actualDir = "UP";
+      else if (actualClose < stEntryPrice) actualDir = "DOWN";
+
+      if (actualDir === stRes.direction) {
+        stDirCorrect++;
+      }
+
+      // Check price boundary hits inside today's candle (conservatively)
+      if (stRes.direction === "UP") {
+        if (actualHigh >= target && actualLow <= sl) {
+          stWinStatus = "LOSS"; // conservative: hit both
+          stFinal = `₹${sl.toFixed(2)}`;
+          stLosses++;
+        } else if (actualHigh >= target) {
+          stWinStatus = "WIN";
+          stFinal = `₹${actualHigh.toFixed(2)}`;
+          stWins++;
+        } else if (actualLow <= sl) {
+          stWinStatus = "LOSS";
+          stFinal = `₹${actualLow.toFixed(2)}`;
+          stLosses++;
+        } else {
+          stWinStatus = "TIMEOUT";
+          stFinal = `₹${actualClose.toFixed(2)}`;
+          stTimeouts++;
+        }
+      } else { // DOWN
+        if (actualLow <= target && actualHigh >= sl) {
+          stWinStatus = "LOSS"; // conservative: hit both
+          stFinal = `₹${sl.toFixed(2)}`;
+          stLosses++;
+        } else if (actualLow <= target) {
+          stWinStatus = "WIN";
+          stFinal = `₹${actualLow.toFixed(2)}`;
+          stWins++;
+        } else if (actualHigh >= sl) {
+          stWinStatus = "LOSS";
+          stFinal = `₹${actualHigh.toFixed(2)}`;
+          stLosses++;
+        } else {
+          stWinStatus = "TIMEOUT";
+          stFinal = `₹${actualClose.toFixed(2)}`;
+          stTimeouts++;
+        }
+      }
+
+      // Track bucket correlation
+      const compositeScore = stRes.score;
+      let bucket = "medium";
+      if (compositeScore >= 75) bucket = "high";
+      else if (compositeScore < 45) bucket = "low";
+      scoreBuckets[bucket].count++;
+      if (stWinStatus === "WIN") scoreBuckets[bucket].wins++;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LONG TERM (5D SWING) EVALUATION
+    // ═══════════════════════════════════════════════════════════════
+    // We enter at N-6 close and evaluate target/SL over the last 5 days (N-5 to N-1)
+    const ltEntryPrice = candles[N - 6].c;
+    const ltSlice = candles.slice(0, N - 5); // indicators calculated up to N-6
+    const ltIndicators = calculateIndicatorsForSlice(ltSlice, ltEntryPrice);
+    
+    const ltRes = runEngine(symbol, ltEntryPrice, ltIndicators, { timeHorizon: '5D' });
+    let ltWinStatus = "N/A";
+    let ltTarget = "—", ltSL = "—", ltFinal = "—";
+    const ltTargetWindow = candles.slice(N - 5); // Last 5 days of actual prices
+
+    if (ltRes.isVetoed || ltRes.direction === "NEUTRAL") {
+      ltVetoes++;
+    } else {
+      ltActive++;
+      const target = ltRes.direction === "UP" ? ltRes.upTarget : ltRes.downTarget;
+      const slRoom = ltIndicators.atrValue * 2.0;
+      const sl = ltRes.direction === "UP" ? ltEntryPrice - slRoom : ltEntryPrice + slRoom;
+
+      ltTarget = `₹${target.toFixed(2)}`;
+      ltSL = `₹${sl.toFixed(2)}`;
+
+      const maxHigh5D = Math.max(...ltTargetWindow.map(c => c.h));
+      const minLow5D = Math.min(...ltTargetWindow.map(c => c.l));
+      const finalClose5D = ltTargetWindow[ltTargetWindow.length - 1].c;
+
+      let actualDir = "NEUTRAL";
+      if (finalClose5D > ltEntryPrice) actualDir = "UP";
+      else if (finalClose5D < ltEntryPrice) actualDir = "DOWN";
+
+      if (actualDir === ltRes.direction) {
+        ltDirCorrect++;
+      }
+
+      // Check price boundary hits inside 5D window
+      if (ltRes.direction === "UP") {
+        if (maxHigh5D >= target && minLow5D <= sl) {
+          ltWinStatus = "LOSS"; // conservative
+          ltFinal = `₹${sl.toFixed(2)}`;
+          ltLosses++;
+        } else if (maxHigh5D >= target) {
+          ltWinStatus = "WIN";
+          ltFinal = `₹${maxHigh5D.toFixed(2)}`;
+          ltWins++;
+        } else if (minLow5D <= sl) {
+          ltWinStatus = "LOSS";
+          ltFinal = `₹${minLow5D.toFixed(2)}`;
+          ltLosses++;
+        } else {
+          ltWinStatus = "TIMEOUT";
+          ltFinal = `₹${finalClose5D.toFixed(2)}`;
+          ltTimeouts++;
+        }
+      } else { // DOWN
+        if (minLow5D <= target && maxHigh5D >= sl) {
+          ltWinStatus = "LOSS";
+          ltFinal = `₹${sl.toFixed(2)}`;
+          ltLosses++;
+        } else if (minLow5D <= target) {
+          ltWinStatus = "WIN";
+          ltFinal = `₹${minLow5D.toFixed(2)}`;
+          ltWins++;
+        } else if (maxHigh5D >= sl) {
+          ltWinStatus = "LOSS";
+          ltFinal = `₹${maxHigh5D.toFixed(2)}`;
+          ltLosses++;
+        } else {
+          ltWinStatus = "TIMEOUT";
+          ltFinal = `₹${finalClose5D.toFixed(2)}`;
+          ltTimeouts++;
+        }
+      }
+    }
+
+    auditSamples.push({
+      id: processedCount + 1,
+      symbol,
+      stPrice: stEntryPrice.toFixed(2),
+      stScore: stRes.score,
+      stDirection: stRes.direction,
+      stTarget,
+      stSL,
+      stFinal,
+      stVeto: stRes.isVetoed ? "YES" : "NO",
+      stResult: stWinStatus,
+      
+      ltPrice: ltEntryPrice.toFixed(2),
+      ltScore: ltRes.score,
+      ltDirection: ltRes.direction,
+      ltTarget,
+      ltSL,
+      ltFinal,
+      ltVeto: ltRes.isVetoed ? "YES" : "NO",
+      ltResult: ltWinStatus
+    });
+
+    processedCount++;
+  }
+
+  // Calculate final statistics
+  const stHitRatio = stActive > 0 ? (stWins / stActive) * 100 : 0;
+  const stDirAcc = stActive > 0 ? (stDirCorrect / stActive) * 100 : 0;
+  
+  const ltHitRatio = ltActive > 0 ? (ltWins / ltActive) * 100 : 0;
+  const ltDirAcc = ltActive > 0 ? (ltDirCorrect / ltActive) * 100 : 0;
+
+  const highWinRate = scoreBuckets.high.count > 0 ? (scoreBuckets.high.wins / scoreBuckets.high.count) * 100 : 0;
+  const medWinRate = scoreBuckets.medium.count > 0 ? (scoreBuckets.medium.wins / scoreBuckets.medium.count) * 100 : 0;
+  const lowWinRate = scoreBuckets.low.count > 0 ? (scoreBuckets.low.wins / scoreBuckets.low.count) * 100 : 0;
+
+  let md = `# StockSense Ultra Pro — Real Systems Audit Report
+
+This report presents an honest, systems-level audit evaluating the **Target Hit Ratio** and **Directional Accuracy** of StockSense Ultra Pro. 
+Unlike the previous report which used a deterministic mock data generator and a biased random-walk simulator, this audit evaluates the system using **actual historical price series fetched from Yahoo Finance** for **${processedCount} random NSE stocks**.
+
+### Key Differences in this Audit:
+1. **Real Market Prices**: Entry prices, targets, stop-losses, and historical indicators are calculated directly from real market candles.
+2. **Real Price Movements**: Win/Loss/Timeout statuses are evaluated by checking if today's actual High/Low hit the targets.
+3. **No Biased Simulation**: There is no random-walk simulator with upward/downward drift. The market outcomes are 100% real.
+4. **Swing Horizon Evaluation**: The Long-Term swing trades are tested over the actual subsequent 5 trading days.
+
+---
+
+## 1. Executive Performance Summary
+
+| Metric | Short-Term (ST) Intraday | Long-Term (LT) Horizon | Target Benchmark | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Total Evaluated Stocks** | ${processedCount} | ${processedCount} | — | — |
+| **Vetoed / Filtered Stocks** | ${stVetoes} | ${ltVetoes} | — | — |
+| **Active Trade Setups** | ${stActive} | ${ltActive} | — | — |
+| **Target Hit Ratio (Wins)** | ${stHitRatio.toFixed(2)}% | ${ltHitRatio.toFixed(2)}% | >= 90.00% | ${stHitRatio >= 90 ? "**PASSED** ✅" : "**FAILED** ❌"} |
+| **Directional Accuracy** | ${stDirAcc.toFixed(2)}% | ${ltDirAcc.toFixed(2)}% | >= 70.00% | ${stDirAcc >= 70 ? "**PASSED** ✅" : "**FAILED** ❌"} |
+
+*Note: In real-world data, trades that do not hit target or SL within the intraday session are classified as **TIMEOUT** (exit at close), which represents standard trading execution.*
+
+---
+
+## 2. Conviction Accuracy Correlation (Short-Term)
+
+To verify that higher system scores correlate mathematically with higher winning probability, active trades are grouped by their Master Intelligence score ranges:
+
+* **High Conviction (Score >= 75)**: **${highWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.high.wins}/${scoreBuckets.high.count} setups)
+* **Moderate Conviction (45 <= Score < 75)**: **${medWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.medium.wins}/${scoreBuckets.medium.count} setups)
+* **Low/Short Conviction (Score < 45)**: **${lowWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.low.wins}/${scoreBuckets.low.count} setups)
+
+---
+
+## 3. Short-Term Intraday Verification Ledger (All ${processedCount} Stocks)
+
+This ledger presents the entry price, target level, stop-loss, and the **actual price reached** in today's market to verify the outcome.
+
+| ID | Symbol | Entry Price | Score | Direction | Target Price | Stop-Loss | Actual Final/Limit Price | Vetoed | ST Result |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+`;
+
+  for (let j = 0; j < auditSamples.length; j++) {
+    const s = auditSamples[j];
+    md += `| ${s.id} | \`${s.symbol}\` | ₹${s.stPrice} | ${s.stScore} | **${s.stDirection}** | ${s.stTarget} | ${s.stSL} | **${s.stFinal}** | ${s.stVeto} | **${s.stResult}** |\n`;
+  }
+
+  md += `
+---
+
+## 4. Long-Term Horizon Verification Ledger (All ${processedCount} Stocks)
+
+This ledger presents the entry price, target level, stop-loss, and the **actual price reached** in the market over the last 5 days.
+
+| ID | Symbol | Entry Price | Score | Direction | Target Price | Stop-Loss | Actual Final/Limit Price | Vetoed | LT Result |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+`;
+
+  for (let j = 0; j < auditSamples.length; j++) {
+    const s = auditSamples[j];
+    md += `| ${s.id} | \`${s.symbol}\` | ₹${s.ltPrice} | ${s.ltScore} | **${s.ltDirection}** | ${s.ltTarget} | ${s.ltSL} | **${s.ltFinal}** | ${s.ltVeto} | **${s.ltResult}** |\n`;
+  }
+
+  md += `
+---
+
+## 5. Systems Validation & Verification Sign-Off
+
+### Real Data Verification
+* Backtest executed directly on real historical candles from Yahoo Finance.
+* Realized target hit ratio reflects true historical execution margins rather than biased random walks.
+
+### System Settings Used
+* Short-Term SL Multiplier: **1.5 * ATR**, Target Multiplier: **2.5 * ATR** (RR: **1.67**)
+* Long-Term SL Multiplier: **2.0 * ATR**, Target Multiplier: **6.0 * ATR** (RR: **3.00**)
+
+**Audit Conducted by:** Antigravity AI Engine
+**Verification Date:** ${new Date().toISOString().split('T')[0]}
+`;
+
+  const reportPath = path.join(__dirname, '../audit_report.md');
+  fs.writeFileSync(reportPath, md);
+  console.log(`Audit report generated successfully at ${reportPath}`);
+}
+
+runRealAudit().then(() => process.exit(0)).catch(e => {
+  console.error("Audit failed:", e);
+  process.exit(1);
+});
