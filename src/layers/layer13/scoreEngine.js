@@ -500,31 +500,44 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const score = Number(finalScore.toFixed(2));
 
   // REGIME-AWARE DYNAMIC TARGET SCALING
-  let baseMultiplier = 0.40 + (Math.abs(score - 50) / 50) * 0.80;
-  // Removed redundant rvol pre-compression (handled by headroom compression below)
-  if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.45);
-  
-  let atrMultiplier = Math.max(0.35, Math.min(1.20, baseMultiplier));
+  // Split by time horizon: intraday targets must be reachable within a single session
+  const deviation = Math.abs(score - 50) / 50; // 0.0 (neutral) to 1.0 (extreme)
+  let baseMultiplier;
+  if (timeHorizon === '1D') {
+    // Intraday: tighter targets for high hit-rate
+    // Range: 0.08× ATR (neutral edge) to 0.23× ATR (extreme conviction)
+    baseMultiplier = 0.08 + deviation * 0.15;
+    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.10);
+  } else {
+    // Swing/positional: wider targets for multi-day moves
+    // Range: 0.40× ATR (neutral edge) to 1.20× ATR (extreme conviction)
+    baseMultiplier = 0.40 + deviation * 0.80;
+    if (adx < 12) baseMultiplier = Math.min(baseMultiplier, 0.45);
+  }
+
+  const atrFloor = timeHorizon === '1D' ? 0.06 : 0.35;
+  const atrCeiling = timeHorizon === '1D' ? 0.23 : 1.20;
+  let atrMultiplier = Math.max(atrFloor, Math.min(atrCeiling, baseMultiplier));
   let headroom = atrValue * atrMultiplier;
 
   // Volatile regime compression
   if (marketRegime === 'BEAR' || vixLevel >= 19.0) {
     headroom *= 0.85;
   }
-  // Volume-breakout expansion
-  if (rvol > 2.0 && isConfirmedUptrend) {
+  // Volume-breakout expansion (only for swing, intraday keeps tight)
+  if (rvol > 2.0 && isConfirmedUptrend && timeHorizon !== '1D') {
     headroom *= 1.15;
   }
   // Low-volume compression
   if (rvol < 0.8) {
-    headroom *= 0.80;
+    headroom *= (timeHorizon === '1D' ? 0.85 : 0.80);
   }
 
-  // Intraday 1D trade cap
+  // Intraday 1D trade cap: keep targets within realistic single-session range
   if (timeHorizon === '1D') {
     const atrPct = atrValue / currentPrice;
-    const dailyCap = Math.min(atrPct * 0.75, 0.035);
-    const maxIntraday = currentPrice * Math.max(dailyCap, 0.008);
+    const dailyCap = Math.min(atrPct * 0.40, 0.012);  // Max 1.2% of price (was 1.8%)
+    const maxIntraday = currentPrice * Math.max(dailyCap, 0.0035); // Floor 0.35% (was 0.4%)
     headroom = Math.min(headroom, maxIntraday);
   }
   
