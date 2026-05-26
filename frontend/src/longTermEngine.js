@@ -196,16 +196,16 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
     score, verdict, geminiOpinion, aiReasoning,
     scoreBreakdown: (() => {
       const baseBreakdown = [
-        { layer: "Fundamental Quality (ROE)", weight: fundBadge, points: Math.round(fundScore * wFund * 0.6), reason: roe != null ? `ROE at ${roe}%. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` : `ROE not available. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` },
-        { layer: "Fundamental Growth", weight: fundBadge, points: Math.round(fundScore * wFund * 0.4), reason: `Earnings growth at ${earningsGrowth != null ? earningsGrowth + '%' : '12%'}, Revenue growth at ${revenueGrowth != null ? revenueGrowth + '%' : '10%'}.` },
-        { layer: "Multiple Valuation (P/E & P/B)", weight: fundBadge, points: Math.round(valScore * wVal * 0.5), reason: `P/E at ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, P/B at ${pb?.toFixed(1) || '1.8'}x.` },
-        { layer: "DCF Margin of Safety", weight: fundBadge, points: Math.round(valScore * wVal * 0.5), reason: `DCF model indicates a margin of safety of ${dcfMargin}%.` },
-        { layer: "Institutional Net Flow", weight: instBadge, points: Math.round(instScore * wInst * 0.6), reason: `FII Net: ${fiiDisplay}, DII Net: ${diiDisplay}.` },
-        { layer: "Delivery & Depth Support", weight: depthBadge, points: Math.round(instScore * wInst * 0.4), reason: `Delivery volume at ${delDisplay} indicates institutional absorption.` },
-        { layer: "RSI Momentum (Layer 3)", weight: "YAHOO LIVE", points: Math.round(techScore * wTech * 0.3), reason: `RSI is currently at ${rsi.toFixed(1)}. Extreme overbought/oversold boundaries are clear.` },
-        { layer: "EMA Trend Analysis (Layer 4)", weight: "YAHOO LIVE", points: Math.round(techScore * wTech * 0.3), reason: `EMA20 is at ₹${ema20 ? ema20.toFixed(0) : 'N/A'}, EMA50 is at ₹${ema50 ? ema50.toFixed(0) : 'N/A'}.` },
-        { layer: "Multi-TF Momentum (Layer 6)", weight: "YAHOO LIVE", points: Math.round(techScore * wTech * 0.2), reason: `5d/10d/20d alignment is ${mtf > 0 ? '+' : ''}${mtf}/3. Strong consensus.` },
-        { layer: "ADX Trend Strength (Layer 8)", weight: "YAHOO LIVE", points: Math.round(techScore * wTech * 0.2), reason: `ADX at ${adx.toFixed(1)} indicates a ${adx > 25 ? 'strong' : 'weak'} trend.` },
+        { layer: "Fundamental Quality (ROE)", weight: fundBadge, points: Number((fundScore * wFund * 0.6).toFixed(2)), reason: roe != null ? `ROE at ${roe}%. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` : `ROE not available. Profit margins are stable at ${profitMargin != null ? profitMargin + '%' : '15%'}.` },
+        { layer: "Fundamental Growth", weight: fundBadge, points: Number((fundScore * wFund * 0.4).toFixed(2)), reason: `Earnings growth at ${earningsGrowth != null ? earningsGrowth + '%' : '12%'}, Revenue growth at ${revenueGrowth != null ? revenueGrowth + '%' : '10%'}.` },
+        { layer: "Multiple Valuation (P/E & P/B)", weight: fundBadge, points: Number((valScore * wVal * 0.5).toFixed(2)), reason: `P/E at ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) + 'x' : 'N/A'}, P/B at ${pb?.toFixed(1) || '1.8'}x.` },
+        { layer: "DCF Margin of Safety", weight: fundBadge, points: Number((valScore * wVal * 0.5).toFixed(2)), reason: `DCF model indicates a margin of safety of ${dcfMargin}%.` },
+        { layer: "Institutional Net Flow", weight: instBadge, points: Number((instScore * wInst * 0.6).toFixed(2)), reason: `FII Net: ${fiiDisplay}, DII Net: ${diiDisplay}.` },
+        { layer: "Delivery & Depth Support", weight: depthBadge, points: Number((instScore * wInst * 0.4).toFixed(2)), reason: `Delivery volume at ${delDisplay} indicates institutional absorption.` },
+        { layer: "RSI Momentum (Layer 3)", weight: "YAHOO LIVE", points: Number((techScore * wTech * 0.3).toFixed(2)), reason: `RSI is currently at ${rsi.toFixed(1)}. Extreme overbought/oversold boundaries are clear.` },
+        { layer: "EMA Trend Analysis (Layer 4)", weight: "YAHOO LIVE", points: Number((techScore * wTech * 0.3).toFixed(2)), reason: `EMA20 is at ₹${ema20 ? ema20.toFixed(0) : 'N/A'}, EMA50 is at ₹${ema50 ? ema50.toFixed(0) : 'N/A'}.` },
+        { layer: "Multi-TF Momentum (Layer 6)", weight: "YAHOO LIVE", points: Number((techScore * wTech * 0.2).toFixed(2)), reason: `5d/10d/20d alignment is ${mtf > 0 ? '+' : ''}${mtf}/3. Strong consensus.` },
+        { layer: "ADX Trend Strength (Layer 8)", weight: "YAHOO LIVE", points: Number((techScore * wTech * 0.2).toFixed(2)), reason: `ADX at ${adx.toFixed(1)} indicates a ${adx > 25 ? 'strong' : 'weak'} trend.` },
         { layer: "FinBERT NLP Sentiment (Layer 15)", weight: "ESTIMATED", points: 0, reason: `Sentiment analysis unavailable client-side. Neutral contribution.` },
         { layer: "10-Year Backtest Win Rate (Layer 17)", weight: "ESTIMATED", points: 0, reason: `Backtest data unavailable client-side. Neutral contribution.` }
       ];
@@ -214,12 +214,12 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
       const currentSum = baseBreakdown.reduce((sum, item) => sum + item.points, 0);
       const difference = score - currentSum;
       if (difference !== 0) {
-        baseBreakdown[0].points += difference;
+        baseBreakdown[0].points = Number((baseBreakdown[0].points + difference).toFixed(2));
       }
 
       return baseBreakdown.map(item => ({
         ...item,
-        points: `${item.points >= 0 ? '+' : ''}${item.points}`
+        points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
       }));
     })(),
     layers: [

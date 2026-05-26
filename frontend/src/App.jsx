@@ -145,10 +145,10 @@ const getLongTermData = (stock, isBullRegime, realData = {}) => {
     geminiOpinion,
     aiReasoning: `[Regime: ${isBullRegime ? 'BULL' : 'BEAR'}] Dynamic neural-weighting applied. ${hasFund ? `REAL Yahoo Finance fundamentals loaded: ROE ${roe != null ? roe + '%' : 'N/A'}, P/E ${pe != null ? pe.toFixed(1) : 'N/A'}x, Debt/Equity ${debtToEquity != null ? debtToEquity.toFixed(1) : 'N/A'}.` : 'Using estimated fundamentals (Yahoo data unavailable).'} ${hasFiiDii ? `REAL NSE institutional flow: FII ${fiiDii.fiiNetValue > 0 ? 'buying' : 'selling'} ₹${Math.abs(fiiDii.fiiNetValue).toFixed(0)} Cr.` : ''} ${hasDepth ? `REAL delivery % at ${deliveryPct} confirms ${depth.deliveryPct > 50 ? 'genuine accumulation' : 'speculative trading'}.` : ''}`,
     scoreBreakdown: [
-      { layer: "Layer 8 (Fundamentals)", weight: fundBadge, points: `+${Math.round(baseFundamental * wFund)}`, reason: roe != null ? `ROE ${roe}%, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : 'N/A'}x, Margins ${fund && fund.profitMargin != null ? fund.profitMargin + '%' : 'N/A'}.` : `Fundamentals not available for index/ETF.` },
-      { layer: "Layer 10 (Valuation)", weight: fundBadge, points: `+${Math.round(baseValuation * wVal)}`, reason: hasFund ? `P/B ${fund.pb?.toFixed(1) || 'N/A'}x, PEG ${fund.pegRatio?.toFixed(1) || 'N/A'}, EV/EBITDA ${fund.enterpriseToEbitda?.toFixed(1) || 'N/A'}.` : `DCF model shows ${dcfMargin}% margin of safety.` },
-      { layer: "Layer 6 (Institutional Flow)", weight: instBadge, points: `+${Math.round(baseInstitutional * wInst)}`, reason: hasFiiDii ? `FII: ${fiiNet}, DII: ₹${fiiDii.diiNetValue > 0 ? '+' : ''}${fiiDii.diiNetValue.toFixed(0)} Cr.` : `Estimated institutional accumulation.` },
-      { layer: "Layer 15 (FinBERT NLP)", weight: "Estimated", points: `+${Math.round(baseSentiment * wSent)}`, reason: `FinBERT transcript parsing shows index at ${nlpSentiment}/100.` }
+      { layer: "Layer 8 (Fundamentals)", weight: fundBadge, points: `+${(baseFundamental * wFund).toFixed(1)}`, reason: roe != null ? `ROE ${roe}%, P/E ${pe != null ? (typeof pe === 'number' ? pe.toFixed(1) : pe) : 'N/A'}x, Margins ${fund && fund.profitMargin != null ? fund.profitMargin + '%' : 'N/A'}.` : `Fundamentals not available for index/ETF.` },
+      { layer: "Layer 10 (Valuation)", weight: fundBadge, points: `+${(baseValuation * wVal).toFixed(1)}`, reason: hasFund ? `P/B ${fund.pb?.toFixed(1) || 'N/A'}x, PEG ${fund.pegRatio?.toFixed(1) || 'N/A'}, EV/EBITDA ${fund.enterpriseToEbitda?.toFixed(1) || 'N/A'}.` : `DCF model shows ${dcfMargin}% margin of safety.` },
+      { layer: "Layer 6 (Institutional Flow)", weight: instBadge, points: `+${(baseInstitutional * wInst).toFixed(1)}`, reason: hasFiiDii ? `FII: ${fiiNet}, DII: ₹${fiiDii.diiNetValue > 0 ? '+' : ''}${fiiDii.diiNetValue.toFixed(0)} Cr.` : `Estimated institutional accumulation.` },
+      { layer: "Layer 15 (FinBERT NLP)", weight: "Estimated", points: `+${(baseSentiment * wSent).toFixed(1)}`, reason: `FinBERT transcript parsing shows index at ${nlpSentiment}/100.` }
     ],
     layers: [
       { title: "Layer 6: Institutional Flow & Delivery", badge: darkPoolBias.toUpperCase(), class: baseInstitutional > 50 ? "badge-positive" : "badge-negative", data: [{ l: hasFiiDii ? "FII Net (LIVE)" : "Smart Money", v: hasFiiDii ? fiiNet : darkPoolBias }, { l: hasDepth ? "Delivery % (LIVE)" : "Off-Exchange Vol", v: hasDepth ? deliveryPct : `${darkPoolVolume}K` }, { l: "Bias", v: darkPoolBias }] },
@@ -738,7 +738,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
       return baseBreakdown.map(item => ({
         ...item,
-        points: `${item.points >= 0 ? '+' : ''}${item.points}`
+        points: `${item.points >= 0 ? '+' : ''}${item.points.toFixed(1)}`
       }));
     })(),
     layers: [
