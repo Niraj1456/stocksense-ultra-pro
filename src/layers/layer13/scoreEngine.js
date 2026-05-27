@@ -539,8 +539,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // INTRADAY FALLING/RISING KNIFE — Graduated caution for live intraday price drops/surges
   // Detects when the engine says BUY but the stock is actively falling today, or SELL but rising.
   // Uses intradayChangePct = (LTP - prevClose) / prevClose * 100 (computed in analyzeStock.js).
-  const intradayFallingKnife = isBullish && intradayChangePct < -0.5;
-  const intradayRisingKnife = isBearish && intradayChangePct > 0.5;
+  const intradayFallingKnife = isBullish && timeHorizon === '1D' && intradayChangePct < -0.5;
+  const intradayRisingKnife = isBearish && timeHorizon === '1D' && intradayChangePct > 0.5;
 
   let candleVetoLong = false;
   let candleVetoShort = false;
@@ -663,6 +663,17 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const additionalPenalty = Math.max(0, cautionVetoes.length - 1) * 0.03;
   const cautionMultiplierClamped = clamp(worstMultiplier - additionalPenalty, 0.55, 1.00);
   let S_6 = 50 + (S_5b - 50) * cautionMultiplierClamped;
+
+  // Special handling to bypass the 0.55 caution floor for severe intraday decline contradiction (Falling Knife)
+  if (cautionVetoes.includes('INTRADAY_FALLING_KNIFE')) {
+    let fallingKnifeFactor = 0.80;
+    const dropMag = Math.abs(intradayChangePct);
+    if (dropMag >= 2.0) fallingKnifeFactor = 0.10;
+    else if (dropMag >= 1.0) fallingKnifeFactor = 0.15;
+    else fallingKnifeFactor = 0.20; // 0.5% to 1.0%
+    
+    S_6 = 50 + (S_6 - 50) * fallingKnifeFactor;
+  }
 
   // STEP 8: Apply Multi-Layer Conviction Gating (With Safety Floor)
   let agreeing_layers = S_6 > 50 ? long_agreeing_layers : bear_agreeing_layers;
