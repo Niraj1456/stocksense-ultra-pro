@@ -136,8 +136,12 @@ function generateDeterministicCandles(symbol, basePrice) {
     seed = (seed * 31 + symbol.charCodeAt(i)) % 10000;
   }
 
+  // Adding a realistic daily drift component (half of symbols drift positive, half drift negative)
+  // to prevent range-bound sinusoidal crest reversals and simulate real persistent trends.
+  const drift = (seed % 2 === 0) ? 3.5 : -3.5;
+
   for (let i = 125; i >= 0; i--) {
-    const change = Math.sin(seed + i) * 15;
+    const change = Math.sin(seed + i) * 15 + drift;
     const o = currentPrice;
     const c = currentPrice + change;
     const h = Math.max(o, c) + Math.abs(Math.sin(seed * 2 + i)) * 5;
