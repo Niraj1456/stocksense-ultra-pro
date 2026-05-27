@@ -19,11 +19,11 @@ const getHash = (str) => {
 };
 
 const getVerdict = (score) => {
-  if (score >= 75) return "STRONGLY BUY";
-  if (score >= 60) return "BUY";
-  if (score >= 55) return "NEUTRAL";
-  if (score >= 45) return "HOLD";
-  if (score >= 35) return "AVOID";
+  if (score >= 70) return "STRONGLY BUY";
+  if (score >= 63) return "BUY";
+  if (score >= 57) return "NEUTRAL";
+  if (score >= 46) return "HOLD";
+  if (score >= 38) return "AVOID";
   return "STRONGLY AVOID";
 };
 
@@ -943,8 +943,8 @@ const getApiWidgetsData = (stock, score, realData = null) => {
 // ===== PREMIUM UI/UXAESTHETIC HELPERS =====
 const getGlowClass = (score, verdict) => {
   if (verdict?.includes("VETOED") || verdict?.includes("TRAP")) return "glow-avoid";
-  if (score >= 60) return "glow-buy";
-  if (score >= 45) return "glow-neutral";
+  if (score >= 63) return "glow-buy";
+  if (score >= 46) return "glow-neutral";
   return "glow-avoid";
 };
 
@@ -2508,7 +2508,7 @@ export default function App() {
     }
     const finalScore = Math.max(5, Math.min(95, Math.round(50 + weightedSumPoints)));
 
-    const direction = data.direction || (isVetoed ? "NEUTRAL" : (finalScore >= 53 ? "UP" : finalScore < 47 ? "DOWN" : "NEUTRAL"));
+    const direction = data.direction || (isVetoed ? "NEUTRAL" : (finalScore >= 57 ? "UP" : finalScore < 46 ? "DOWN" : "NEUTRAL"));
     const verdict = data.verdict || (isVetoed ? "SYSTEM_VETO" : getVerdict(finalScore));
 
     const dummyRes = {
@@ -2890,9 +2890,8 @@ export default function App() {
                           r="48"
                           strokeWidth="8"
                           stroke={
-                            currentData.score >= 75 ? 'var(--accent)' :
-                            currentData.score >= 60 ? 'var(--accent)' :
-                            currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                            currentData.score >= 63 ? 'var(--accent)' :
+                            currentData.score >= 46 ? 'var(--warning)' : 'var(--danger)'
                           }
                           strokeDasharray={301.6}
                           strokeDashoffset={301.6 - (301.6 * currentData.score) / 100}
@@ -2917,8 +2916,8 @@ export default function App() {
                       fontSize: '0.85rem',
                       fontWeight: 800,
                       marginTop: '0.4rem',
-                      color: currentData.score >= 60 ? 'var(--accent)' :
-                             currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                      color: currentData.score >= 63 ? 'var(--accent)' :
+                             currentData.score >= 46 ? 'var(--warning)' : 'var(--danger)'
                     }}>{currentData.verdict}</div>
                   </div>
 
@@ -3004,12 +3003,12 @@ export default function App() {
                       
                       const netAdjustment = totalBullish + totalBearish + vetoPenalty;
                       const hasVeto = currentData.isVetoed || vetoPenalty !== 0;
-                      const verdictColor = currentData.score >= 53 ? 'var(--accent)' : currentData.score < 47 ? 'var(--danger)' : 'var(--text-primary)';
-                      const verdictText = currentData.score >= 68 ? 'STRONG BUY' : 
-                                          currentData.score >= 60 ? 'BUY' : 
-                                          currentData.score >= 53 ? 'ACCUMULATE' : 
-                                          currentData.score >= 47 ? 'NEUTRAL' : 
-                                          currentData.score >= 40 ? 'SELL' : 'STRONG SELL';
+                      const verdictColor = currentData.score >= 63 ? 'var(--accent)' : currentData.score < 46 ? 'var(--danger)' : 'var(--text-primary)';
+                      const verdictText = currentData.score >= 70 ? 'STRONG BUY' : 
+                                          currentData.score >= 63 ? 'BUY' : 
+                                          currentData.score >= 57 ? 'ACCUMULATE' : 
+                                          currentData.score >= 46 ? 'NEUTRAL' : 
+                                          currentData.score >= 38 ? 'SELL' : 'STRONG SELL';
                                           
                       return (
                         <div style={{

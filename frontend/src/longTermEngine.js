@@ -8,9 +8,9 @@ const getHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = ((h <
 
 function getVerdict(s) {
   if (s >= 80) return "STRONG BUY";
-  if (s >= 65) return "BUY";
-  if (s >= 55) return "ACCUMULATE";
-  if (s >= 45) return "HOLD";
+  if (s >= 70) return "BUY";
+  if (s >= 60) return "ACCUMULATE";
+  if (s >= 50) return "HOLD";
   if (s >= 35) return "REDUCE";
   if (s >= 20) return "SELL";
   return "STRONG SELL";
@@ -223,7 +223,7 @@ export function getLongTermData(stock, isBullRegime, realData = {}, liveAtr = nu
       }));
     })(),
     layers: [
-      { title: "Investment Timeframe", badge: timeframe.split(' (')[0], class: score >= 55 ? "badge-positive" : score >= 40 ? "badge-neutral" : "badge-negative", data: [
+      { title: "Investment Timeframe", badge: timeframe.split(' (')[0], class: score >= 60 ? "badge-positive" : score >= 50 ? "badge-neutral" : "badge-negative", data: [
         {l: "Suggested Horizon", v: timeframe},
         {l: "Risk Rating", v: riskRating},
         {l: "Annualized Vol", v: monthlyVol != null ? monthlyVol.toFixed(1) + '%' : 'N/A'},

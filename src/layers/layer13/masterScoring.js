@@ -198,27 +198,27 @@ function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered
     conviction_multiplier = Math.max(0.33, 1.0 - cautionPenalty);
     
     // Score based logic with conviction gating
-    if (total_score >= 68) {
+    if (total_score >= 70) {
       verdict = "STRONG_CONVICTION_BUY";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_IMMEDIATELY_AT_MARKET";
-    } else if (total_score >= 60 && total_score < 68) {
+    } else if (total_score >= 63 && total_score < 70) {
       verdict = "BUY";
       conviction_level = "HIGH";
       action = "EXECUTE_WITH_LIMIT_ORDERS";
-    } else if (total_score >= 53 && total_score < 60) {
+    } else if (total_score >= 57 && total_score < 63) {
       verdict = "ACCUMULATE_ON_DIPS";
       conviction_level = "MODERATE";
       action = "SCALE_IN_SLOWLY";
-    } else if (total_score >= 47 && total_score < 53) {
+    } else if (total_score >= 46 && total_score < 57) {
       verdict = "NEUTRAL_WATCH";
       conviction_level = "LOW";
       action = "MONITOR_FOR_SETUP";
-    } else if (total_score >= 40 && total_score < 47) {
+    } else if (total_score >= 38 && total_score < 46) {
       verdict = "SELL_ON_RALLIES";
       conviction_level = "MODERATE";
       action = "LOOK_FOR_SHORT_ENTRIES";
-    } else if (total_score < 40) {
+    } else if (total_score < 38) {
       verdict = "STRONG_CONVICTION_SELL";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_SHORT_OR_LIQUIDATE";
