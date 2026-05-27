@@ -9,12 +9,11 @@ const {
 } = require("./masterScoring");
 
 function getVerdict(score) {
-  if (score >= 70) return "STRONG_CONVICTION_BUY";
+  if (score >= 70) return "STRONG_BUY";
   if (score >= 63) return "BUY";
-  if (score >= 57) return "ACCUMULATE_ON_DIPS";
-  if (score >= 46) return "NEUTRAL_WATCH";
-  if (score >= 38) return "SELL_ON_RALLIES";
-  return "STRONG_CONVICTION_SELL";
+  if (score >= 55) return "ACCUMULATE_ON_DIPS";
+  if (score >= 45) return "NEUTRAL_WATCH";
+  return "AVOID";
 }
 
 function clamp(x, min, max) {

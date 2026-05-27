@@ -19,12 +19,11 @@ const getHash = (str) => {
 };
 
 const getVerdict = (score) => {
-  if (score >= 70) return "STRONGLY BUY";
+  if (score >= 70) return "STRONG BUY";
   if (score >= 63) return "BUY";
-  if (score >= 57) return "NEUTRAL";
-  if (score >= 46) return "HOLD";
-  if (score >= 38) return "AVOID";
-  return "STRONGLY AVOID";
+  if (score >= 55) return "ACCUMULATE ON DIPS";
+  if (score >= 45) return "NEUTRAL WATCH";
+  return "AVOID";
 };
 
 const getMarketStatusIST = (meta = null, serverDate = new Date()) => {
@@ -943,8 +942,8 @@ const getApiWidgetsData = (stock, score, realData = null) => {
 // ===== PREMIUM UI/UXAESTHETIC HELPERS =====
 const getGlowClass = (score, verdict) => {
   if (verdict?.includes("VETOED") || verdict?.includes("TRAP")) return "glow-avoid";
-  if (score >= 63) return "glow-buy";
-  if (score >= 46) return "glow-neutral";
+  if (score >= 55) return "glow-buy";
+  if (score >= 45) return "glow-neutral";
   return "glow-avoid";
 };
 
@@ -3003,12 +3002,12 @@ export default function App() {
                       
                       const netAdjustment = totalBullish + totalBearish + vetoPenalty;
                       const hasVeto = currentData.isVetoed || vetoPenalty !== 0;
-                      const verdictColor = currentData.score >= 63 ? 'var(--accent)' : currentData.score < 46 ? 'var(--danger)' : 'var(--text-primary)';
+                      const verdictColor = currentData.score >= 55 ? 'var(--accent)' : currentData.score < 45 ? 'var(--danger)' : 'var(--text-primary)';
                       const verdictText = currentData.score >= 70 ? 'STRONG BUY' : 
                                           currentData.score >= 63 ? 'BUY' : 
-                                          currentData.score >= 57 ? 'ACCUMULATE' : 
-                                          currentData.score >= 46 ? 'NEUTRAL' : 
-                                          currentData.score >= 38 ? 'SELL' : 'STRONG SELL';
+                                          currentData.score >= 55 ? 'ACCUMULATE ON DIPS' : 
+                                          currentData.score >= 45 ? 'NEUTRAL WATCH' : 
+                                          'AVOID';
                                           
                       return (
                         <div style={{

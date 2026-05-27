@@ -198,34 +198,31 @@ function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered
     conviction_multiplier = Math.max(0.33, 1.0 - cautionPenalty);
     
     // Score based logic with conviction gating
+    // User-defined tiers: 70-100 Strong Buy | 55-69 Buy | 45-54.99 Neutral Watch | 0-44.99 Avoid
     if (total_score >= 70) {
-      verdict = "STRONG_CONVICTION_BUY";
+      verdict = "STRONG_BUY";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_IMMEDIATELY_AT_MARKET";
     } else if (total_score >= 63 && total_score < 70) {
       verdict = "BUY";
       conviction_level = "HIGH";
       action = "EXECUTE_WITH_LIMIT_ORDERS";
-    } else if (total_score >= 57 && total_score < 63) {
+    } else if (total_score >= 55 && total_score < 63) {
       verdict = "ACCUMULATE_ON_DIPS";
       conviction_level = "MODERATE";
       action = "SCALE_IN_SLOWLY";
-    } else if (total_score >= 46 && total_score < 57) {
+    } else if (total_score >= 45 && total_score < 55) {
       verdict = "NEUTRAL_WATCH";
       conviction_level = "LOW";
       action = "MONITOR_FOR_SETUP";
-    } else if (total_score >= 38 && total_score < 46) {
-      verdict = "SELL_ON_RALLIES";
-      conviction_level = "MODERATE";
-      action = "LOOK_FOR_SHORT_ENTRIES";
-    } else if (total_score < 38) {
-      verdict = "STRONG_CONVICTION_SELL";
-      conviction_level = "MAXIMUM";
-      action = "EXECUTE_SHORT_OR_LIQUIDATE";
+    } else if (total_score < 45) {
+      verdict = "AVOID";
+      conviction_level = "LOW";
+      action = "SIDELINED_NO_TRADE";
     }
     
     // Downgrade verdict if conviction is floored
-    if (conviction_multiplier <= 0.33 && (verdict === "STRONG_CONVICTION_BUY" || verdict === "BUY")) {
+    if (conviction_multiplier <= 0.33 && (verdict === "STRONG_BUY" || verdict === "BUY")) {
       verdict = "ACCUMULATE_ON_DIPS";
       conviction_level = "REDUCED_BY_CAUTIONS";
       action = "SCALE_IN_SLOWLY_WITH_CAUTION";
