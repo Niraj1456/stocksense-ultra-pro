@@ -1301,6 +1301,15 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
       roce: mergedFundamentals.roe,
       adx: volatile.indicators?.adx14?.adx ?? volatile.indicators?.adx14,
       prevDayChangePct: len >= 2 ? ((candles[len-1].c - candles[len-2].c) / candles[len-2].c * 100) : 0,
+      // intradayChangePct: LIVE price change TODAY (LTP vs previous close).
+      // Uses lastClose from volatile cache (previous session close) when available,
+      // falls back to the last completed candle's close.
+      intradayChangePct: (() => {
+        const prevClose = volatile.indicators?.lastClose || (len >= 1 ? candles[len - 1].c : null);
+        return (prevClose && prevClose > 0 && currentPrice)
+          ? ((currentPrice - prevClose) / prevClose) * 100
+          : 0;
+      })(),
       marketRegime: (vixOut?.data?.inputs?.vix_current ?? 15) > 20 ? 'BEAR' : ((momentumPct > 0.5) ? 'BULL' : 'NEUTRAL'),
       sectorRegime: sectorRegime || 'NEUTRAL',
       deliveryPct: 45.0,

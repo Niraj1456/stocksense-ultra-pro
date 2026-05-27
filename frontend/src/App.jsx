@@ -339,8 +339,19 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   // Oversold trend long protection (falling knife veto): RSI < 30 + ADX > 25
   if (biasSum > 0 && rsi < 30 && adx > 25) shapDirectionalGate -= 8;
 
-  // Daily change disagreement (falling knife protection): If down > 2% and setup is BUY, depress score
-  if (biasSum > 0 && prevDayChangePct < -2.0 && rsi >= 25) shapDirectionalGate -= 12;
+  // Daily change disagreement (falling knife protection): graduated penalties for live intraday drops
+  // Matches backend INTRADAY_FALLING_KNIFE caution veto graduation.
+  if (biasSum > 0 && rsi >= 25) {
+    if (prevDayChangePct < -2.0) shapDirectionalGate -= 18;
+    else if (prevDayChangePct < -1.0) shapDirectionalGate -= 12;
+    else if (prevDayChangePct < -0.5) shapDirectionalGate -= 6;
+  }
+  // Rising knife protection for shorts: if stock is up and engine says SHORT, suppress
+  if (biasSum < 0 && rsi <= 75) {
+    if (prevDayChangePct > 2.0) shapDirectionalGate += 18;
+    else if (prevDayChangePct > 1.0) shapDirectionalGate += 12;
+    else if (prevDayChangePct > 0.5) shapDirectionalGate += 6;
+  }
 
   // Low RVOL penalty: any directional signal with RVOL < 0.40
   if (Math.abs(biasSum) > 2 && rvol < 0.40) {
@@ -384,7 +395,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const momDisagreeShort = (finalScore < 38) && (momentumPct > 1.0) && (rsi < 75);
   const overboughtLong = (finalScore >= 58 && finalScore < 75) && (rsi > 60);
   const oversoldTrendLong = (finalScore >= 58) && (rsi < 30) && (adx > 25);
-  const fallingKnifeDailyVeto = (finalScore >= 58) && (prevDayChangePct < -2.0) && (rsi >= 25);
+  const fallingKnifeDailyVeto = (finalScore >= 58) && (prevDayChangePct < -1.0) && (rsi >= 25);
 
   let candleVetoLong = false;
   let candleVetoShort = false;

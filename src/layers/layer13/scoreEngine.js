@@ -288,7 +288,7 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const {
     rsi = 50, rvol = 1.0, momentum = 0, momentumPct = 0, atrTrend = 0, atrValue = 0, pcr = 1.0, l2Imbalance = 0, hasRealPCR = false, hasRealL2 = false,
     macd, ema20, ema50, ema200, peRatio, pbRatio, pegRatio, debtToEquity, roce, adx = 25,
-    prevDayChangePct = 0, marketRegime = 'NEUTRAL',
+    prevDayChangePct = 0, intradayChangePct = 0, marketRegime = 'NEUTRAL',
     piotroskiScore = null, altmanZone = null, dcfMoS = null,
     sentimentPts = 0, sentimentVeto = false, sentimentConfidence = 'LOW',
     insiderNetBuying = null, earningsSurpriseStreak = 0, revenueAcceleration = null, daysToEarnings = null,
@@ -536,6 +536,12 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const pdhPdlContradictionLong = isBullish && pdhPdlPts <= -3;
   const pdhPdlContradictionShort = isBearish && pdhPdlPts >= 3;
 
+  // INTRADAY FALLING/RISING KNIFE — Graduated caution for live intraday price drops/surges
+  // Detects when the engine says BUY but the stock is actively falling today, or SELL but rising.
+  // Uses intradayChangePct = (LTP - prevClose) / prevClose * 100 (computed in analyzeStock.js).
+  const intradayFallingKnife = isBullish && intradayChangePct < -0.5;
+  const intradayRisingKnife = isBearish && intradayChangePct > 0.5;
+
   let candleVetoLong = false;
   let candleVetoShort = false;
   if (triggerCandleHigh != null && triggerCandleLow != null && triggerCandleOpen != null) {
@@ -586,7 +592,9 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     ...(indicators.l20CautionCode ? [indicators.l20CautionCode] : []),
     ...(indicators.l26VetoCode ? [indicators.l26VetoCode] : []),
     ...(pdhPdlContradictionLong ? ['PDH_PDL_CONTRADICTION_LONG'] : []),
-    ...(pdhPdlContradictionShort ? ['PDH_PDL_CONTRADICTION_SHORT'] : [])
+    ...(pdhPdlContradictionShort ? ['PDH_PDL_CONTRADICTION_SHORT'] : []),
+    ...(intradayFallingKnife ? ['INTRADAY_FALLING_KNIFE'] : []),
+    ...(intradayRisingKnife ? ['INTRADAY_RISING_KNIFE'] : [])
   ];
 
   // Run tiered veto verification
@@ -625,8 +633,20 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     'INSIDER_VETO': 0.70,
     'TREND_MISALIGNMENT': 0.65,
     'PDH_PDL_CONTRADICTION_LONG': 0.80,
-    'PDH_PDL_CONTRADICTION_SHORT': 0.80
+    'PDH_PDL_CONTRADICTION_SHORT': 0.80,
+    'INTRADAY_RISING_KNIFE': 0.75
   };
+
+  // INTRADAY_FALLING_KNIFE uses a graduated multiplier based on drop severity
+  // instead of a fixed value — deeper drops get stronger compression.
+  if (intradayFallingKnife && cautionVetoes.includes('INTRADAY_FALLING_KNIFE')) {
+    let fallingKnifeMultiplier;
+    const dropMag = Math.abs(intradayChangePct);
+    if (dropMag >= 2.0) fallingKnifeMultiplier = 0.55;
+    else if (dropMag >= 1.0) fallingKnifeMultiplier = 0.65;
+    else fallingKnifeMultiplier = 0.80; // 0.5% to 1.0%
+    cautionMultipliers['INTRADAY_FALLING_KNIFE'] = fallingKnifeMultiplier;
+  }
 
   // Worst-of-N caution model: use the single worst multiplier, then apply
   // a small diminishing penalty for each additional caution beyond the first.
