@@ -88,6 +88,8 @@ function insiderTradingEngine({ bse_announcements = [] }) {
   let promoter_buy_events = 0;
   let promoter_sell_events = 0;
   let auditor_resignation = false;
+  let executive_turnover = false;
+  let cfo_resignation = false;
 
   for (const ann of bse_announcements) {
     const text = (ann.subject || "").toUpperCase();
@@ -101,6 +103,20 @@ function insiderTradingEngine({ bse_announcements = [] }) {
     if (text.includes("RESIGNATION OF AUDITOR")) {
       auditor_resignation = true;
     }
+
+    const isResignation = text.includes("RESIGNATION OF CFO") || 
+                          text.includes("CFO RESIGNATION") || 
+                          text.includes("RESIGNATION OF CHIEF FINANCIAL OFFICER") || 
+                          text.includes("RESIGNATION OF CEO") || 
+                          text.includes("RESIGNATION OF MANAGING DIRECTOR") || 
+                          text.includes("RESIGNATION OF EXECUTIVE DIRECTOR") || 
+                          text.includes("RESIGNATION OF DIRECTOR");
+    if (isResignation) {
+      executive_turnover = true;
+      if (text.includes("CFO") || text.includes("CHIEF FINANCIAL OFFICER")) {
+        cfo_resignation = true;
+      }
+    }
   }
 
   let insider_signal = "NEUTRAL";
@@ -108,11 +124,16 @@ function insiderTradingEngine({ bse_announcements = [] }) {
   let veto = false;
   let flag = null;
 
-  if (auditor_resignation) {
+  if (auditor_resignation || executive_turnover) {
     insider_signal = "CRITICAL_RED_FLAG";
     veto = true;
-    flag = "AUDITOR_RESIGNATION";
-    pts = -10;
+    if (auditor_resignation) {
+      flag = "AUDITOR_RESIGNATION";
+      pts = -10;
+    } else {
+      flag = cfo_resignation ? "CFO_RESIGNATION" : "EXECUTIVE_RESIGNATION";
+      pts = -15;
+    }
   } else if (promoter_sell_events > 0 && promoter_buy_events === 0) {
     insider_signal = "PROMOTER_SELLING";
     pts = -3;
@@ -126,7 +147,17 @@ function insiderTradingEngine({ bse_announcements = [] }) {
 
   return {
     ok: true,
-    data: { promoter_buy_events, promoter_sell_events, auditor_resignation, insider_signal, flag, veto, pts },
+    data: { 
+      promoter_buy_events, 
+      promoter_sell_events, 
+      auditor_resignation, 
+      executive_turnover,
+      cfo_resignation,
+      insider_signal, 
+      flag, 
+      veto, 
+      pts 
+    },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:insiderTradingEngine" }
   };
 }

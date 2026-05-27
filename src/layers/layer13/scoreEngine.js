@@ -127,6 +127,14 @@ function getLayerScoresFromIndicators(indicators, currentPrice, stock = "GENERIC
   const pcr = indicators.pcr ?? 1.0;
   if (pcr > 1.2) l7 += 15;
   else if (pcr < 0.6) l7 -= 15;
+  
+  // Factor in GEX regime and options speculative velocity
+  if (indicators.gexPts !== undefined && indicators.gexPts !== null) {
+    l7 += indicators.gexPts * 3; // Max +/-9 points
+  }
+  if (indicators.optionVelocityPts !== undefined && indicators.optionVelocityPts !== null) {
+    l7 += indicators.optionVelocityPts * 2.5; // Max +/-10 points
+  }
   scores.layer7_derivatives = clamp(l7, 0, 100);
 
   // 8. Fundamentals
@@ -593,7 +601,10 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     ...(pdhPdlContradictionLong ? ['PDH_PDL_CONTRADICTION_LONG'] : []),
     ...(pdhPdlContradictionShort ? ['PDH_PDL_CONTRADICTION_SHORT'] : []),
     ...(intradayFallingKnife ? ['INTRADAY_FALLING_KNIFE'] : []),
-    ...(intradayRisingKnife ? ['INTRADAY_RISING_KNIFE'] : [])
+    ...(intradayRisingKnife ? ['INTRADAY_RISING_KNIFE'] : []),
+    ...(indicators.gexVeto ? ['NEGATIVE_GAMMA_TAIL_RISK'] : []),
+    ...(indicators.cfoResignation ? ['CFO_RESIGNATION'] : []),
+    ...(indicators.executiveTurnover ? ['EXECUTIVE_RESIGNATION'] : [])
   ];
 
   // Run tiered veto verification
@@ -633,7 +644,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
     'TREND_MISALIGNMENT': 0.65,
     'PDH_PDL_CONTRADICTION_LONG': 0.80,
     'PDH_PDL_CONTRADICTION_SHORT': 0.80,
-    'INTRADAY_RISING_KNIFE': 0.75
+    'INTRADAY_RISING_KNIFE': 0.75,
+    'NEGATIVE_GAMMA_TAIL_RISK': 0.80
   };
 
   // INTRADAY_FALLING_KNIFE uses a graduated multiplier based on drop severity

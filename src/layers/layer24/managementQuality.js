@@ -181,11 +181,12 @@ function isBfsiSector(sector) {
  * Calculates the Layer 24 Management Quality score.
  *
  * @param {Object}     params
- * @param {number[]}   params.roceHistory    - Array of annual ROCE values (oldest first, ideally 5 years)
- * @param {number|null} params.dividendsPaid - Total dividends paid (absolute value, positive)
- * @param {number|null} params.freeCashFlow  - Free cash flow (can be negative)
- * @param {string|null} params.auditorName   - Name of the auditing firm
- * @param {string|null} params.sector        - Company's sector/sub-sector
+ * @param {number[]}   params.roceHistory      - Array of annual ROCE values (oldest first, ideally 5 years)
+ * @param {number|null} params.dividendsPaid   - Total dividends paid (absolute value, positive)
+ * @param {number|null} params.freeCashFlow    - Free cash flow (can be negative)
+ * @param {string|null} params.auditorName     - Name of the auditing firm
+ * @param {string|null} params.sector          - Company's sector/sub-sector
+ * @param {boolean}    params.executiveTurnover - Whether a sudden CFO/executive resignation has occurred
  * @returns {ManagementQualityResult}
  */
 function calculateManagementQualityScore({
@@ -193,7 +194,8 @@ function calculateManagementQualityScore({
   dividendsPaid = null,
   freeCashFlow = null,
   auditorName = null,
-  sector = null
+  sector = null,
+  executiveTurnover = false
 } = {}) {
   const fetchedAt = new Date().toISOString();
 
@@ -201,6 +203,16 @@ function calculateManagementQualityScore({
   let roceSlope = 0;
   let dividendRatio = 0;
   const isBfsi = isBfsiSector(sector);
+
+  // ────────────────────────────────────────────────────────────────────────
+  // SIGNAL 4: SUDDEN EXECUTIVE TURNOVER (CFO/MD/CEO RESIGNATION)
+  // ────────────────────────────────────────────────────────────────────────
+  if (executiveTurnover === true) {
+    score -= 15;
+    logEvent('L24_SUDDEN_EXECUTIVE_TURNOVER_DEDUCTION_ACTIVE', 'WARN',
+      'Sudden CFO or key executive resignation detected — management quality score penalized by -15',
+      { executiveTurnover });
+  }
 
   // ────────────────────────────────────────────────────────────────────────
   // SIGNAL 1: ROCE TREND SLOPE (5-year linear regression)
@@ -307,6 +319,7 @@ function calculateManagementQualityScore({
       roceSlope,
       dividendRatio,
       auditorTier,
+      executiveTurnover,
       dataSource: 'management_quality_analysis'
     },
     meta: { fetchedAt, source: 'calc:calculateManagementQualityScore' }

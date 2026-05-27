@@ -28,17 +28,44 @@ function rsiEngine({ close_prices }) {
   const rsi_arr = RSI.calculate({ period: 14, values: close_prices });
   const rsi_value = rsi_arr[rsi_arr.length - 1];
   
+  // Calculate adaptive Bollinger-band style boundaries based on rolling RSI standard deviation
+  const lookback = Math.min(20, rsi_arr.length);
+  const rsi_tail = rsi_arr.slice(-lookback);
+  const rsi_mean = rsi_tail.reduce((a, b) => a + b, 0) / lookback;
+  const variance = rsi_tail.reduce((sum, val) => sum + Math.pow(val - rsi_mean, 2), 0) / lookback;
+  const rsi_std = Math.sqrt(variance) || 1.0;
+
+  const overbought_threshold = Math.max(65, Math.min(85, rsi_mean + 2 * rsi_std));
+  const oversold_threshold = Math.min(35, Math.max(15, rsi_mean - 2 * rsi_std));
+
   let zone = "NEUTRAL";
   let pts = 0;
   let flag = null;
 
-  if (rsi_value < 20) { zone = "EXTREME_OVERSOLD"; pts = 5; }
-  else if (rsi_value >= 20 && rsi_value < 30) { zone = "OVERSOLD"; pts = 4; }
-  else if (rsi_value >= 30 && rsi_value < 40) { zone = "APPROACHING_OVERSOLD"; pts = 3; }
-  else if (rsi_value >= 40 && rsi_value < 60) { zone = "NEUTRAL"; pts = 3; }
-  else if (rsi_value >= 60 && rsi_value < 70) { zone = "MOMENTUM"; pts = 6; }
-  else if (rsi_value >= 70 && rsi_value < 80) { zone = "OVERBOUGHT"; pts = 4; flag = "OVERBOUGHT_RISK"; }
-  else if (rsi_value >= 80) { zone = "EXTREME_OVERBOUGHT"; pts = 2; flag = "OVERBOUGHT_EXTREME"; }
+  if (rsi_value < oversold_threshold - 5) { 
+    zone = "EXTREME_OVERSOLD"; 
+    pts = 5; 
+  } else if (rsi_value >= oversold_threshold - 5 && rsi_value < oversold_threshold) { 
+    zone = "OVERSOLD"; 
+    pts = 4; 
+  } else if (rsi_value >= oversold_threshold && rsi_value < 40) { 
+    zone = "APPROACHING_OVERSOLD"; 
+    pts = 3; 
+  } else if (rsi_value >= 40 && rsi_value < 60) { 
+    zone = "NEUTRAL"; 
+    pts = 3; 
+  } else if (rsi_value >= 60 && rsi_value <= overbought_threshold) { 
+    zone = "MOMENTUM"; 
+    pts = 6; 
+  } else if (rsi_value > overbought_threshold && rsi_value <= overbought_threshold + 5) { 
+    zone = "OVERBOUGHT"; 
+    pts = 4; 
+    flag = "OVERBOUGHT_RISK"; 
+  } else if (rsi_value > overbought_threshold + 5) { 
+    zone = "EXTREME_OVERBOUGHT"; 
+    pts = 2; 
+    flag = "OVERBOUGHT_EXTREME"; 
+  }
 
   // Divergence Detection
   const price_highs = findSwingHighs(close_prices, 5);
@@ -84,7 +111,19 @@ function rsiEngine({ close_prices }) {
 
   return {
     ok: true,
-    data: { rsi_value, zone, pts, bearish_divergence, bullish_divergence, flag, divergence_confidence },
+    data: { 
+      rsi_value, 
+      zone, 
+      pts, 
+      bearish_divergence, 
+      bullish_divergence, 
+      flag, 
+      divergence_confidence,
+      overbought_threshold: +overbought_threshold.toFixed(2),
+      oversold_threshold: +oversold_threshold.toFixed(2),
+      rsi_mean: +rsi_mean.toFixed(2),
+      rsi_std: +rsi_std.toFixed(2)
+    },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:rsiEngine" }
   };
 }

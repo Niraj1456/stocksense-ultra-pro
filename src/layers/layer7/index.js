@@ -6,7 +6,9 @@ const {
   pcrEngine,
   maxPainEngine,
   oiDeltaEngine,
-  ivPercentileEngine
+  ivPercentileEngine,
+  gammaExposureEngine,
+  optionVolumeVelocityEngine
 } = require("./derivatives");
 
 module.exports = { 
@@ -17,6 +19,8 @@ module.exports = {
   pcrEngine,
   maxPainEngine,
   oiDeltaEngine,
-  ivPercentileEngine
+  ivPercentileEngine,
+  gammaExposureEngine,
+  optionVolumeVelocityEngine
 };
 

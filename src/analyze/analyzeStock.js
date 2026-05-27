@@ -289,10 +289,18 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
   const sectorRegime = sectorChangePct > 0.5 ? 'BULL' : (sectorChangePct < -0.5 ? 'BEAR' : 'NEUTRAL');
 
   // ═══════════════════════════════════════════════════════════════
-  // LAYER 7: Derivatives (PCR, Max Pain) — unchanged logic
+  // LAYER 7: Derivatives (PCR, Max Pain, GEX, Option Volume Velocity)
   // ═══════════════════════════════════════════════════════════════
   const pcrOut = chainOut.ok ? Layer7.pcr(chainOut.data) : { ok: false, data: {} };
   const maxPainOut = chainOut.ok ? Layer7.maxPain(chainOut.data) : { ok: false, data: {} };
+
+  const gexOut = (chainOut.ok && Layer7.gammaExposureEngine)
+    ? Layer7.gammaExposureEngine({ current_price: currentPrice, raw_chain: chainOut.data })
+    : { ok: false, data: { pts: 0, net_gex: 0, gamma_regime: "POSITIVE" } };
+
+  const optionVelocityOut = (chainOut.ok && Layer7.optionVolumeVelocityEngine)
+    ? Layer7.optionVolumeVelocityEngine({ raw_chain: chainOut.data })
+    : { ok: false, data: { pts: 0, ce_velocity: 0, pe_velocity: 0 } };
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 8: Fundamentals — ENHANCED with FMP data
@@ -572,10 +580,11 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     }
   }
 
-  const insiderTradingRes = Layer15.insiderTradingEngine ? Layer15.insiderTradingEngine({ bse_announcements: announcementsList }) : { ok: false, data: { pts: 0, veto: false, auditor_resignation: false } };
+  const insiderTradingRes = Layer15.insiderTradingEngine ? Layer15.insiderTradingEngine({ bse_announcements: announcementsList }) : { ok: false, data: { pts: 0, veto: false, auditor_resignation: false, executive_turnover: false } };
   const insiderPts = insiderTradingRes.ok ? insiderTradingRes.data.pts : 0;
   const insiderVeto = insiderTradingRes.ok ? insiderTradingRes.data.veto : false;
   const auditorResignation = insiderTradingRes.ok ? insiderTradingRes.data.auditor_resignation : false;
+  const executiveTurnover = insiderTradingRes.ok ? insiderTradingRes.data.executive_turnover : false;
 
   const upcomingActions = finOut?.data?.upcomingCorporateActions || [];
   const eventCatalystRes = Layer15.eventCatalystEngine ? Layer15.eventCatalystEngine({ days_to_earnings: daysToEarnings, upcoming_corporate_actions: upcomingActions }) : { ok: false, data: { pts: 0, veto: false } };
@@ -1226,7 +1235,8 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     dividendsPaid: fmpData?.financials?.cashflow?.[0]?.dividendsPaid ? Math.abs(fmpData.financials.cashflow[0].dividendsPaid) : null,
     freeCashFlow: mergedFundamentals.freeCashFlow,
     auditorName: fmpData?.profile?.auditor || null,
-    sector: effectiveSector
+    sector: effectiveSector,
+    executiveTurnover: executiveTurnover
   });
 
   // ── Layer 18: Volatility (ATR) Predictor ──
@@ -1357,6 +1367,11 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
       prevCandleOpen: len >= 2 ? candles[len - 2].o : null,
       prevCandleClose: len >= 2 ? candles[len - 2].c : null,
       rrValid: rrOut?.data?.valid ?? true,
+      gexPts: gexOut.ok ? gexOut.data.pts : 0,
+      gexVeto: gexOut.ok && gexOut.data.gamma_regime === "NEGATIVE",
+      optionVelocityPts: optionVelocityOut.ok ? optionVelocityOut.data.pts : 0,
+      cfoResignation: insiderTradingRes.ok ? insiderTradingRes.data.cfo_resignation : false,
+      executiveTurnover: insiderTradingRes.ok ? insiderTradingRes.data.executive_turnover : false,
       
       // Pass upgraded layers outputs
       l19Score: l19Out?.data?.score,
@@ -1474,7 +1489,7 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     layer4: { wyckoffOut, elliottOut, fibConfluenceOut },
     layer5: { vpDetails },
     layer6: { mfFlowRes, fiiDiiRes, bulkBlockRes, peerCorrRes },
-    layer7: { pcrOut, maxPainOut },
+    layer7: { pcrOut, maxPainOut, gexOut, optionVelocityOut },
     layer8: { ...finOut, merged: mergedFundamentals },
     layer9: { forensicOut, altmanOut, piotroskiOut },
     layer10: { valuationOut, dcfOut },
@@ -1484,7 +1499,8 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     layer15: {
       sentiment: sentimentOut,
       supplyChainNews: layer15SupplyChainNews,
-      announcements: layer15Announcements
+      announcements: layer15Announcements,
+      insiderTrading: insiderTradingRes
     },
     layer16: {
       freshnessDecay: freshnessRes,

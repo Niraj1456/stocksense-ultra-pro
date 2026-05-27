@@ -20,6 +20,28 @@ function volumeProfileEngine({ price_volume_pairs, price_bins = 100, current_pri
   const poc_bin = volume_at_price.indexOf(max_vol);
   const poc = price_min + (poc_bin * bin_size) + (bin_size / 2);
 
+  // Calculate early POC from the first 50% of chronological data to detect value migration
+  let poc_early = poc;
+  if (price_volume_pairs.length >= 10) {
+    const half_len = Math.floor(price_volume_pairs.length / 2);
+    const early_pairs = price_volume_pairs.slice(0, half_len);
+    const early_min = Math.min(...early_pairs.map(p => p.price));
+    const early_max = Math.max(...early_pairs.map(p => p.price));
+    const early_bin_size = early_max === early_min ? 1.0 : (early_max - early_min) / price_bins;
+    const early_vol_at_price = new Array(price_bins).fill(0);
+    
+    early_pairs.forEach(c => {
+      let bin = Math.floor((c.price - early_min) / early_bin_size);
+      if (bin >= price_bins) bin = price_bins - 1;
+      if (bin < 0) bin = 0;
+      early_vol_at_price[bin] += c.volume;
+    });
+    
+    const early_max_vol = Math.max(...early_vol_at_price);
+    const early_poc_bin = early_vol_at_price.indexOf(early_max_vol);
+    poc_early = early_min + (early_poc_bin * early_bin_size) + (early_bin_size / 2);
+  }
+
   const total_volume = volume_at_price.reduce((a, b) => a + b, 0);
   const target_volume = total_volume * 0.70;
   
@@ -66,6 +88,16 @@ function volumeProfileEngine({ price_volume_pairs, price_bins = 100, current_pri
   else if (Math.abs(current_price - poc) < bin_size) { signal = "AT_FAIR_VALUE_POC"; pts = 0; }
   else if (current_price > poc) { signal = "ABOVE_VALUE_AREA"; pts = 4; }
 
+  // Developing POC (dPOC) Migration Trend Calculation
+  let dpoc_migration_trend = "STABLE";
+  if (poc > poc_early * 1.005) {
+    dpoc_migration_trend = "UPWARD";
+    pts += 3;
+  } else if (poc < poc_early * 0.995) {
+    dpoc_migration_trend = "DOWNWARD";
+    pts -= 3;
+  }
+
   let extend_target = 0;
   if (atr_target_2 && atr) {
     const lvn_between = lvn_zones.some(z => z > current_price && z < atr_target_2);
@@ -74,7 +106,18 @@ function volumeProfileEngine({ price_volume_pairs, price_bins = 100, current_pri
 
   return {
     ok: true,
-    data: { poc, vah, val, lvn_zones, hvn_zones, signal, pts, extend_target },
+    data: { 
+      poc, 
+      poc_early: +poc_early.toFixed(2), 
+      dpoc_migration_trend, 
+      vah, 
+      val, 
+      lvn_zones, 
+      hvn_zones, 
+      signal, 
+      pts, 
+      extend_target 
+    },
     meta: { fetchedAt: new Date().toISOString(), source: "calc:volumeProfileEngine" }
   };
 }
