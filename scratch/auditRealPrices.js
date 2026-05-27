@@ -86,6 +86,12 @@ function calculateIndicatorsForSlice(candlesSlice, entryPrice) {
     ema200: emaRes.ok ? emaRes.data.ema200 : null,
     adx: adxVal,
     prevDayChangePct: len >= 2 ? ((close_prices[len - 1] - close_prices[len - 2]) / close_prices[len - 2]) * 100 : 0,
+    intradayChangePct: len >= 2 ? ((close_prices[len - 1] - close_prices[len - 2]) / close_prices[len - 2]) * 100 : 0,
+    triggerCandleOpen: len >= 1 ? candlesSlice[len - 1].o : null,
+    triggerCandleHigh: len >= 1 ? candlesSlice[len - 1].h : null,
+    triggerCandleLow: len >= 1 ? candlesSlice[len - 1].l : null,
+    prevCandleOpen: len >= 2 ? candlesSlice[len - 2].o : null,
+    prevCandleClose: len >= 2 ? candlesSlice[len - 2].c : null,
     pdhPdlPts,
     marketRegime: "NEUTRAL",
     sectorRegime: "NEUTRAL"
@@ -354,8 +360,8 @@ This audit evaluates the system using **actual historical price series fetched f
 | **Total Evaluated Stocks** | ${processedCount} | ${processedCount} | — | — |
 | **Vetoed / Filtered Setups** | ${stVetoes} | ${ltVetoes} | — | — |
 | **Active Trade Setups** | ${stActive} | ${ltActive} | — | — |
-| **Target Hit Ratio (Wins)** | ${stHitRatio.toFixed(2)}% | ${ltHitRatio.toFixed(2)}% | >= 90.00% | ${stHitRatio >= 90 ? "**PASSED** ✅" : "**FAILED** ❌"} |
-| **Directional Accuracy** | ${stDirAcc.toFixed(2)}% | ${ltDirAcc.toFixed(2)}% | >= 60.00% | ${stDirAcc >= 60 ? "**PASSED** ✅" : "**FAILED** ❌"} |
+| **Target Hit Ratio (Wins)** | ${stHitRatio.toFixed(2)}% | ${ltHitRatio.toFixed(2)}% | >= 90% (ST)<br>>= 50% (LT) | ST: ${stHitRatio >= 90 ? "**PASSED** ✅" : "**FAILED** ❌"}<br>LT: ${ltHitRatio >= 50 ? "**PASSED** ✅" : "**FAILED** ❌"} |
+| **Directional Accuracy** | ${stDirAcc.toFixed(2)}% | ${ltDirAcc.toFixed(2)}% | >= 60.00% | ST: ${stDirAcc >= 60 ? "**PASSED** ✅" : "**FAILED** ❌"}<br>LT: ${ltDirAcc >= 60 ? "**PASSED** ✅" : "**FAILED** ❌"} |
 
 *Note: In real-world data, trades that do not hit target or SL within the intraday session are classified as **TIMEOUT** (exit at close), which represents standard trading execution.*
 

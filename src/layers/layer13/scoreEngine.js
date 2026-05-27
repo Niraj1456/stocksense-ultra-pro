@@ -539,8 +539,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   // INTRADAY FALLING/RISING KNIFE — Graduated caution for live intraday price drops/surges
   // Detects when the engine says BUY but the stock is actively falling today, or SELL but rising.
   // Uses intradayChangePct = (LTP - prevClose) / prevClose * 100 (computed in analyzeStock.js).
-  const intradayFallingKnife = isBullish && timeHorizon === '1D' && intradayChangePct < -0.5;
-  const intradayRisingKnife = isBearish && timeHorizon === '1D' && intradayChangePct > 0.5;
+  const intradayFallingKnife = isBullish && intradayChangePct < -0.5;
+  const intradayRisingKnife = isBearish && intradayChangePct > 0.5;
 
   let candleVetoLong = false;
   let candleVetoShort = false;
