@@ -1272,7 +1272,7 @@ const getDynamicScoreBreakdown = (res, masterScore, isVetoed, vetoesList) => {
       reason = `Avg Peer Percentile Rank: ${l23.data?.avgPercentile || 0}% across ${l23.data?.peerCount || 0} sector peers.`;
     } else if (key === 'layer24_mgmt_quality') {
       const l24 = layers.layer24 || {};
-      reason = `ROCE Slope: ${l24.data?.roceSlope || 0}, Dividend Sustainability Ratio: ${l24.data?.dividendRatio || 0}.`;
+      reason = `ROCE Slope: ${l24.data?.roceSlope || 0}, Dividend Sustainability Ratio: ${l24.data?.dividendRatio || 0}.${l24.data?.executiveTurnover ? ' [TURNOVER ALERT ⚠️]' : ''}`;
     } else if (key === 'layer25_ensemble') {
       reason = `Weights Auto-Tuner calibrated successfully. Tuning Cycle: 24h.`;
     } else if (key === 'layer26_walk_forward') {
@@ -1383,10 +1383,11 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
     },
     { 
       title: "Layer 3: Momentum Technicals", 
-      badge: (l3.data?.indicators?.rsi14 > 70) ? "OVERBOUGHT" : (l3.data?.indicators?.rsi14 < 30) ? "OVERSOLD" : "NEUTRAL", 
-      class: (l3.data?.indicators?.rsi14 > 70) ? "badge-negative" : (l3.data?.indicators?.rsi14 < 30) ? "badge-positive" : "badge-neutral", 
+      badge: (l3.data?.indicators?.rsiDetails?.zone) || ((l3.data?.indicators?.rsi14 > 70) ? "OVERBOUGHT" : (l3.data?.indicators?.rsi14 < 30) ? "OVERSOLD" : "NEUTRAL"), 
+      class: (l3.data?.indicators?.rsiDetails?.zone?.includes("OVERBOUGHT") || l3.data?.indicators?.rsi14 > 70) ? "badge-negative" : (l3.data?.indicators?.rsiDetails?.zone?.includes("OVERSOLD") || l3.data?.indicators?.rsi14 < 30) ? "badge-positive" : "badge-neutral", 
       data: [
         { l: "RSI (14-Period)", v: l3.data?.indicators?.rsi14?.toFixed(1) || "50.0" }, 
+        { l: "Adaptive OB / OS", v: l3.data?.indicators?.rsiDetails?.overbought_threshold ? `${l3.data.indicators.rsiDetails.overbought_threshold} / ${l3.data.indicators.rsiDetails.oversold_threshold}` : "70 / 30" },
         { l: "ADX (Trend Strength)", v: l3.data?.indicators?.adx14?.adx?.toFixed(1) || l3.data?.indicators?.adx14?.toFixed(1) || "25.0" },
         { l: "RVOL (20-Period)", v: `${l3.data?.indicators?.rvol20?.toFixed(2) || "1.00"}x` }
       ] 
@@ -1403,12 +1404,13 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
     },
     { 
       title: "Layer 5: Volume Profile (POC)", 
-      badge: l5.vpDetails?.rvol > 1.5 ? "HIGH VOLUME" : "CONGESTION", 
-      class: l5.vpDetails?.rvol > 1.5 ? "badge-positive" : "badge-neutral", 
+      badge: l5.vpDetails?.dpoc_migration_trend ? `dPOC: ${l5.vpDetails.dpoc_migration_trend}` : (l5.vpDetails?.rvol > 1.5 ? "HIGH VOLUME" : "CONGESTION"), 
+      class: l5.vpDetails?.dpoc_migration_trend === "UPWARD" || l5.vpDetails?.rvol > 1.5 ? "badge-positive" : l5.vpDetails?.dpoc_migration_trend === "DOWNWARD" ? "badge-negative" : "badge-neutral", 
       data: [
-        { l: "Point of Control (POC)", v: l5.vpDetails?.pocPrice ? `₹${l5.vpDetails.pocPrice}` : "N/A" }, 
-        { l: "Value Area High (VAH)", v: l5.vpDetails?.vah ? `₹${l5.vpDetails.vah}` : "N/A" },
-        { l: "Value Area Low (VAL)", v: l5.vpDetails?.val ? `₹${l5.vpDetails.val}` : "N/A" }
+        { l: "Point of Control (POC)", v: l5.vpDetails?.poc ? `₹${l5.vpDetails.poc.toFixed(2)}` : "N/A" }, 
+        { l: "dPOC Migration", v: l5.vpDetails?.dpoc_migration_trend || "STABLE" },
+        { l: "Value Area High (VAH)", v: l5.vpDetails?.vah ? `₹${l5.vpDetails.vah.toFixed(2)}` : "N/A" },
+        { l: "Value Area Low (VAL)", v: l5.vpDetails?.val ? `₹${l5.vpDetails.val.toFixed(2)}` : "N/A" }
       ] 
     },
     { 
@@ -1423,11 +1425,13 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
     },
     { 
       title: "Layer 7: Options Derivatives", 
-      badge: pcr > 1.0 ? "BULLISH" : pcr < 0.7 ? "BEARISH" : "NEUTRAL", 
-      class: pcr > 1.0 ? "badge-positive" : pcr < 0.7 ? "badge-negative" : "badge-neutral", 
+      badge: l7.gexOut?.data?.gamma_regime ? `GEX: ${l7.gexOut.data.gamma_regime}` : (pcr > 1.0 ? "BULLISH" : pcr < 0.7 ? "BEARISH" : "NEUTRAL"), 
+      class: l7.gexOut?.data?.gamma_regime === "POSITIVE" || pcr > 1.0 ? "badge-positive" : l7.gexOut?.data?.gamma_regime === "NEGATIVE" || pcr < 0.7 ? "badge-negative" : "badge-neutral", 
       data: [
         { l: "PCR Ratio", v: pcr.toFixed(2) }, 
-        { l: "Max Pain Strike", v: displayMaxPain }
+        { l: "Max Pain Strike", v: displayMaxPain },
+        { l: "Net GEX (MM Exposure)", v: l7.gexOut?.data?.net_gex != null ? `${l7.gexOut.data.net_gex.toFixed(0)}` : "N/A" },
+        { l: "Option Vol Velocity", v: l7.optionVelocityOut?.data?.velocity_ratio != null ? `${l7.optionVelocityOut.data.velocity_ratio.toFixed(2)}x` : "N/A" }
       ] 
     },
     { 
@@ -1595,12 +1599,13 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
     },
     {
       title: "Layer 24: Management Quality",
-      badge: l24.data?.roceSlope > 0 ? "GROWING" : "STABLE",
-      class: l24.data?.roceSlope > 0 ? "badge-positive" : "badge-neutral",
+      badge: l24.data?.executiveTurnover ? "TURNOVER ALERT ⚠️" : (l24.data?.roceSlope > 0 ? "GROWING" : "STABLE"),
+      class: l24.data?.executiveTurnover ? "badge-negative" : (l24.data?.roceSlope > 0 ? "badge-positive" : "badge-neutral"),
       data: [
         { l: "5Y ROCE Slope", v: `${l24.data?.roceSlope?.toFixed(2) || 0}` },
         { l: "Dividend Sustainability", v: `${l24.data?.dividendRatio?.toFixed(2) || 0}` },
-        { l: "Auditor Tier", v: `${l24.data?.auditorTier || "N/A"}` }
+        { l: "Auditor Tier", v: `${l24.data?.auditorTier || "N/A"}` },
+        { l: "Executive Resignation", v: l24.data?.executiveTurnover ? "DETECTED (FATAL VETO)" : "NONE" }
       ]
     },
     {
