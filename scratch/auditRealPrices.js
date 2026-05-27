@@ -217,7 +217,7 @@ async function runRealAudit() {
 
         const compositeScore = stRes.score;
         let bucket = "medium";
-        if (compositeScore >= 75) bucket = "high";
+        if (compositeScore >= 70) bucket = "high";
         else if (compositeScore < 45) bucket = "low";
         scoreBuckets[bucket].count++;
         if (stWinStatus === "WIN") scoreBuckets[bucket].wins++;
@@ -371,9 +371,9 @@ This audit evaluates the system using **actual historical price series fetched f
 
 To verify that higher system scores correlate mathematically with higher winning probability, active trades are grouped by their Master Intelligence score ranges:
 
-* **High Conviction (Score >= 75)**: **${highWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.high.wins}/${scoreBuckets.high.count} setups)
-* **Moderate Conviction (45 <= Score < 75)**: **${medWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.medium.wins}/${scoreBuckets.medium.count} setups)
-* **Low/Short Conviction (Score < 45)**: **${lowWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.low.wins}/${scoreBuckets.low.count} setups)
+* **High Conviction — STRONG BUY (Score >= 70)**: **${highWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.high.wins}/${scoreBuckets.high.count} setups)
+* **Moderate Conviction — BUY / ACCUMULATE (45 <= Score < 70)**: **${medWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.medium.wins}/${scoreBuckets.medium.count} setups)
+* **Low Conviction — AVOID (Score < 45)**: **${lowWinRate.toFixed(2)}% Win Rate** (${scoreBuckets.low.wins}/${scoreBuckets.low.count} setups)
 
 ---
 
