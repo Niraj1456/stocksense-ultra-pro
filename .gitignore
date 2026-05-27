@@ -1,6 +1,47 @@
-﻿node_modules
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Local Environment Variables
 .env
-dist
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Build and Bundler outputs
+dist/
+build/
+out/
+.vercel/
+
+# Log Files
 *.log
-.vercel
-.vercel
+error.log
+logs/
+
+# IDE Configuration Directories
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# OS Metadata Cache
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Testing & Coverage outputs
+coverage/
+.nyc_output/
+
+# System Temporary Directories
+scratch/
+tmp/
+temp/

@@ -8,8 +8,36 @@
 require("dotenv").config();
 
 module.exports = async function handler(req, res) {
-  // CORS Headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  // CORS Origin Control Whitelist
+  const originsEnv = process.env.ALLOWED_ORIGINS;
+  let whitelist = [];
+  if (originsEnv) {
+    whitelist = originsEnv.split(",").map(o => o.trim().toLowerCase());
+  }
+
+  const origin = req.headers.origin;
+  let allowedOrigin = "*";
+  
+  if (origin) {
+    const parsedOrigin = origin.trim().toLowerCase();
+    if (whitelist.includes(parsedOrigin)) {
+      allowedOrigin = origin;
+    } else if (!isProduction) {
+      if (
+        parsedOrigin.startsWith("http://localhost:") ||
+        parsedOrigin.startsWith("http://127.0.0.1:") ||
+        parsedOrigin.startsWith("https://localhost:") ||
+        parsedOrigin.startsWith("https://127.0.0.1:")
+      ) {
+        allowedOrigin = origin;
+      }
+    }
+  }
+
+  // Set CORS Headers
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-api-key");
 
@@ -21,10 +49,25 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  // Validate API key (matches existing authenticate middleware pattern)
+  // Validate API key (enforce secure keys, allow dev key only in non-production)
   const apiKey = req.headers["x-api-key"];
-  const expectedApiKey = process.env.API_KEY || "stocksense-secret-api-key";
-  if (!apiKey || apiKey !== expectedApiKey) {
+  const envKey = process.env.API_KEY;
+  const envKeysList = process.env.API_AUTH_KEYS;
+  
+  const allowedKeys = [];
+  if (envKey) allowedKeys.push(envKey);
+  if (envKeysList) {
+    envKeysList.split(",").forEach(k => {
+      const trimmed = k.trim();
+      if (trimmed) allowedKeys.push(trimmed);
+    });
+  }
+  
+  if (!isProduction && allowedKeys.length === 0) {
+    allowedKeys.push("stocksense-secret-api-key");
+  }
+
+  if (allowedKeys.length === 0 || !apiKey || !allowedKeys.includes(apiKey)) {
     return res.status(401).json({ error: "unauthorized_api_key" });
   }
 

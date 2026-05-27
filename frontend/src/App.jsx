@@ -7,6 +7,7 @@ import NewsWidget from './components/NewsWidget';
 import IndexRibbon from './components/IndexRibbon';
 import TrendingStocks from './components/TrendingStocks';
 import Sidebar from './components/Sidebar';
+import useDebounce from './hooks/useDebounce';
 import './index.css';
 
 // Utility to generate a deterministic pseudo-random number from a string
@@ -1926,6 +1927,7 @@ export default function App() {
     return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [activeTab, setActiveTab] = useState("confluence");
   const [expandedBreakdown, setExpandedBreakdown] = useState(null);
   useEffect(() => {
@@ -2296,19 +2298,21 @@ export default function App() {
   const handleSearchChange = (e) => {
     const val = e.target.value.toUpperCase();
     setSearchTerm(val);
-    if (val.length > 0) {
+  };
+
+  useEffect(() => {
+    if (debouncedSearchTerm.length > 0) {
       // Improved matching logic: strict startsWith for better UX
-      const matches = ALL_INDIAN_STOCKS.filter(s => s.startsWith(val)).slice(0, 15);
-      // In a real app, this would query an API endpoint containing all 5000+ NSE/BSE stocks
+      const matches = ALL_INDIAN_STOCKS.filter(s => s.startsWith(debouncedSearchTerm)).slice(0, 15);
       if (matches.length === 0) {
-        setSuggestions([val]); // Allow free-form searching for symbols not in mock list
+        setSuggestions([debouncedSearchTerm]); // Allow free-form searching for symbols not in mock list
       } else {
         setSuggestions(matches);
       }
     } else {
       setSuggestions([]);
     }
-  };
+  }, [debouncedSearchTerm]);
 
   const toggleWatchlistItem = (stock) => {
     setWatchlist(prev =>

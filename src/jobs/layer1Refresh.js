@@ -1,15 +1,17 @@
 const cron = require("node-cron");
 const { cache } = require("../lib/cache");
-const { fetchAllIndices, fetchAdvancesDeclines } = require("../services/nse");
-const { fetchQuotes } = require("../services/yahoo");
+const { getMarketDataAdapter, getNseAdapter } = require("../adapters/adapterFactory");
 const { logger } = require("../lib/logger");
 
 async function refreshOnce() {
   try {
+    const nseAdapter = getNseAdapter();
+    const marketAdapter = getMarketDataAdapter();
+
     const [indices, advdec, quotes] = await Promise.all([
-      fetchAllIndices().catch((e) => ({ error: e?.message || "allIndices_failed" })),
-      fetchAdvancesDeclines().catch((e) => ({ error: e?.message || "advdec_failed" })),
-      fetchQuotes(["^IXIC", "^N225", "^HSI", "USDINR=X", "CL=F"]).catch((e) => ({
+      nseAdapter.getIndices().catch((e) => ({ error: e?.message || "allIndices_failed" })),
+      nseAdapter.getAdvancesDeclines().catch((e) => ({ error: e?.message || "advdec_failed" })),
+      marketAdapter.getQuote(["^IXIC", "^N225", "^HSI", "USDINR=X", "CL=F"]).catch((e) => ({
         error: e?.message || "quotes_failed"
       }))
     ]);

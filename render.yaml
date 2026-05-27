@@ -14,18 +14,18 @@ services:
         value: "true"
       # Core Market Data: Angel One SmartAPI
       - key: ANGEL_API_KEY
-        value: RtVN8ga2
+        sync: false
       - key: ANGEL_CLIENT_ID
-        value: AAAX164101
+        sync: false
       - key: ANGEL_PIN
-        value: "0808"
+        sync: false
       - key: ANGEL_TOTP_SECRET
-        value: PFO2GKO22I4NZMTZ5G6TBFM6IU
+        sync: false
       # Alternative Data APIs
       - key: ALPHA_VANTAGE_KEY
-        value: 3A1S2PQ8RLS76HVQ
+        sync: false
       - key: FMP_API_KEY
-        value: gLL0tSazwanMMmROWDx15xTDg2VQBRvl
+        sync: false
       # AI Orchestrator
       - key: GEMINI_API_KEY
-        value: AIzaSyAreW72dC6ro9QF5Q9EQ_oTqDvZNogc4e4
+        sync: false

@@ -16,10 +16,12 @@ const env = {
 
   angelClientId: process.env.ANGEL_CLIENT_ID || "",
   angelApiKey: process.env.ANGEL_API_KEY || "",
-  angelMpin: process.env.ANGEL_MPIN || "",
-  angelTotp: process.env.ANGEL_TOTP || "",
+  angelPin: process.env.ANGEL_PIN || process.env.ANGEL_MPIN || "",
+  angelTotpSecret: process.env.ANGEL_TOTP_SECRET || process.env.ANGEL_TOTP || "",
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
+  truthProtocolSecret: process.env.TRUTH_PROTOCOL_SECRET || "",
 
   // Alternative Data APIs
   alphaVantageKey: process.env.ALPHA_VANTAGE_KEY || "",
@@ -39,12 +41,13 @@ function validateEnv() {
 
   if (!env.databaseUrl) warnings.push("DATABASE_URL missing (Postgres disabled)");
   if (!env.redisUrl) warnings.push("REDIS_URL missing (Redis cache disabled)");
+  if (!env.truthProtocolSecret) warnings.push("SECURITY CRITICAL: TRUTH_PROTOCOL_SECRET is missing. No fallback secret will be accepted in production mode.");
 
   if (env.enableSmartApi) {
     if (!env.angelApiKey) warnings.push("ENABLE_SMARTAPI=true but ANGEL_API_KEY missing");
     if (!env.angelClientId) warnings.push("ENABLE_SMARTAPI=true but ANGEL_CLIENT_ID missing");
-    if (!env.angelMpin) warnings.push("ENABLE_SMARTAPI=true but ANGEL_MPIN missing");
-    if (!env.angelTotp) warnings.push("ENABLE_SMARTAPI=true but ANGEL_TOTP missing");
+    if (!env.angelPin) warnings.push("ENABLE_SMARTAPI=true but ANGEL_PIN/ANGEL_MPIN missing");
+    if (!env.angelTotpSecret) warnings.push("ENABLE_SMARTAPI=true but ANGEL_TOTP_SECRET/ANGEL_TOTP missing");
   }
 
   if (env.enableClaude && !env.anthropicApiKey) {

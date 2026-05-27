@@ -41,12 +41,52 @@ async function main() {
 
   const app = createApp();
 
-  app.listen(env.port, () => {
+  const server = app.listen(env.port, () => {
     logger.info(`Server listening on :${env.port}`);
   });
 
   startLayer1Jobs();
   startCacheHydrator();
+
+  // Register graceful shutdown handlers
+  async function gracefulShutdown(signal) {
+    logger.info(`graceful_shutdown_initiated`, { signal });
+    
+    // 1. Close HTTP server immediately to reject new incoming connections
+    server.close(async () => {
+      logger.info("http_server_closed_no_longer_accepting_requests");
+      
+      try {
+        // 2. Cleanly end PostgreSQL Pool
+        const { getPool } = require("./lib/db");
+        const pool = getPool();
+        if (pool) {
+          logger.info("db_pool_closing");
+          await pool.end();
+          logger.info("db_pool_closed");
+        }
+        
+        // 3. Cleanly close Puppeteer Shared browser
+        const { closeSharedBrowser } = require("./scrapers/browser");
+        await closeSharedBrowser();
+        
+        logger.info("graceful_shutdown_completed_successfully");
+        process.exit(0);
+      } catch (err) {
+        logger.error("graceful_shutdown_failed", { error: err.message, stack: err.stack });
+        process.exit(1);
+      }
+    });
+
+    // Enforce a hard timeout limit of 10 seconds to force-kill if hanging occurs
+    setTimeout(() => {
+      logger.error("graceful_shutdown_timed_out_force_killing");
+      process.exit(1);
+    }, 10000);
+  }
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
 main().catch((err) => {

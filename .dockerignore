@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules
+jspm_packages
+
+# Environment & local credentials
+.env
+.env.local
+.env.*.local
+*.env
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Test coverage and debug logs
+coverage
+*.log
+error.log
+
+# Temporary build outputs
+dist
+.vercel
+scratch
+docs
+tests
+
+# OS Cache files
+.DS_Store
+Thumbs.db
