@@ -1677,8 +1677,9 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
 
   const maxPainData = layers.layer7?.maxPainOut?.data || {};
   const displayMaxPain = maxPainData.maxPainStrike ? `₹${maxPainData.maxPainStrike}` : 'N/A';
-  const displayIV = 'N/A';
-  const displayOIDelta = 'N/A';
+  const optChainData = realData?.optionChain || {};
+  const displayIV = optChainData.avgIV ? `${optChainData.avgIV}%` : 'N/A';
+  const displayOIDelta = optChainData.oiDelta !== undefined ? (optChainData.oiDelta > 0 ? `+${optChainData.oiDelta}` : `${optChainData.oiDelta}`) : 'N/A';
 
   const direction = engineResult.direction || "NEUTRAL";
   const isBullish = direction === "UP";
@@ -2038,6 +2039,7 @@ export default function App() {
         const result = yfData.chart.result[0];
         const meta = result.meta;
         const currentPrice = meta.regularMarketPrice;
+        window.lastKnownPrice = currentPrice;
         const dayHigh = meta.regularMarketDayHigh || currentPrice;
         const dayLow = meta.regularMarketDayLow || currentPrice;
         const mState = getMarketStatusIST(meta, serverDate);

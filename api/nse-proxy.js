@@ -41,22 +41,43 @@ export default async function handler(req, res) {
     // Step 2: Fetch the actual NSE API with cookies
     const response = await fetch(targetUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
         'Referer': 'https://www.nseindia.com/',
         'Cookie': cookieStr,
       },
     });
-
-    const data = await response.json();
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=60');
     res.setHeader('Content-Type', 'application/json');
 
-    return res.status(response.status).json(data);
+    if (!response.ok) {
+      const text = await response.text();
+      console.warn(`[Proxy] NSE returned status ${response.status} for ${originalPath}: ${text.slice(0, 100)}`);
+      return res.status(response.status).json({
+        error: 'nse_api_error',
+        status: response.status,
+        message: `NSE returned status ${response.status}`
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      return res.status(502).json({
+        error: 'nse_non_json_response',
+        message: `Expected JSON but received content-type: ${contentType}`,
+        preview: text.slice(0, 200)
+      });
+    }
+
+    const data = await response.json();
+    return res.status(200).json(data);
   } catch (err) {
     console.error('NSE proxy error:', err.message);
     return res.status(500).json({
