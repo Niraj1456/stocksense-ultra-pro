@@ -2586,6 +2586,7 @@ export default function App() {
 
     return {
       ...data,
+      score: finalScore,
       layers: layersList,
       scoreBreakdown: formattedScoreBreakdown
     };
