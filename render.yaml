@@ -1,10 +1,14 @@
 services:
   - type: web
     name: stocksense-backend
-    env: node
+    runtime: node
     plan: free
+    region: oregon
+    branch: master
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,3 +33,11 @@ services:
       # AI Orchestrator
       - key: GEMINI_API_KEY
         sync: false
+      # Zerodha Kite Connect
+      - key: KITE_API_KEY
+        sync: false
+      - key: KITE_API_SECRET
+        sync: false
+      # CORS: Allow Vercel frontend
+      - key: ALLOWED_ORIGINS
+        value: "https://stocksense-ultra-pro.vercel.app"
