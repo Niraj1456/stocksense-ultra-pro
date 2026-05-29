@@ -117,6 +117,29 @@ kiteRouter.get("/callback", async (req, res, next) => {
   }
 });
 
+// GET /depth: Fetches active L2 depth from Zerodha Kite Connect
+kiteRouter.get("/depth", async (req, res) => {
+  try {
+    const symbol = String(req.query.symbol || "").trim().toUpperCase();
+    if (!symbol) {
+      return res.status(400).json({ ok: false, error: "Symbol is required" });
+    }
+    const quoteRes = await kiteService.getQuote(symbol);
+    if (quoteRes.ok && quoteRes.data) {
+      return res.json({
+        ok: true,
+        source: 'KITE_CONNECT',
+        isMocked: !kiteService.client,
+        data: quoteRes.data
+      });
+    } else {
+      return res.status(500).json({ ok: false, error: "Failed to fetch depth" });
+    }
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // POST /order/place: Places an order and records it in the PostgreSQL database
 kiteRouter.post("/order/place", async (req, res, next) => {
   try {

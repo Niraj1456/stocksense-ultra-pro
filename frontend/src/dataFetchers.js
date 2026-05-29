@@ -177,10 +177,71 @@ export async function fetchMarketDepth(symbol) {
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
+  let kiteSandboxMock = null;
+
+  // Tier 1: Try to fetch from Zerodha Kite Connect first
+  try {
+    const kiteRes = await fetch(`/api/kite/depth?symbol=${encodeURIComponent(symbol)}`);
+    if (kiteRes.ok) {
+      const kData = await kiteRes.json();
+      if (kData && kData.ok && kData.data) {
+        const quote = kData.data;
+        const depth = quote.depth || { buy: [], sell: [] };
+
+        let totalBuyers = 0, totalSellers = 0;
+        const bidLevels = [];
+        const askLevels = [];
+
+        for (const b of (depth.buy || [])) {
+          totalBuyers += b.quantity || 0;
+          bidLevels.push({ price: b.price, qty: b.quantity, orders: b.orders });
+        }
+        for (const s of (depth.sell || [])) {
+          totalSellers += s.quantity || 0;
+          askLevels.push({ price: s.price, qty: s.quantity, orders: s.orders });
+        }
+
+        const totalQty = totalBuyers + totalSellers;
+        const l2Imbalance = totalQty > 0 ? +((totalBuyers - totalSellers) / totalQty * 100).toFixed(2) : 0;
+
+        let spreadPct = 0;
+        if (bidLevels.length > 0 && askLevels.length > 0) {
+          const bestBid = bidLevels[0].price;
+          const bestAsk = askLevels[0].price;
+          if (bestBid > 0) spreadPct = +((bestAsk - bestBid) / bestBid * 100).toFixed(3);
+        }
+
+        const result = {
+          l2Imbalance,
+          totalBuyQty: totalBuyers,
+          totalSellQty: totalSellers,
+          bidLevels: bidLevels.slice(0, 5),
+          askLevels: askLevels.slice(0, 5),
+          spreadPct,
+          deliveryPct: null, // Not in quotes
+          totalTradedVolume: quote.volume || 0,
+          topBidConcentration: bidLevels.length > 0 && totalBuyers > 0 ? +((bidLevels[0].qty / totalBuyers) * 100).toFixed(1) : 0,
+          source: kData.isMocked ? 'Estimated' : 'KITE_LIVE',
+          fetchedAt: new Date().toISOString(),
+        };
+
+        if (!kData.isMocked) {
+          console.log(`[MarketDepth] Successfully loaded live L2 depth from Kite Connect for ${symbol}`);
+          setCache(cacheKey, result, CACHE_TTL.marketDepth);
+          return result;
+        } else {
+          kiteSandboxMock = result;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[Kite L2 Fetch Failed] ${symbol}: ${err.message}`);
+  }
+
+  // Tier 2: Fallback to Public NSE Scraper
   try {
     await fetch('/api/nse/', { credentials: 'include' });
 
-    // NSE provides full market depth via quote-equity endpoint
     const res = await fetchWithRetry(
       `/api/nse/api/quote-equity?symbol=${encodeURIComponent(symbol)}&section=trade_info`,
       { credentials: 'include' }
@@ -204,7 +265,6 @@ export async function fetchMarketDepth(symbol) {
         askLevels.push({ price: ask.price, qty: ask.quantity, orders: ask.orders });
       }
 
-      // Bid-ask spread
       if (bidLevels.length > 0 && askLevels.length > 0) {
         const bestBid = bidLevels[0].price;
         const bestAsk = askLevels[0].price;
@@ -215,19 +275,15 @@ export async function fetchMarketDepth(symbol) {
     const totalBuyers = marketDepth?.totalBuyQuantity || totalBuyQty;
     const totalSellers = marketDepth?.totalSellQuantity || totalSellQty;
 
-    // L2 Imbalance: (BuyQty - SellQty) / (BuyQty + SellQty) * 100
     const totalQty = totalBuyers + totalSellers;
     const l2Imbalance = totalQty > 0 ? +((totalBuyers - totalSellers) / totalQty * 100).toFixed(2) : 0;
 
-    // Delivery percentage (institutional proxy — high delivery = real buying)
     const deliveryPct = secWiseDP?.deliveryToTradedQuantity
       ? parseFloat(secWiseDP.deliveryToTradedQuantity)
       : null;
 
-    // Traded volume
     const totalTradedVolume = marketDepth?.totalTradedVolume || 0;
 
-    // Order concentration (are a few big orders dominating?)
     const topBidConcentration = bidLevels.length > 0 && totalBuyers > 0
       ? +(bidLevels[0].qty / totalBuyers * 100).toFixed(1)
       : 0;
@@ -249,6 +305,10 @@ export async function fetchMarketDepth(symbol) {
     setCache(cacheKey, result, CACHE_TTL.marketDepth);
     return result;
   } catch (err) {
+    if (kiteSandboxMock) {
+      console.warn(`[L2 Scraper Failed - Using Kite Sandbox Mock] ${symbol}: ${err.message}`);
+      return kiteSandboxMock;
+    }
     console.warn(`[L2 Proxy Failed - Triggering Mock Fallback] ${symbol}: ${err.message}`);
     const mock = generateHighFidelityL2Mock(symbol, window.lastKnownPrice || 1000);
     return mock;
