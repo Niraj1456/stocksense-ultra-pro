@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useActivityTracker from './hooks/useActivityTracker';
 import { ALL_INDIAN_STOCKS } from './stocks';
 import { fetchAllRealData, clearDataCache } from './dataFetchers';
 import { getLongTermData as computeLongTerm } from './longTermEngine';
@@ -1963,6 +1964,7 @@ export default function App() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [activeTab, setActiveTab] = useState("confluence");
   const [expandedBreakdown, setExpandedBreakdown] = useState(null);
+  const [viewMode, setViewMode] = useState("terminal"); // 'terminal' or 'activity'
   useEffect(() => {
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -1970,6 +1972,7 @@ export default function App() {
   // Authentication states
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('stocksense_logged_in') === 'true');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('stocksense_api_key') || 'stocksense-secret-api-key');
+  const [loggedInUser, setLoggedInUser] = useState(() => localStorage.getItem('stocksense_user') || '');
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -1981,13 +1984,16 @@ export default function App() {
     setLoginError("");
     setIsLoggingIn(true);
 
-    if (loginUsername === "admin" && loginPassword === "StockSense@2026") {
+    if ((loginUsername === "admin" && loginPassword === "StockSense@2026") || (loginUsername === "Alpha" && loginPassword === "AlphaTrader@2026")) {
       const keyToUse = "stocksense-secret-api-key"; 
       localStorage.setItem('stocksense_logged_in', 'true');
       localStorage.setItem('stocksense_api_key', keyToUse);
+      localStorage.setItem('stocksense_user', loginUsername.toLowerCase());
       setIsLoggedIn(true);
       setApiKey(keyToUse);
+      setLoggedInUser(loginUsername.toLowerCase());
       setIsLoggingIn(false);
+      setViewMode("terminal");
     } else {
       setTimeout(() => {
         setLoginError("Invalid username or password.");
@@ -1997,12 +2003,19 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    tracker.endSession();
     localStorage.removeItem('stocksense_logged_in');
     localStorage.removeItem('stocksense_api_key');
+    localStorage.removeItem('stocksense_user');
     setIsLoggedIn(false);
+    setLoggedInUser('');
     setLoginUsername("");
     setLoginPassword("");
+    setViewMode("terminal");
   };
+
+  // Activity Tracker
+  const tracker = useActivityTracker(isLoggedIn, loggedInUser);
 
   const [suggestions, setSuggestions] = useState([]);
   const [selectedStock, setSelectedStock] = useState("NIFTY 50");
@@ -2398,6 +2411,8 @@ export default function App() {
   };
 
   const selectStock = (stock) => {
+    tracker.trackStockSelect(stock);
+    tracker.trackSearch(searchTerm, stock);
     setSelectedStock(stock);
     setSearchTerm("");
     setSuggestions([]);
@@ -2418,6 +2433,7 @@ export default function App() {
   const [isLateAnalysis, setIsLateAnalysis] = useState(false);
 
   const handleAnalyze = async () => {
+    tracker.trackAnalysis(selectedStock, mode === "LONG_TERM" ? "LT" : "ST");
     setIsAnalyzing(true);
     setIsAnalyzed(false);
     setRealData(null);
@@ -2668,6 +2684,7 @@ export default function App() {
 
   // Retain analysis when mode changes, just swap the engine
   const handleModeChange = (newMode) => {
+    tracker.trackModeChange(mode, newMode);
     setMode(newMode);
   };
 
@@ -2815,14 +2832,293 @@ export default function App() {
           <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle Theme" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
+          {loggedInUser.toLowerCase() === 'admin' && (
+            <button className={`activity-btn ${viewMode === 'activity' ? 'active' : ''}`} onClick={() => setViewMode(viewMode === 'activity' ? 'terminal' : 'activity')} style={{ marginRight: '0.5rem' }}>
+              📊 Activity
+            </button>
+          )}
           <button className="logout-btn" onClick={handleLogout} title="Logout">
             🚪 Logout
           </button>
         </div>
       </nav>
 
-      {/* === SPLIT WORKSPACE === */}
-      <div className="split-workspace">
+      {/* === SPLIT WORKSPACE or ACTIVITY DASHBOARD === */}
+      {viewMode === 'activity' && loggedInUser.toLowerCase() === 'admin' ? (
+        <div className="activity-dashboard-container" style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'Outfit', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              <span>📊</span> User Activity Audit Terminal
+            </h1>
+            <button 
+              className="activity-clear-btn" 
+              onClick={() => setViewMode('terminal')}
+              style={{ padding: '0.45rem 1.25rem', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)', transition: 'all 0.2s' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            >
+              ◀ Back to Terminal Workspace
+            </button>
+          </div>
+          {(() => {
+            const formatDuration = (seconds) => {
+              if (!seconds || seconds <= 0) return '0s';
+              const h = Math.floor(seconds / 3600);
+              const m = Math.floor((seconds % 3600) / 60);
+              const s = seconds % 60;
+              if (h > 0) return `${h}h ${m}m`;
+              if (m > 0) return `${m}m ${s}s`;
+              return `${s}s`;
+            };
+
+            const stats = tracker.activityData.stats || {};
+            const sessions = tracker.activityData.sessions || [];
+            const currentSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+
+            // Aggregate all searches, analyses, and interactions across all sessions, attaching user info
+            const allSearches = sessions.flatMap(s => (s.searches || []).map(search => ({ ...search, sessionId: s.id, user: s.user })));
+            const allInteractions = sessions.flatMap(s => (s.interactions || []).map(i => ({ ...i, sessionId: s.id, user: s.user })));
+            const allAnalyses = sessions.flatMap(s => (s.analyses || []).map(a => ({ ...a, sessionId: s.id, user: s.user })));
+
+            // Interaction breakdown by section
+            const sectionCounts = {};
+            allInteractions.forEach(i => {
+              const section = i.section || 'other';
+              sectionCounts[section] = (sectionCounts[section] || 0) + 1;
+            });
+            const maxSectionCount = Math.max(1, ...Object.values(sectionCounts));
+            const sectionLabels = {
+              search: '🔍 Search',
+              sidebar: '📋 Sidebar',
+              tabs: '📑 Tabs',
+              navbar: '🧭 Navbar',
+              analysis: '⚡ Analysis',
+              watchlist: '⭐ Watchlist',
+              other: '📦 Other'
+            };
+
+            return (
+              <div className="activity-dashboard fade-in">
+                {/* Stats Cards Row */}
+                <div className="activity-stats-grid">
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">⏱️</span>
+                    <span className="activity-stat-value">
+                      <span className="activity-live-pulse"></span>
+                      {formatDuration(tracker.sessionElapsed)}
+                    </span>
+                    <span className="activity-stat-label">Current Session</span>
+                    <span className="activity-stat-sub">Live timer</span>
+                  </div>
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">📊</span>
+                    <span className="activity-stat-value">{stats.totalSessions || 0}</span>
+                    <span className="activity-stat-label">Total Sessions</span>
+                    <span className="activity-stat-sub">All-time logins</span>
+                  </div>
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">🕐</span>
+                    <span className="activity-stat-value">{formatDuration(stats.totalTimeSpent || 0)}</span>
+                    <span className="activity-stat-label">Total Time Spent</span>
+                    <span className="activity-stat-sub">Across all sessions</span>
+                  </div>
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">🔍</span>
+                    <span className="activity-stat-value">{stats.totalSearches || 0}</span>
+                    <span className="activity-stat-label">Total Searches</span>
+                    <span className="activity-stat-sub">Stocks looked up</span>
+                  </div>
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">⚡</span>
+                    <span className="activity-stat-value">{stats.totalAnalyses || 0}</span>
+                    <span className="activity-stat-label">Total Analyses</span>
+                    <span className="activity-stat-sub">Engine runs triggered</span>
+                  </div>
+                  <div className="activity-stat-card">
+                    <span className="activity-stat-icon">⏳</span>
+                    <span className="activity-stat-value">{formatDuration(stats.avgSessionDuration || 0)}</span>
+                    <span className="activity-stat-label">Avg Session</span>
+                    <span className="activity-stat-sub">Average duration</span>
+                  </div>
+                </div>
+
+                {/* Two-column detail sections */}
+                <div className="activity-two-col">
+                  {/* Recent Searches */}
+                  <div className="activity-section">
+                    <div className="activity-section-header">
+                      <span className="activity-section-title">🔍 Search History</span>
+                      <span className="activity-section-badge">{allSearches.length} total</span>
+                    </div>
+                    {allSearches.length > 0 ? (
+                      <div className="activity-table-scroll">
+                        <table className="activity-table">
+                          <thead>
+                            <tr>
+                              <th>Time</th>
+                              <th>User</th>
+                              <th>Query</th>
+                              <th>Selected Stock</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allSearches.slice().reverse().slice(0, 50).map((s, i) => (
+                              <tr key={i}>
+                                <td>{new Date(s.at).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
+                                <td style={{ fontWeight: 700, color: s.user === 'admin' ? '#10b981' : '#f59e0b' }}>{s.user || '—'}</td>
+                                <td>{s.query || '—'}</td>
+                                <td className="stock-name-cell">{s.selected || '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="activity-empty">
+                        <span className="activity-empty-icon">🔎</span>
+                        No searches yet. Start searching for stocks!
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Top Stocks */}
+                  <div className="activity-section">
+                    <div className="activity-section-header">
+                      <span className="activity-section-title">🏆 Most Searched Stocks</span>
+                      <span className="activity-section-badge">Top 10</span>
+                    </div>
+                    {(stats.mostSearchedStocks || []).length > 0 ? (
+                      <div className="activity-top-stocks">
+                        {(stats.mostSearchedStocks || []).map(([stock, count], i) => (
+                          <span key={i} className="activity-top-stock-chip">
+                            {stock}
+                            <span className="activity-top-stock-count">{count}×</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="activity-empty">
+                        <span className="activity-empty-icon">📈</span>
+                        No stock data yet.
+                      </div>
+                    )}
+
+                    {/* Analyses List */}
+                    {allAnalyses.length > 0 && (
+                      <>
+                        <div className="activity-section-header" style={{ marginTop: '0.5rem' }}>
+                          <span className="activity-section-title">⚡ Analysis Log</span>
+                          <span className="activity-section-badge">{allAnalyses.length} runs</span>
+                        </div>
+                        <div className="activity-table-scroll">
+                          <table className="activity-table">
+                            <thead>
+                              <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Stock</th>
+                                <th>Mode</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {allAnalyses.slice().reverse().slice(0, 30).map((a, i) => (
+                                <tr key={i}>
+                                  <td>{new Date(a.at).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
+                                  <td style={{ fontWeight: 700, color: a.user === 'admin' ? '#10b981' : '#f59e0b' }}>{a.user || '—'}</td>
+                                  <td className="stock-name-cell">{a.stock}</td>
+                                  <td>{a.mode === 'LT' ? '📊 Long Term' : '⚡ Short Term'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Interaction Heatmap & Session History */}
+                <div className="activity-two-col">
+                  {/* Interaction Heatmap */}
+                  <div className="activity-section">
+                    <div className="activity-section-header">
+                      <span className="activity-section-title">🖱️ Interaction Heatmap</span>
+                      <span className="activity-section-badge">{allInteractions.length} clicks</span>
+                    </div>
+                    {Object.keys(sectionCounts).length > 0 ? (
+                      <div className="activity-bar-chart">
+                        {Object.entries(sectionCounts).sort((a, b) => b[1] - a[1]).map(([section, count]) => (
+                          <div key={section} className="activity-bar-row">
+                            <span className="activity-bar-label">{sectionLabels[section] || section}</span>
+                            <div className="activity-bar-track">
+                              <div className="activity-bar-fill" style={{ width: `${Math.max(8, (count / maxSectionCount) * 100)}%` }}>
+                                <span className="activity-bar-count">{count}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="activity-empty">
+                        <span className="activity-empty-icon">🖱️</span>
+                        No interactions recorded yet.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Session History */}
+                  <div className="activity-section">
+                    <div className="activity-section-header">
+                      <span className="activity-section-title">📅 Session History</span>
+                      <span className="activity-section-badge">{sessions.length} sessions</span>
+                    </div>
+                    {sessions.length > 0 ? (
+                      <div className="activity-sessions-list">
+                        {sessions.slice().reverse().map((s, i) => (
+                          <div key={s.id || i} className="activity-session-row">
+                            <div>
+                              <span className="activity-session-date" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                {new Date(s.loginAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', background: s.user === 'admin' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', color: s.user === 'admin' ? '#10b981' : '#f59e0b', border: `1px solid ${s.user === 'admin' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`, fontWeight: 800 }}>
+                                  {s.user || 'unknown'}
+                                </span>
+                              </span>
+                              <span className="activity-session-meta">
+                                <span>🕐 {new Date(s.loginAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span>🔍 {(s.searches || []).length}</span>
+                                <span>⚡ {(s.analyses || []).length}</span>
+                                <span>👁️ {s.viewport?.device || '?'}</span>
+                              </span>
+                            </div>
+                            <span className="activity-session-duration">
+                              {!s.logoutAt && i === 0 ? (
+                                <><span className="activity-live-pulse"></span>Active</>
+                              ) : (
+                                formatDuration(s.totalDuration || 0)
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="activity-empty">
+                        <span className="activity-empty-icon">📅</span>
+                        No sessions recorded.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Clear Activity Log */}
+                <button className="activity-clear-btn" onClick={() => { if (window.confirm('Clear all activity data? This cannot be undone.')) tracker.clearActivityLog(); }}>
+                  🗑️ Clear Activity Log
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+      ) : (
+        <div className="split-workspace">
         {/* Left collapsable Control Panel (Sidebar) */}
         <aside className={`sidebar-control-panel ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <Sidebar 
@@ -3145,7 +3441,7 @@ export default function App() {
                   <button className={`center-tab ${activeTab === 'smartMoney' ? 'active' : ''}`} onClick={() => setActiveTab('smartMoney')}>Smart Money & PEAD</button>
                   <button className={`center-tab ${activeTab === 'technicals' ? 'active' : ''}`} onClick={() => setActiveTab('technicals')}>Technicals & Volatility</button>
                   <button className={`center-tab ${activeTab === 'aiBriefing' ? 'active' : ''}`} onClick={() => setActiveTab('aiBriefing')}>AI Briefing</button>
-                  <button className={`center-tab ${activeTab === 'diagnostics' ? 'active' : ''}`} onClick={() => setActiveTab('diagnostics')}>Self-Learning Diagnostics</button>
+                  <button className={`center-tab ${activeTab === 'diagnostics' ? 'active' : ''}`} onClick={() => { tracker.trackTabSwitch(activeTab, 'diagnostics'); setActiveTab('diagnostics'); }}>Self-Learning Diagnostics</button>
                 </div>
 
                 {/* TAB 1: PILLAR CONFLUENCE (SHAP EXPLAINER) */}
@@ -3788,6 +4084,7 @@ export default function App() {
             )}
             </main>
           </div>
-        </div>
-      );
+        )}
+      </div>
+    );
     }
