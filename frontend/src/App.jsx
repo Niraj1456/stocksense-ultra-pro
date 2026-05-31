@@ -27,6 +27,30 @@ const getVerdict = (score) => {
   return "AVOID";
 };
 
+const getLongTermVerdict = (score) => {
+  if (score >= 80) return "STRONG BUY";
+  if (score >= 70) return "BUY";
+  if (score >= 60) return "ACCUMULATE";
+  if (score >= 50) return "HOLD";
+  if (score >= 35) return "REDUCE";
+  if (score >= 20) return "SELL";
+  return "STRONG SELL";
+};
+
+const sanitizeAndAlignVerdict = (verdict, score, isVetoed, isExhausted, isLt = false) => {
+  const v = (verdict || "").toUpperCase().replace(/_/g, " ");
+  if (v.includes("VETO") || isVetoed) return "SYSTEM VETO";
+  if (v.includes("EXHAUSTED") || isExhausted) return "EXHAUSTED";
+  if (v.includes("INVALID") || v.includes("RISK")) return "INVALID RISK REWARD";
+  if (v.includes("NO TRADE")) return "NO TRADE";
+  
+  if (isLt) {
+    return getLongTermVerdict(score);
+  }
+  return getVerdict(score);
+};
+
+
 const getMarketStatusIST = (meta = null, serverDate = new Date()) => {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -1641,10 +1665,10 @@ const mapBackendStToFrontend = (res, liveAtr, realData, numericPrice) => {
   const scoreOut = layers.layer13?.scoreOut || {};
   const engineResult = scoreOut.data?.engineResult || {};
   const masterScore = scoreData.masterScore ?? engineResult.score ?? 50;
-  const verdict = scoreData.verdict || engineResult.verdict || "NEUTRAL";
-  const aiReasoning = scoreData.aiReasoning || result.final?.response_text || "Analysis complete.";
-
   const isVetoed = engineResult.isVetoed ?? false;
+  const rawVerdict = scoreData.verdict || engineResult.verdict || "NEUTRAL";
+  const verdict = sanitizeAndAlignVerdict(rawVerdict, masterScore, isVetoed, rawVerdict === "EXHAUSTED", false);
+  const aiReasoning = scoreData.aiReasoning || result.final?.response_text || "Analysis complete.";
   const vetoesList = engineResult.vetoReasons || [];
 
   const l3Data = layers.layer3?.data || {};
@@ -1749,13 +1773,13 @@ const mapBackendLtToFrontend = (res, liveAtr, realData, numericPrice) => {
   const scoreData = result.data || {};
   
   const score = scoreData.masterScore ?? 50;
-  const verdict = scoreData.verdict || "NEUTRAL";
-  const aiReasoning = scoreData.aiReasoning || result.final?.response_text || "Analysis complete.";
-  const geminiOpinion = aiReasoning;
-
   const scoreOut = layers.layer13?.scoreOut || {};
   const engineResult = scoreOut.data?.engineResult || {};
   const isVetoed = engineResult.isVetoed ?? false;
+  const rawVerdict = scoreData.verdict || "NEUTRAL";
+  const verdict = sanitizeAndAlignVerdict(rawVerdict, score, isVetoed, rawVerdict === "EXHAUSTED", true);
+  const aiReasoning = scoreData.aiReasoning || result.final?.response_text || "Analysis complete.";
+  const geminiOpinion = aiReasoning;
   const vetoesList = engineResult.vetoReasons || [];
 
   const l8Data = layers.layer8?.data || {};
@@ -1940,6 +1964,43 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Authentication states
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('stocksense_logged_in') === 'true');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('stocksense_api_key') || 'stocksense-secret-api-key');
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setLoginError("");
+    setIsLoggingIn(true);
+
+    if (loginUsername === "admin" && loginPassword === "StockSense@2026") {
+      const keyToUse = "stocksense-secret-api-key"; 
+      localStorage.setItem('stocksense_logged_in', 'true');
+      localStorage.setItem('stocksense_api_key', keyToUse);
+      setIsLoggedIn(true);
+      setApiKey(keyToUse);
+      setIsLoggingIn(false);
+    } else {
+      setTimeout(() => {
+        setLoginError("Invalid username or password.");
+        setIsLoggingIn(false);
+      }, 400);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('stocksense_logged_in');
+    localStorage.removeItem('stocksense_api_key');
+    setIsLoggedIn(false);
+    setLoginUsername("");
+    setLoginPassword("");
+  };
+
   const [suggestions, setSuggestions] = useState([]);
   const [selectedStock, setSelectedStock] = useState("NIFTY 50");
   
@@ -1973,12 +2034,13 @@ export default function App() {
   const [healthError, setHealthError] = useState(null);
 
   const fetchHealth = async () => {
+    if (!isLoggedIn) return;
     setIsHealthLoading(true);
     setHealthError(null);
     try {
       const res = await fetch('/api/health', {
         headers: {
-          'x-api-key': 'stocksense-secret-api-key'
+          'x-api-key': apiKey
         }
       });
       if (!res.ok) {
@@ -1994,19 +2056,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isLoggedIn) {
+      fetchHealth();
+      const interval = setInterval(fetchHealth, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    if (activeTab === 'diagnostics') {
+    if (activeTab === 'diagnostics' && isLoggedIn) {
       fetchHealth();
     }
-  }, [activeTab]);
+  }, [activeTab, isLoggedIn]);
 
   // Fetch real-time price directly from Yahoo Finance
   useEffect(() => {
+    if (!isLoggedIn) return;
     let isMounted = true;
     let isFirstFetch = true;
     const fetchPrice = async () => {
@@ -2404,7 +2469,11 @@ export default function App() {
         const intervalMs = 2000;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           console.log(`[StockSense] Polling ${mode} analysis for ${symbol} (attempt ${attempt}/${maxAttempts})...`);
-          const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}&mode=${mode}`);
+          const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}&mode=${mode}`, {
+            headers: {
+              'x-api-key': apiKey
+            }
+          });
           if (!res.ok) {
             throw new Error(`API returned status ${res.status}`);
           }
@@ -2518,8 +2587,8 @@ export default function App() {
     }
     const finalScore = Math.max(5, Math.min(95, Math.round(50 + weightedSumPoints)));
 
-    const direction = data.direction || (isVetoed ? "NEUTRAL" : (finalScore >= 57 ? "UP" : finalScore < 46 ? "DOWN" : "NEUTRAL"));
-    const verdict = data.verdict || (isVetoed ? "SYSTEM_VETO" : getVerdict(finalScore));
+    const direction = (isVetoed || data.verdict?.includes("EXHAUSTED")) ? "NEUTRAL" : (finalScore >= 58 ? "UP" : finalScore < 38 ? "DOWN" : "NEUTRAL");
+    const verdict = sanitizeAndAlignVerdict(data.verdict, finalScore, isVetoed, data.verdict?.includes("EXHAUSTED"), isLt);
 
     const dummyRes = {
       stock: symbol,
@@ -2587,6 +2656,8 @@ export default function App() {
     return {
       ...data,
       score: finalScore,
+      verdict,
+      direction,
       layers: layersList,
       scoreBreakdown: formattedScoreBreakdown
     };
@@ -2603,6 +2674,72 @@ export default function App() {
 
   const currentData = ensure26LayersFallback(rawCurrentData, selectedStock, mode === "LONG_TERM", liveAtr, realData, livePrice);
 
+  if (!isLoggedIn) {
+    return (
+      <div className={`login-page-container ${theme}`}>
+        <div className="login-glass-card">
+          <div className="login-brand-header">
+            <h1 className="login-brand-logo">
+              <span className="text-gradient">⚡ StockSense</span>
+              <span style={{ fontSize: '1.2rem', display: 'block', color: 'var(--text-primary)', marginTop: '0.2rem' }}>Ultra Pro</span>
+            </h1>
+            <p className="login-brand-subtitle">
+              18-Layer Quantitative Intelligence Engine
+            </p>
+          </div>
+
+          <form className="login-form" onSubmit={handleLogin}>
+            <div className="login-input-group">
+              <label className="login-label">Username</label>
+              <div className="login-input-wrapper">
+                <span className="login-input-icon">👤</span>
+                <input
+                  type="text"
+                  className="login-input"
+                  placeholder="Enter username"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="login-input-group">
+              <label className="login-label">Password</label>
+              <div className="login-input-wrapper">
+                <span className="login-input-icon">🔒</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="login-input"
+                  placeholder="Enter password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-toggle-password"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "☀️" : "👁️"}
+                </button>
+              </div>
+            </div>
+
+            {loginError && (
+              <div className="login-error-message">
+                <span>⚠️</span> {loginError}
+              </div>
+            )}
+
+            <button type="submit" className="login-btn-submit" disabled={isLoggingIn}>
+              {isLoggingIn ? "Logging in..." : "⚡ Access Framework"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`app-container ${theme}`}>
@@ -2664,6 +2801,9 @@ export default function App() {
           </span>
           <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle Theme" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
             {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button className="logout-btn" onClick={handleLogout} title="Logout">
+            🚪 Logout
           </button>
         </div>
       </nav>
@@ -2901,8 +3041,8 @@ export default function App() {
                           r="48"
                           strokeWidth="8"
                           stroke={
-                            currentData.score >= 63 ? 'var(--accent)' :
-                            currentData.score >= 46 ? 'var(--warning)' : 'var(--danger)'
+                            currentData.score >= 55 ? 'var(--accent)' :
+                            currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
                           }
                           strokeDasharray={301.6}
                           strokeDashoffset={301.6 - (301.6 * currentData.score) / 100}
@@ -2927,8 +3067,8 @@ export default function App() {
                       fontSize: '0.85rem',
                       fontWeight: 800,
                       marginTop: '0.4rem',
-                      color: currentData.score >= 63 ? 'var(--accent)' :
-                             currentData.score >= 46 ? 'var(--warning)' : 'var(--danger)'
+                      color: currentData.score >= 55 ? 'var(--accent)' :
+                             currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
                     }}>{currentData.verdict}</div>
                   </div>
 
@@ -3014,7 +3154,7 @@ export default function App() {
                       
                       const netAdjustment = totalBullish + totalBearish + vetoPenalty;
                       const hasVeto = currentData.isVetoed || vetoPenalty !== 0;
-                      const verdictColor = currentData.score >= 55 ? 'var(--accent)' : currentData.score < 45 ? 'var(--danger)' : 'var(--text-primary)';
+                      const verdictColor = currentData.score >= 55 ? 'var(--accent)' : currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)';
                       const verdictText = currentData.score >= 70 ? 'STRONG BUY' : 
                                           currentData.score >= 63 ? 'BUY' : 
                                           currentData.score >= 55 ? 'ACCUMULATE ON DIPS' : 
@@ -3353,7 +3493,7 @@ export default function App() {
 
                 {/* TAB 4: AI RISK ORCHESTRATION BRIEFING */}
                 {activeTab === 'aiBriefing' && (() => {
-                  const borderLeftColor = currentData.score >= 60 ? '#10b981' : currentData.score >= 45 ? '#f59e0b' : '#f43f5e';
+                  const borderLeftColor = currentData.score >= 55 ? '#10b981' : currentData.score >= 45 ? '#f59e0b' : '#f43f5e';
                   return (
                     <div 
                       className="ai-briefing-wrapper glass-panel-premium fade-in" 
