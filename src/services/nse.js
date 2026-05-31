@@ -5,7 +5,7 @@ async function fetchAllIndices() {
 }
 
 async function fetchAdvancesDeclines() {
-  return nseGetJson("/api/advances-declines");
+  return nseGetJson("/api/common/advances-declines");
 }
 
 module.exports = {
