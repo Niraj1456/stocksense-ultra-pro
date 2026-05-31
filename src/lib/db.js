@@ -7,11 +7,19 @@ let pool;
 function getPool() {
   if (pool) return pool;
   if (!env.databaseUrl) return null;
-  pool = new Pool({
+
+  const isProduction = process.env.NODE_ENV === "production";
+  const poolConfig = {
     connectionString: env.databaseUrl,
     max: 10,
     idleTimeoutMillis: 30000
-  });
+  };
+
+  if (isProduction) {
+    poolConfig.ssl = { rejectUnauthorized: false };
+  }
+
+  pool = new Pool(poolConfig);
   pool.on("error", (e) => logger.warn("pg_pool_error", { message: e?.message }));
   return pool;
 }
