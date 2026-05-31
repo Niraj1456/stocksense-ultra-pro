@@ -2678,6 +2678,16 @@ export default function App() {
     return (
       <div className={`login-page-container ${theme}`}>
         <div className="login-glass-card">
+          <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', zIndex: 10 }}>
+            <button 
+              type="button" 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+              title="Toggle Theme" 
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.05rem', color: theme === 'dark' ? '#f8fafc' : '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </div>
           <div className="login-brand-header">
             <h1 className="login-brand-logo">
               <span className="text-gradient">⚡ StockSense</span>
