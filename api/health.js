@@ -93,12 +93,17 @@ module.exports = async function handler(req, res) {
  */
 async function handleWithDatabase(req, res, databaseUrl) {
   const { Pool } = require("pg");
-  const pool = new Pool({
+  const isProduction = process.env.NODE_ENV === "production";
+  const poolConfig = {
     connectionString: databaseUrl,
     max: 2,
     idleTimeoutMillis: 5000,
     connectionTimeoutMillis: 5000,
-  });
+  };
+  if (isProduction) {
+    poolConfig.ssl = { rejectUnauthorized: false };
+  }
+  const pool = new Pool(poolConfig);
 
   let status = "OK";
   const reasons = [];
