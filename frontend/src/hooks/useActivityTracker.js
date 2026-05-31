@@ -78,7 +78,7 @@ const useActivityTracker = (isLoggedIn, loggedInUser) => {
 
   // Start session on login
   useEffect(() => {
-    if (isLoggedIn && !sessionRef.current) {
+    if (isLoggedIn && loggedInUser && loggedInUser.toLowerCase() !== 'admin' && !sessionRef.current) {
       const newSession = {
         id: generateSessionId(),
         user: loggedInUser || 'unknown',

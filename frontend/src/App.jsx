@@ -1965,6 +1965,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("confluence");
   const [expandedBreakdown, setExpandedBreakdown] = useState(null);
   const [viewMode, setViewMode] = useState("terminal"); // 'terminal' or 'activity'
+  const [selectedUserFilter, setSelectedUserFilter] = useState("all");
   useEffect(() => {
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -2871,14 +2872,51 @@ export default function App() {
               return `${s}s`;
             };
 
-            const stats = tracker.activityData.stats || {};
-            const sessions = tracker.activityData.sessions || [];
-            const currentSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+            const allSessions = tracker.activityData.sessions || [];
+            
+            // Get unique users who have logs (excluding 'admin')
+            const uniqueUsers = Array.from(new Set(allSessions.map(s => s.user).filter(u => u && u.toLowerCase() !== 'admin')));
+            
+            // Filter sessions based on selection (always exclude admin's own sessions if any)
+            const filteredSessions = selectedUserFilter === 'all'
+              ? allSessions.filter(s => s.user && s.user.toLowerCase() !== 'admin')
+              : allSessions.filter(s => s.user && s.user.toLowerCase() === selectedUserFilter.toLowerCase());
 
-            // Aggregate all searches, analyses, and interactions across all sessions, attaching user info
-            const allSearches = sessions.flatMap(s => (s.searches || []).map(search => ({ ...search, sessionId: s.id, user: s.user })));
-            const allInteractions = sessions.flatMap(s => (s.interactions || []).map(i => ({ ...i, sessionId: s.id, user: s.user })));
-            const allAnalyses = sessions.flatMap(s => (s.analyses || []).map(a => ({ ...a, sessionId: s.id, user: s.user })));
+            // Recalculate stats dynamically for the filtered sessions
+            const stats = (() => {
+              const sessionsToCalc = filteredSessions;
+              const totalSessions = sessionsToCalc.length;
+              let totalTimeSpent = 0;
+              let totalSearches = 0;
+              let totalAnalyses = 0;
+              const stockSearchCounts = {};
+
+              sessionsToCalc.forEach(s => {
+                totalTimeSpent += s.totalDuration || 0;
+                totalSearches += (s.searches || []).length;
+                totalAnalyses += (s.analyses || []).length;
+
+                (s.searches || []).forEach(search => {
+                  const q = (search.selected || search.query || '').toUpperCase();
+                  if (q) stockSearchCounts[q] = (stockSearchCounts[q] || 0) + 1;
+                });
+              });
+
+              const mostSearchedStocks = Object.entries(stockSearchCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+              const avgSessionDuration = totalSessions > 0 ? Math.round(totalTimeSpent / totalSessions) : 0;
+
+              return { totalSessions, totalTimeSpent, totalSearches, totalAnalyses, mostSearchedStocks, avgSessionDuration };
+            })();
+
+            const currentSession = filteredSessions.length > 0 ? filteredSessions[filteredSessions.length - 1] : null;
+
+            // Aggregate all searches, analyses, and interactions across filtered sessions, attaching user info
+            const allSearches = filteredSessions.flatMap(s => (s.searches || []).map(search => ({ ...search, sessionId: s.id, user: s.user })));
+            const allInteractions = filteredSessions.flatMap(s => (s.interactions || []).map(i => ({ ...i, sessionId: s.id, user: s.user })));
+            const allAnalyses = filteredSessions.flatMap(s => (s.analyses || []).map(a => ({ ...a, sessionId: s.id, user: s.user })));
 
             // Interaction breakdown by section
             const sectionCounts = {};
@@ -2899,6 +2937,54 @@ export default function App() {
 
             return (
               <div className="activity-dashboard fade-in">
+                {/* User Filter Navigation Bar */}
+                <div className="user-filter-bar" style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center', padding: '0.65rem 1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.5rem' }}>
+                    👤 Filter by User:
+                  </span>
+                  <button 
+                    className={`filter-chip ${selectedUserFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setSelectedUserFilter('all')}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      border: '1px solid var(--border)',
+                      background: selectedUserFilter === 'all' ? 'var(--accent)' : 'transparent',
+                      color: selectedUserFilter === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    All Users ({allSessions.filter(s => s.user && s.user.toLowerCase() !== 'admin').length})
+                  </button>
+                  {uniqueUsers.map(user => {
+                    const count = allSessions.filter(s => s.user && s.user.toLowerCase() === user.toLowerCase()).length;
+                    return (
+                      <button 
+                        key={user}
+                        className={`filter-chip ${selectedUserFilter.toLowerCase() === user.toLowerCase() ? 'active' : ''}`}
+                        onClick={() => setSelectedUserFilter(user)}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          border: '1px solid var(--border)',
+                          background: selectedUserFilter.toLowerCase() === user.toLowerCase() ? 'var(--accent)' : 'transparent',
+                          color: selectedUserFilter.toLowerCase() === user.toLowerCase() ? '#ffffff' : 'var(--text-secondary)',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          textTransform: 'capitalize'
+                        }}
+                      >
+                        {user} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Stats Cards Row */}
                 <div className="activity-stats-grid">
                   <div className="activity-stat-card">
