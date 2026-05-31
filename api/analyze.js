@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "mode_must_be_ST_or_LT" });
     }
 
-    console.log(`[API Analyze] Running 18-layer engine for ${symbol} in ${mode} mode`);
+    console.log(`[API Analyze] Running 26-layer engine for ${symbol} in ${mode} mode`);
     const analysis = await analyzeStock(symbol, mode);
     
     return res.status(200).json(analysis);

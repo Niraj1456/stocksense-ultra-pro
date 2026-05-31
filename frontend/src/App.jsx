@@ -965,10 +965,13 @@ const getApiWidgetsData = (stock, score, realData = null) => {
 };
 
 // ===== PREMIUM UI/UXAESTHETIC HELPERS =====
-const getGlowClass = (score, verdict) => {
-  if (verdict?.includes("VETOED") || verdict?.includes("TRAP")) return "glow-avoid";
-  if (score >= 55) return "glow-buy";
-  if (score >= 45) return "glow-neutral";
+const getGlowClass = (score, verdict, isLt = false) => {
+  const v = (verdict || "").toUpperCase();
+  if (v.includes("VETO") || v.includes("TRAP")) return "glow-avoid";
+  const bullThreshold = isLt ? 60 : 55;
+  const neutralThreshold = isLt ? 50 : 45;
+  if (score >= bullThreshold) return "glow-buy";
+  if (score >= neutralThreshold) return "glow-neutral";
   return "glow-avoid";
 };
 
@@ -2459,8 +2462,8 @@ export default function App() {
         });
       }
 
-      // 2. Fetch 18-layer calculations from the backend API (ST & LT in parallel)
-      console.log(`[StockSense] Triggering 18-layer backend scoring engine for ${selectedStock}...`);
+      // 2. Fetch 26-layer calculations from the backend API (ST & LT in parallel)
+      console.log(`[StockSense] Triggering 26-layer backend scoring engine for ${selectedStock}...`);
       setStBackendData(null);
       setLtBackendData(null);
 
@@ -2694,7 +2697,7 @@ export default function App() {
               <span style={{ fontSize: '1.2rem', display: 'block', color: 'var(--text-primary)', marginTop: '0.2rem' }}>Ultra Pro</span>
             </h1>
             <p className="login-brand-subtitle">
-              18-Layer Quantitative Intelligence Engine
+              26-Layer Quantitative Intelligence Engine
             </p>
           </div>
 
@@ -3020,9 +3023,9 @@ export default function App() {
           {/* Quantitative attribution engine standby overlay or content */}
           {!isAnalyzed ? (
             <div className="glass-panel quant-standby-card" style={{ padding: '3rem', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit' }}>⚡ 18-Layer Quantitative Intelligence Engine Standby</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit' }}>⚡ 26-Layer Quantitative Intelligence Engine Standby</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1.5rem', maxWidth: '500px', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
-                Initialize the 18-layer analytical models to compute SHAP attributions, insider accumulation scales, GARCH regimes, and formulate institutional playbooks.
+                Initialize the 26-layer analytical models to compute SHAP attributions, insider accumulation scales, GARCH regimes, and formulate institutional playbooks.
               </p>
               <button 
                 className="analyze-btn" 
@@ -3039,7 +3042,7 @@ export default function App() {
               {/* Section C: Attribution Dashboard */}
               <div className="attribution-dashboard-grid">
                 {/* Score Card with Premium Circle SVG */}
-                <div className={`score-card glass-panel ${getGlowClass(currentData.score, currentData.verdict)}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.5rem', padding: '1.5rem', height: '100%' }}>
+                <div className={`score-card glass-panel ${getGlowClass(currentData.score, currentData.verdict, mode === "LONG_TERM")}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.5rem', padding: '1.5rem', height: '100%' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                     <div className="score-circle" style={{ margin: 0 }}>
                       <svg className="score-circle-svg" width="110" height="110" viewBox="0 0 110 110">
@@ -3051,8 +3054,13 @@ export default function App() {
                           r="48"
                           strokeWidth="8"
                           stroke={
-                            currentData.score >= 55 ? 'var(--accent)' :
-                            currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                            mode === "LONG_TERM" ? (
+                              currentData.score >= 60 ? 'var(--accent)' :
+                              currentData.score >= 50 ? 'var(--warning)' : 'var(--danger)'
+                            ) : (
+                              currentData.score >= 55 ? 'var(--accent)' :
+                              currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                            )
                           }
                           strokeDasharray={301.6}
                           strokeDashoffset={301.6 - (301.6 * currentData.score) / 100}
@@ -3077,8 +3085,13 @@ export default function App() {
                       fontSize: '0.85rem',
                       fontWeight: 800,
                       marginTop: '0.4rem',
-                      color: currentData.score >= 55 ? 'var(--accent)' :
-                             currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                      color: mode === "LONG_TERM" ? (
+                               currentData.score >= 60 ? 'var(--accent)' :
+                               currentData.score >= 50 ? 'var(--warning)' : 'var(--danger)'
+                             ) : (
+                               currentData.score >= 55 ? 'var(--accent)' :
+                               currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                             )
                     }}>{currentData.verdict}</div>
                   </div>
 
@@ -3163,13 +3176,16 @@ export default function App() {
                       });
                       
                       const netAdjustment = totalBullish + totalBearish + vetoPenalty;
-                      const hasVeto = currentData.isVetoed || vetoPenalty !== 0;
-                      const verdictColor = currentData.score >= 55 ? 'var(--accent)' : currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)';
-                      const verdictText = currentData.score >= 70 ? 'STRONG BUY' : 
-                                          currentData.score >= 63 ? 'BUY' : 
-                                          currentData.score >= 55 ? 'ACCUMULATE ON DIPS' : 
-                                          currentData.score >= 45 ? 'NEUTRAL WATCH' : 
-                                          'AVOID';
+                      const hasVeto = currentData.isVetoed;
+                      const isLtMode = mode === "LONG_TERM" || currentData.mode === "LT";
+                      const verdictColor = isLtMode ? (
+                        currentData.score >= 60 ? 'var(--accent)' :
+                        currentData.score >= 50 ? 'var(--warning)' : 'var(--danger)'
+                      ) : (
+                        currentData.score >= 55 ? 'var(--accent)' :
+                        currentData.score >= 45 ? 'var(--warning)' : 'var(--danger)'
+                      );
+                      const verdictText = isLtMode ? getLongTermVerdict(currentData.score) : getVerdict(currentData.score);
                                           
                       return (
                         <div style={{
@@ -3503,7 +3519,12 @@ export default function App() {
 
                 {/* TAB 4: AI RISK ORCHESTRATION BRIEFING */}
                 {activeTab === 'aiBriefing' && (() => {
-                  const borderLeftColor = currentData.score >= 55 ? '#10b981' : currentData.score >= 45 ? '#f59e0b' : '#f43f5e';
+                  const isLtMode = mode === "LONG_TERM";
+                  const borderLeftColor = isLtMode ? (
+                    currentData.score >= 60 ? '#10b981' : currentData.score >= 50 ? '#f59e0b' : '#f43f5e'
+                  ) : (
+                    currentData.score >= 55 ? '#10b981' : currentData.score >= 45 ? '#f59e0b' : '#f43f5e'
+                  );
                   return (
                     <div 
                       className="ai-briefing-wrapper glass-panel-premium fade-in" 
