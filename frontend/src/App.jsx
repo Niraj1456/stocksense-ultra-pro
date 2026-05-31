@@ -3156,11 +3156,11 @@ export default function App() {
                   <div className="activity-section">
                     <div className="activity-section-header">
                       <span className="activity-section-title">📅 Session History</span>
-                      <span className="activity-section-badge">{sessions.length} sessions</span>
+                      <span className="activity-section-badge">{filteredSessions.length} sessions</span>
                     </div>
-                    {sessions.length > 0 ? (
+                    {filteredSessions.length > 0 ? (
                       <div className="activity-sessions-list">
-                        {sessions.slice().reverse().map((s, i) => (
+                        {filteredSessions.slice().reverse().map((s, i) => (
                           <div key={s.id || i} className="activity-session-row">
                             <div>
                               <span className="activity-session-date" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
