@@ -41,7 +41,6 @@ const getLongTermVerdict = (score) => {
 const sanitizeAndAlignVerdict = (verdict, score, isVetoed, isExhausted, isLt = false) => {
   const v = (verdict || "").toUpperCase().replace(/_/g, " ");
   if (v.includes("VETO") || isVetoed) return "SYSTEM VETO";
-  if (v.includes("EXHAUSTED") || isExhausted) return "EXHAUSTED";
   if (v.includes("INVALID") || v.includes("RISK")) return "INVALID RISK REWARD";
   if (v.includes("NO TRADE")) return "NO TRADE";
   
@@ -231,7 +230,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
   const remainingAtr = Math.max(atrValue - currentDayRange, 0);
   const atrHeadroomPct = atrValue > 0 ? (remainingAtr / atrValue) * 100 : 100;
-  const isExhausted = !isMarketClosed && atrHeadroomPct < 10;
+  const isExhausted = false; // ATR Exhaustion overrides removed per user request
 
   // --- LAYER 13 VETO FILTERS ---
   const rvolPass = rvol >= 1.1;
@@ -452,7 +451,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
   // Compute aligned direction
   let direction = "NEUTRAL";
-  if (isExhausted || isVetoTriggered) {
+  if (isVetoTriggered) {
     direction = "NEUTRAL";
   } else if (finalScore >= 58) {
     direction = "UP";
@@ -650,7 +649,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
   const geminiTgt = isBullish ? (upTgtPrice * 0.998).toFixed(2) : (dnTgtPrice * 1.002).toFixed(2);
   const geminiSl = isBullish ? (upSlPrice * 1.002).toFixed(2) : (dnSlPrice * 0.998).toFixed(2);
 
-  const geminiOpinion = (isExhausted || isVetoTriggered)
+  const geminiOpinion = isVetoTriggered
     ? `GEMINI 3.1 PRO (THINKING): The primary ATR/Veto algorithm indicates a protective veto is active. ${hasL2 ? `Real NSE order book confirms buy/sell ratio at ${(depth.totalBuyQty / Math.max(depth.totalSellQty, 1)).toFixed(2)}x.` : ''} The probability of a successful setup here is mathematically negligible. VETO the trade.`
     : `GEMINI 3.1 PRO (THINKING): The primary ATR algorithm projects a Base Target of ₹${isBullish ? upTgtPrice.toFixed(2) : dnTgtPrice.toFixed(2)}. ${hasOC ? `REAL NSE PCR at ${pcr} ${pcr > 1 ? 'supports bullish bias' : 'signals caution'}.` : ''} ${hasL2 ? `REAL NSE order book shows ${l2Imbalance > 0 ? 'buy-side dominance' : 'sell-side pressure'} at ${l2Imbalance.toFixed(1)}% imbalance.` : ''} I recommend ${isBullish ? 'long' : 'short'} entry at ₹${geminiTgt} with stop at ₹${geminiSl}.`;
 
@@ -723,7 +722,7 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
 
   return {
     score: finalScore,
-    verdict: isVetoed ? "VETOED (TRAP)" : (isExhausted ? "EXHAUSTED" : getVerdict(finalScore)),
+    verdict: isVetoed ? "VETOED (TRAP)" : getVerdict(finalScore),
     geminiOpinion,
     aiReasoning: isVetoed
       ? `Setup explicitly VETOED by Layer 13 / v4.5 filters. Active vetoes: ${[
@@ -2607,8 +2606,8 @@ export default function App() {
     }
     const finalScore = Math.max(5, Math.min(95, Math.round(50 + weightedSumPoints)));
 
-    const direction = (isVetoed || data.verdict?.includes("EXHAUSTED")) ? "NEUTRAL" : (finalScore >= 58 ? "UP" : finalScore < 38 ? "DOWN" : "NEUTRAL");
-    const verdict = sanitizeAndAlignVerdict(data.verdict, finalScore, isVetoed, data.verdict?.includes("EXHAUSTED"), isLt);
+    const direction = isVetoed ? "NEUTRAL" : (finalScore >= 58 ? "UP" : finalScore < 38 ? "DOWN" : "NEUTRAL");
+    const verdict = sanitizeAndAlignVerdict(data.verdict, finalScore, isVetoed, false, isLt);
 
     const dummyRes = {
       stock: symbol,
