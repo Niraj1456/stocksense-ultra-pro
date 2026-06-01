@@ -613,49 +613,48 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   const cautionVetoes = vetoResult.data.caution_vetoes || [];
   const cautionCount = cautionVetoes.length;
 
-  // STEP 7: Apply CAUTION Tier Veto Compressions
+  // STEP 7: Apply CAUTION Tier Veto Compressions (Eased by 30%)
   const cautionMultipliers = {
-    'BEAR_MARKET_LONG': 0.75,
-    'WEAK_BEAR_CONVICTION': 0.75,
-    'EARNINGS_QUALITY_MANIPULATION': 0.80,
-    'LOW_VOLUME_LONG': 0.75,
-    'LOW_VOLUME_SHORT': 0.75,
-    'LOW_VOL_LONG': 0.75,
-    'LOW_VOL_SHORT': 0.75,
-    'UNIVERSAL_LOW_VOLUME': 0.70,
-    'LOW_VOL_ANY': 0.70,
-    'MOMENTUM_DISAGREEMENT_LONG': 0.70,
-    'MOMENTUM_DISAGREEMENT_SHORT': 0.70,
-    'MOM_DISAGREE_LONG': 0.70,
-    'MOM_DISAGREE_SHORT': 0.70,
-    'TREND_ALIGNMENT_SHORT': 0.75,
-    'OVERSOLD_OVERRIDE': 0.70,
-    'OVERSOLD_SHORT': 0.75,
-    'OVERBOUGHT_LONG': 0.75,
-    'OVERSOLD_TREND_LONG': 0.75,
-    'CANDLE_STRUCTURE_LONG': 0.75,
-    'CANDLE_STRUCTURE_SHORT': 0.75,
-    'CANDLE_VETO_LONG': 0.75,
-    'CANDLE_VETO_SHORT': 0.75,
-    'TRENDING_OB_SHORT': 0.75,
-    'STRONGLY_BEARISH_SENTIMENT': 0.70,
-    'EARNINGS_IMMINENT_VETO': 0.70,
-    'INSIDER_VETO': 0.70,
-    'TREND_MISALIGNMENT': 0.65,
-    'PDH_PDL_CONTRADICTION_LONG': 0.80,
-    'PDH_PDL_CONTRADICTION_SHORT': 0.80,
-    'INTRADAY_RISING_KNIFE': 0.75,
-    'NEGATIVE_GAMMA_TAIL_RISK': 0.80
+    'BEAR_MARKET_LONG': 0.825,
+    'WEAK_BEAR_CONVICTION': 0.825,
+    'EARNINGS_QUALITY_MANIPULATION': 0.86,
+    'LOW_VOLUME_LONG': 0.825,
+    'LOW_VOLUME_SHORT': 0.825,
+    'LOW_VOL_LONG': 0.825,
+    'LOW_VOL_SHORT': 0.825,
+    'UNIVERSAL_LOW_VOLUME': 0.79,
+    'LOW_VOL_ANY': 0.79,
+    'MOMENTUM_DISAGREEMENT_LONG': 0.79,
+    'MOMENTUM_DISAGREEMENT_SHORT': 0.79,
+    'MOM_DISAGREE_LONG': 0.79,
+    'MOM_DISAGREE_SHORT': 0.79,
+    'TREND_ALIGNMENT_SHORT': 0.825,
+    'OVERSOLD_OVERRIDE': 0.79,
+    'OVERSOLD_SHORT': 0.825,
+    'OVERBOUGHT_LONG': 0.825,
+    'OVERSOLD_TREND_LONG': 0.825,
+    'CANDLE_STRUCTURE_LONG': 0.825,
+    'CANDLE_STRUCTURE_SHORT': 0.825,
+    'CANDLE_VETO_LONG': 0.825,
+    'CANDLE_VETO_SHORT': 0.825,
+    'TRENDING_OB_SHORT': 0.825,
+    'STRONGLY_BEARISH_SENTIMENT': 0.79,
+    'EARNINGS_IMMINENT_VETO': 0.79,
+    'INSIDER_VETO': 0.79,
+    'TREND_MISALIGNMENT': 0.755,
+    'PDH_PDL_CONTRADICTION_LONG': 0.86,
+    'PDH_PDL_CONTRADICTION_SHORT': 0.86,
+    'INTRADAY_RISING_KNIFE': 0.825,
+    'NEGATIVE_GAMMA_TAIL_RISK': 0.86
   };
 
-  // INTRADAY_FALLING_KNIFE uses a graduated multiplier based on drop severity
-  // instead of a fixed value — deeper drops get stronger compression.
+  // INTRADAY_FALLING_KNIFE uses a graduated multiplier based on drop severity (Eased by 30%)
   if (intradayFallingKnife && cautionVetoes.includes('INTRADAY_FALLING_KNIFE')) {
     let fallingKnifeMultiplier;
     const dropMag = Math.abs(intradayChangePct);
-    if (dropMag >= 2.0) fallingKnifeMultiplier = 0.55;
-    else if (dropMag >= 1.0) fallingKnifeMultiplier = 0.65;
-    else fallingKnifeMultiplier = 0.80; // 0.5% to 1.0%
+    if (dropMag >= 2.0) fallingKnifeMultiplier = 0.685;
+    else if (dropMag >= 1.0) fallingKnifeMultiplier = 0.755;
+    else fallingKnifeMultiplier = 0.86; // 0.5% to 1.0%
     cautionMultipliers['INTRADAY_FALLING_KNIFE'] = fallingKnifeMultiplier;
   }
 
@@ -665,23 +664,23 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
   for (const code of cautionVetoes) {
     let factor;
     if (code === 'EARNINGS_BINARY_EVENT' || code === 'EARNINGS_ANNOUNCEMENT_BINARY_RISK') {
-      factor = (S_5b >= 50) ? 0.70 : 0.85;
+      factor = (S_5b >= 50) ? 0.79 : 0.895;
     } else {
       factor = cautionMultipliers[code] ?? 1.0;
     }
     worstMultiplier = Math.min(worstMultiplier, factor);
   }
-  const additionalPenalty = Math.max(0, cautionVetoes.length - 1) * 0.03;
-  const cautionMultiplierClamped = clamp(worstMultiplier - additionalPenalty, 0.55, 1.00);
+  const additionalPenalty = Math.max(0, cautionVetoes.length - 1) * 0.021;
+  const cautionMultiplierClamped = clamp(worstMultiplier - additionalPenalty, 0.685, 1.00);
   let S_6 = 50 + (S_5b - 50) * cautionMultiplierClamped;
 
-  // Special handling to bypass the 0.55 caution floor for severe intraday decline contradiction (Falling Knife)
+  // Special handling to bypass the 0.55 caution floor for severe intraday decline contradiction (Falling Knife) (Eased by 30%)
   if (cautionVetoes.includes('INTRADAY_FALLING_KNIFE')) {
-    let fallingKnifeFactor = 0.80;
+    let fallingKnifeFactor = 0.86;
     const dropMag = Math.abs(intradayChangePct);
-    if (dropMag >= 2.0) fallingKnifeFactor = 0.10;
-    else if (dropMag >= 1.0) fallingKnifeFactor = 0.15;
-    else fallingKnifeFactor = 0.20; // 0.5% to 1.0%
+    if (dropMag >= 2.0) fallingKnifeFactor = 0.37;
+    else if (dropMag >= 1.0) fallingKnifeFactor = 0.405;
+    else fallingKnifeFactor = 0.44; // 0.5% to 1.0%
     
     S_6 = 50 + (S_6 - 50) * fallingKnifeFactor;
   }
@@ -742,8 +741,8 @@ function runEngine(stock, currentPrice, indicators, options = {}) {
 
   let direction = "NEUTRAL";
   if (!hasFatalVeto) {
-    const bullThreshold = 60.0;
-    const bearThreshold = 40.0;
+    const bullThreshold = timeHorizon === '5D' ? 57.0 : 60.0;
+    const bearThreshold = timeHorizon === '5D' ? 43.0 : 40.0;
 
     if (score >= bullThreshold) {
       let trendAlign = true;

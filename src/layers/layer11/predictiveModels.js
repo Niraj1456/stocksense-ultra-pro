@@ -15,10 +15,10 @@ function probabilityOfTouchEngine({ current_price, target_price, days_to_target,
   let likelihood = "IMPROBABLE";
   let pts = 0;
 
-  if (probability_pct > 80) { likelihood = "HIGHLY_PROBABLE"; pts = 4; }
-  else if (probability_pct >= 50 && probability_pct <= 80) { likelihood = "LIKELY"; pts = 2; }
-  else if (probability_pct >= 20 && probability_pct < 50) { likelihood = "POSSIBLE"; pts = 0; }
-  else if (probability_pct < 20) { likelihood = "IMPROBABLE"; pts = -2; }
+  if (probability_pct > 71) { likelihood = "HIGHLY_PROBABLE"; pts = 4; } // 80% -> 50 + 30 * 0.7 = 71%
+  else if (probability_pct >= 50 && probability_pct <= 71) { likelihood = "LIKELY"; pts = 2; }
+  else if (probability_pct >= 29 && probability_pct < 50) { likelihood = "POSSIBLE"; pts = 0; } // 20% -> 50 - 30 * 0.7 = 29%
+  else if (probability_pct < 29) { likelihood = "IMPROBABLE"; pts = -2; }
 
   return {
     ok: true,
@@ -136,13 +136,13 @@ function markovTrendPredictor({ recent_daily_returns = [] }) {
   let prediction = "NEUTRAL_DRIFT";
   let pts = 0;
 
-  if (next_day_up_prob > 0.65) {
+  if (next_day_up_prob > 0.605) { // 0.65 -> 0.605 (30% reduction in deviation from 0.50)
     prediction = "HIGH_PROBABILITY_CONTINUATION_UP";
     pts = 3;
-  } else if (next_day_up_prob < 0.35) {
+  } else if (next_day_up_prob < 0.395) { // 0.35 -> 0.395 (30% reduction in deviation from 0.50)
     prediction = "HIGH_PROBABILITY_CONTINUATION_DOWN";
     pts = -3;
-  } else if (prob_up_given_down > 0.6 && prob_down_given_up > 0.6) {
+  } else if (prob_up_given_down > 0.57 && prob_down_given_up > 0.57) { // 0.60 -> 0.57 (30% reduction in deviation from 0.50)
     prediction = "CHOPPY_MEAN_REVERTING";
     pts = 0;
   }

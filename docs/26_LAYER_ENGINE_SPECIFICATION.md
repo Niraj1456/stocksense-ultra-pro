@@ -325,23 +325,23 @@ Veto conditions are divided into three distinct tiers to preserve capital withou
 | **FATAL** | `CIRCUIT_BREAKER_TRIPPED` | Price anomalies, stale data, or API offline limits | L16 | Reject trade. Verdict = `SYSTEM_VETO`. |
 | **FATAL** | `AUDITOR_RESIGNATION` | Sudden auditor resignation announcements | L15 | Reject trade. Verdict = `SYSTEM_VETO`. |
 | **FATAL** | `ALPHA_DECAY_HALT` | Sharpe decay rate < -0.15 for 3 consecutive windows | L26 | Reject trade. Verdict = `SYSTEM_VETO`. |
-| **CAUTION** | `TREND_MISALIGNMENT` | Daily, Weekly, and Monthly EMAs disagree | L22 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.65$. |
-| **CAUTION** | `EARNINGS_BINARY_EVENT` | Days to earnings $\le 3$ | L15 | Compress score deviation: Long $\times 0.70$, Short $\times 0.85$. |
-| **CAUTION** | `EARNINGS_QUALITY_MANIPULATION` | Accruals Ratio > 0.20 (excluding BFSI & adjusted sectors) | L20 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.80$. |
-| **CAUTION** | `LOW_VOLUME_LONG` | Buy signal (Score $\ge 58$) with relative volume < 0.40 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `LOW_VOLUME_SHORT` | Short signal (Score $< 38$) with relative volume < 0.50 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `UNIVERSAL_LOW_VOLUME` | Score $\ge 58$ or $< 38$ with relative volume < 0.35 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.70$. |
-| **CAUTION** | `MOMENTUM_DISAGREEMENT_LONG` | Buy signal with momentumPct < -1.0 and RSI > 25 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.70$. |
-| **CAUTION** | `MOMENTUM_DISAGREEMENT_SHORT`| Short signal with momentumPct > 1.0 and RSI < 75 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.70$. |
-| **CAUTION** | `TREND_ALIGNMENT_SHORT` | Short signal during macro and long-term uptrend | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `OVERSOLD_OVERRIDE` | Short signal with RSI < 25 during long-term uptrend | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.70$. |
-| **CAUTION** | `BEAR_MARKET_LONG` | Buy signal in BEAR regime during trending conditions | L1 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `WEAK_BEAR_CONVICTION` | Bearish signal with $< 2$ bearish layers | L13 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `OVERSOLD_SHORT` | Short signal with RSI < 30 (unless momentum < -3%) | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `OVERBOUGHT_LONG` | Buy signal (Score < 75) with RSI > 60 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `OVERSOLD_TREND_LONG` | Buy signal with RSI < 30 and ADX > 25 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `CANDLE_VETO_LONG` | Long signal with weak close position or bearish engulfing | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
-| **CAUTION** | `CANDLE_VETO_SHORT` | Short signal with weak close position or bullish engulfing | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.75$. |
+| **CAUTION** | `TREND_MISALIGNMENT` | Daily, Weekly, and Monthly EMAs disagree | L22 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.755$. |
+| **CAUTION** | `EARNINGS_BINARY_EVENT` | Days to earnings $\le 3$ | L15 | Compress score deviation: Long $\times 0.79$, Short $\times 0.895$. |
+| **CAUTION** | `EARNINGS_QUALITY_MANIPULATION` | Accruals Ratio > 0.20 (excluding BFSI & adjusted sectors) | L20 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.86$. |
+| **CAUTION** | `LOW_VOLUME_LONG` | Buy signal (Score $\ge 58$) with relative volume < 0.40 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `LOW_VOLUME_SHORT` | Short signal (Score $< 38$) with relative volume < 0.50 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `UNIVERSAL_LOW_VOLUME` | Score $\ge 58$ or $< 38$ with relative volume < 0.35 | L5 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.79$. |
+| **CAUTION** | `MOMENTUM_DISAGREEMENT_LONG` | Buy signal with momentumPct < -1.0 and RSI > 25 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.79$. |
+| **CAUTION** | `MOMENTUM_DISAGREEMENT_SHORT`| Short signal with momentumPct > 1.0 and RSI < 75 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.79$. |
+| **CAUTION** | `TREND_ALIGNMENT_SHORT` | Short signal during macro and long-term uptrend | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `OVERSOLD_OVERRIDE` | Short signal with RSI < 25 during long-term uptrend | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.79$. |
+| **CAUTION** | `BEAR_MARKET_LONG` | Buy signal in BEAR regime during trending conditions | L1 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `WEAK_BEAR_CONVICTION` | Bearish signal with $< 2$ bearish layers | L13 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `OVERSOLD_SHORT` | Short signal with RSI < 30 (unless momentum < -3%) | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `OVERBOUGHT_LONG` | Buy signal (Score < 75) with RSI > 60 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `OVERSOLD_TREND_LONG` | Buy signal with RSI < 30 and ADX > 25 | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `CANDLE_VETO_LONG` | Long signal with weak close position or bearish engulfing | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
+| **CAUTION** | `CANDLE_VETO_SHORT` | Short signal with weak close position or bullish engulfing | L3 | Compress score deviation: $S_{\text{new}} = 50 + (S - 50) \times 0.825$. |
 | **ADVISORY** | `ALTMAN_DISTRESS` | Altman Z-Score indicates distress zone | L9 | Log warning advisory; no score impact. |
 
 ---

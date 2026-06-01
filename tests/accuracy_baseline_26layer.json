@@ -1,6 +1,6 @@
 {
   "RELIANCE": {
-    "masterScore": 46.03,
+    "masterScore": 47.99,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [
@@ -8,42 +8,42 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_31.68_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2319.7643503537374,
-    "downTarget": 2318.2356496462626
+    "upTarget": 2319.712637316343,
+    "downTarget": 2318.287362683657
   },
   "TCS": {
-    "masterScore": 51.44,
+    "masterScore": 54.9,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2984.7273794194084,
-    "downTarget": 2983.2726205805916
+    "upTarget": 2984.822565984883,
+    "downTarget": 2983.177434015117
   },
   "HDFCBANK": {
-    "masterScore": 48.1,
+    "masterScore": 49.91,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 4041.8688657313255,
-    "downTarget": 4040.1311342686745
+    "upTarget": 4041.8104030185486,
+    "downTarget": 4040.1895969814514
   },
   "BHARTIENT": {
-    "masterScore": 41.91,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 38.46,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_67.09_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1264.0498637232813,
-    "downTarget": 1261.9501362767187
+    "upTarget": 1264.159323676298,
+    "downTarget": 1261.840676323702
   },
   "INFY": {
-    "masterScore": 50.32,
+    "masterScore": 54.85,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -51,127 +51,130 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2060.810092968234,
-    "downTarget": 2059.189907031766
+    "upTarget": 2060.9550266627875,
+    "downTarget": 2059.0449733372125
   },
   "ICICIBANK": {
-    "masterScore": 50.15,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 44.96,
+    "verdict": "AVOID",
     "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3857.831691142631,
-    "downTarget": 3856.168308857369
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT",
+      "INTRADAY_RISING_KNIFE"
+    ],
+    "upTarget": 3857.9933996789123,
+    "downTarget": 3856.0066003210877
   },
   "HINDUNILVR": {
-    "masterScore": 43.19,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 37.24,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_250.10_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 671.8883938489972,
-    "downTarget": 670.1116061510028
+    "upTarget": 672.0545662288002,
+    "downTarget": 669.9454337711998
   },
   "ITC": {
-    "masterScore": 51.18,
+    "masterScore": 52.91,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2924.8302078917663,
-    "downTarget": 2923.1697921082337
+    "upTarget": 2924.88506884107,
+    "downTarget": 2923.11493115893
   },
   "SBI": {
-    "masterScore": 50.7,
+    "masterScore": 53.54,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1982.7945152488996,
-    "downTarget": 1981.2054847511004
+    "upTarget": 1982.8823138211515,
+    "downTarget": 1981.1176861788485
   },
   "L&T": {
-    "masterScore": 50.78,
+    "masterScore": 53.81,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 4398.845013859137,
-    "downTarget": 4397.154986140863
+    "upTarget": 4398.944330848787,
+    "downTarget": 4397.055669151213
   },
   "TATAMOTORS": {
-    "masterScore": 50.27,
+    "masterScore": 51.58,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_LONG",
-      "INTRADAY_FALLING_KNIFE"
-    ],
-    "upTarget": 3592.69431642818,
-    "downTarget": 3591.30568357182
+    "vetoReasons": [],
+    "upTarget": 3592.73030987974,
+    "downTarget": 3591.26969012026
   },
   "BAJFINANCE": {
-    "masterScore": 48.57,
+    "masterScore": 51.44,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_69.11_PCT"
     ],
-    "upTarget": 1215.8618027762395,
-    "downTarget": 1214.1381972237605
+    "upTarget": 1215.862128846151,
+    "downTarget": 1214.137871153849
   },
   "BHARTIARTL": {
-    "masterScore": 45.81,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 46.32,
+    "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2809.8018012880566,
-    "downTarget": 2808.1981987119434
+    "upTarget": 2809.7877924269087,
+    "downTarget": 2808.2122075730913
   },
   "KOTAKBANK": {
-    "masterScore": 50.92,
+    "masterScore": 52.11,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2202.806112960408,
-    "downTarget": 2201.193887039592
+    "upTarget": 2202.843122004501,
+    "downTarget": 2201.156877995499
   },
   "AXISBANK": {
-    "masterScore": 48.82,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 42.8,
+    "verdict": "AVOID",
     "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2673.7205841004534,
-    "downTarget": 2672.2794158995466
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT",
+      "INTRADAY_RISING_KNIFE"
+    ],
+    "upTarget": 2673.8862799096482,
+    "downTarget": 2672.1137200903518
   },
   "ASIANPAINT": {
-    "masterScore": 50.7,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.34,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_57.30_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 314.81989137815464,
-    "downTarget": 313.18010862184536
+    "upTarget": 314.967918459658,
+    "downTarget": 313.032081540342
   },
   "MARUTI": {
-    "masterScore": 50.58,
+    "masterScore": 54.99,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
@@ -179,45 +182,45 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_32.74_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 816.8223390896396,
-    "downTarget": 815.1776609103604
+    "upTarget": 816.9641106058754,
+    "downTarget": 815.0358893941246
   },
   "SUNPHARMA": {
-    "masterScore": 39,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 37.15,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2618.156564283759,
-    "downTarget": 2615.843435716241
+    "upTarget": 2618.21599883723,
+    "downTarget": 2615.78400116277
   },
   "TITAN": {
-    "masterScore": 51.16,
+    "masterScore": 53.42,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 3424.8515836503466,
-    "downTarget": 3423.1484163496534
+    "upTarget": 3424.925153185889,
+    "downTarget": 3423.074846814111
   },
   "ULTRACEMCO": {
-    "masterScore": 42.39,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 38.58,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_32.24_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2272.0622554335732,
-    "downTarget": 2269.9377445664268
+    "upTarget": 2272.1863643940737,
+    "downTarget": 2269.8136356059263
   },
   "ADANIENT": {
-    "masterScore": 50.97,
+    "masterScore": 54.29,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -226,140 +229,143 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 630.8399075992612,
-    "downTarget": 629.1600924007388
+    "upTarget": 630.9472812315119,
+    "downTarget": 629.0527187684881
   },
   "ADANIPORTS": {
-    "masterScore": 47.8,
+    "masterScore": 49.07,
     "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [],
+    "upTarget": 3817.8281271804967,
+    "downTarget": 3816.1718728195033
+  },
+  "WIPRO": {
+    "masterScore": 44.62,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_249.88_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 3817.868687208234,
-    "downTarget": 3816.131312791766
-  },
-  "WIPRO": {
-    "masterScore": 55.35,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_249.88_PCT"
-    ],
-    "upTarget": 671.8195932954802,
-    "downTarget": 670.1804067045198
+    "upTarget": 671.8204034371231,
+    "downTarget": 670.1795965628769
   },
   "HCLTECH": {
-    "masterScore": 43.68,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 43.59,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_41.06_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1847.9970452257774,
-    "downTarget": 1846.0029547742226
+    "upTarget": 1847.9999102982651,
+    "downTarget": 1846.0000897017349
   },
   "ONGC": {
-    "masterScore": 48.12,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 41.21,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_148.46_PCT"
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_148.46_PCT",
+      "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 815.8911836904667,
-    "downTarget": 814.1088163095333
+    "upTarget": 816.1202789025621,
+    "downTarget": 813.8797210974379
   },
   "NTPC": {
-    "masterScore": 45.1,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 46.68,
+    "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_33.68_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2169.8213078228873,
-    "downTarget": 2168.1786921771127
+    "upTarget": 2169.777907610173,
+    "downTarget": 2168.222092389827
   },
   "POWERGRID": {
-    "masterScore": 44.65,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 41.97,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_38.07_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1931.977013806146,
-    "downTarget": 1930.022986193854
+    "upTarget": 1932.0632871834268,
+    "downTarget": 1929.9367128165732
   },
   "JSWSTEEL": {
-    "masterScore": 43.09,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 41.56,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 4286.000028031232,
-    "downTarget": 4283.999971968768
+    "upTarget": 4286.047976727183,
+    "downTarget": 4283.952023272817
   },
   "TATASTEEL": {
-    "masterScore": 50.87,
+    "masterScore": 48.87,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [],
-    "upTarget": 4689.711147147334,
-    "downTarget": 4688.288852852666
+    "upTarget": 4689.718294354845,
+    "downTarget": 4688.281705645155
   },
   "COALINDIA": {
-    "masterScore": 50.42,
+    "masterScore": 54.98,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1664.8213999987486,
-    "downTarget": 1663.1786000012514
+    "upTarget": 1664.9687479135516,
+    "downTarget": 1663.0312520864484
   },
   "HINDALCO": {
-    "masterScore": 51.64,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.73,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 4718.869854662555,
-    "downTarget": 4717.130145337445
+    "upTarget": 4719.00340216893,
+    "downTarget": 4716.99659783107
   },
   "GRASIM": {
-    "masterScore": 50.49,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 40.19,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_34.45_PCT"
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_34.45_PCT",
+      "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2161.68832433285,
-    "downTarget": 2160.31167566715
+    "upTarget": 2161.9399988241075,
+    "downTarget": 2160.0600011758925
   },
   "NESTLEIND": {
-    "masterScore": 51.29,
+    "masterScore": 53.08,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 4178.8564409427045,
-    "downTarget": 4177.1435590572955
+    "upTarget": 4178.91475320164,
+    "downTarget": 4177.08524679836
   },
   "M&M": {
-    "masterScore": 50.32,
+    "masterScore": 53.76,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
@@ -367,53 +373,56 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_47.79_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 452.69635194928225,
-    "downTarget": 451.30364805071775
+    "upTarget": 452.7909590071626,
+    "downTarget": 451.2090409928374
   },
   "INDUSINDBK": {
-    "masterScore": 44,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 42.68,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 4747.995936084377,
-    "downTarget": 4746.004063915623
+    "upTarget": 4748.038343685389,
+    "downTarget": 4745.961656314611
   },
   "BAJAJ-AUTO": {
-    "masterScore": 49.59,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3032.674184596909,
-    "downTarget": 3031.325815403091
-  },
-  "CIPLA": {
-    "masterScore": 42,
-    "verdict": "SELL_ON_RALLIES",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "MOM_DISAGREE_SHORT",
-      "CANDLE_VETO_SHORT",
-      "DATA_CORRUPTION: ZERO_OR_NEGATIVE_PRICE_DETECTED"
-    ],
-    "upTarget": 251.91260854781504,
-    "downTarget": 250.08739145218496
-  },
-  "DRREDDY": {
-    "masterScore": 50.26,
+    "masterScore": 53.37,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2636.691319298952,
-    "downTarget": 2635.308680701048
+    "upTarget": 3032.7527200714017,
+    "downTarget": 3031.2472799285983
+  },
+  "CIPLA": {
+    "masterScore": 47.45,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "MOM_DISAGREE_SHORT",
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: ZERO_OR_NEGATIVE_PRICE_DETECTED"
+    ],
+    "upTarget": 251.76188986340316,
+    "downTarget": 250.23811013659684
+  },
+  "DRREDDY": {
+    "masterScore": 51.87,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_LONG",
+      "INTRADAY_FALLING_KNIFE"
+    ],
+    "upTarget": 2636.735382009613,
+    "downTarget": 2635.264617990387
   },
   "SBILIFE": {
-    "masterScore": 50.91,
+    "masterScore": 53.58,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -421,45 +430,42 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 3130.7227658295574,
-    "downTarget": 3129.2772341704426
+    "upTarget": 3130.7972461369645,
+    "downTarget": 3129.2027538630355
   },
   "HDFCLIFE": {
-    "masterScore": 47.22,
+    "masterScore": 51.74,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_SHORT",
-      "INTRADAY_RISING_KNIFE"
-    ],
-    "upTarget": 4485.768281480652,
-    "downTarget": 4484.231718519348
+    "vetoReasons": [],
+    "upTarget": 4485.7395193229895,
+    "downTarget": 4484.2604806770105
   },
   "BPCL": {
-    "masterScore": 44.65,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 39.37,
+    "verdict": "AVOID",
     "dataQuality": 92.5,
     "vetoReasons": [
       "MOM_DISAGREE_SHORT",
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: ZERO_OR_NEGATIVE_PRICE_DETECTED"
     ],
-    "upTarget": 439.8491970150815,
-    "downTarget": 438.1508029849185
+    "upTarget": 439.99693211358664,
+    "downTarget": 438.00306788641336
   },
   "IOC": {
-    "masterScore": 46.22,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 41.36,
+    "verdict": "AVOID",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2769.8088054504638,
-    "downTarget": 2768.1911945495362
+    "upTarget": 2769.945386217985,
+    "downTarget": 2768.054613782015
   },
   "DIVISLAB": {
-    "masterScore": 50.58,
+    "masterScore": 56.73,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -468,91 +474,87 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 150.82315531348084,
-    "downTarget": 149.17684468651916
+    "upTarget": 151.02106012887987,
+    "downTarget": 148.97893987112013
   },
   "APOLLOHOSP": {
-    "masterScore": 44.83,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 44.9,
+    "verdict": "AVOID",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_227.91_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 679.8287181272713,
-    "downTarget": 678.1712818727287
+    "upTarget": 679.8267953473935,
+    "downTarget": 678.1732046526065
   },
   "EICHERMOT": {
-    "masterScore": 50.53,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.49,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1472.6968397403275,
-    "downTarget": 1471.3031602596725
+    "upTarget": 1472.8322226275982,
+    "downTarget": 1471.1677773724018
   },
   "BRITANNIA": {
-    "masterScore": 51.22,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.08,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_38.39_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 654.8535465997805,
-    "downTarget": 653.1464534002195
+    "upTarget": 654.9792022014263,
+    "downTarget": 653.0207977985737
   },
   "TATACONSUM": {
-    "masterScore": 45.21,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 44.29,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_34.17_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2167.9394405765834,
-    "downTarget": 2166.0605594234166
+    "upTarget": 2167.968453175793,
+    "downTarget": 2166.031546824207
   },
   "HEROMOTOCO": {
-    "masterScore": 43.77,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 48.62,
+    "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_SHORT",
-      "INTRADAY_RISING_KNIFE"
-    ],
-    "upTarget": 3047.965460740014,
-    "downTarget": 3046.034539259986
+    "vetoReasons": [],
+    "upTarget": 3047.815525274466,
+    "downTarget": 3046.184474725534
   },
   "SHRIRAMFIN": {
-    "masterScore": 45.13,
-    "verdict": "SELL_ON_RALLIES",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_SHORT",
-      "DATA_CORRUPTION: ZERO_OR_NEGATIVE_PRICE_DETECTED"
-    ],
-    "upTarget": 125.93800660251078,
-    "downTarget": 124.06199339748922
-  },
-  "JIOFIN": {
-    "masterScore": 46.24,
+    "masterScore": 48.42,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
+      "DATA_CORRUPTION: ZERO_OR_NEGATIVE_PRICE_DETECTED"
+    ],
+    "upTarget": 125.83469084347963,
+    "downTarget": 124.16530915652037
+  },
+  "JIOFIN": {
+    "masterScore": 40.43,
+    "verdict": "AVOID",
+    "dataQuality": 95,
+    "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2507.909971729286,
-    "downTarget": 2506.090028270714
+    "upTarget": 2508.093801205891,
+    "downTarget": 2505.906198794109
   },
   "LTIM": {
-    "masterScore": 50.81,
+    "masterScore": 52.87,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -560,88 +562,87 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2380.707727066509,
-    "downTarget": 2379.292272933491
+    "upTarget": 2380.764213612693,
+    "downTarget": 2379.235786387307
   },
   "BEL": {
-    "masterScore": 46.78,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 33.63,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_138.43_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 841.9357673849731,
-    "downTarget": 840.0642326150269
+    "upTarget": 842.3718177433145,
+    "downTarget": 839.6281822566855
   },
   "HAL": {
-    "masterScore": 47.96,
+    "masterScore": 47.02,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_57.71_PCT"
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_57.71_PCT",
+      "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1383.8723198871655,
-    "downTarget": 1382.1276801128345
+    "upTarget": 1383.9026446169707,
+    "downTarget": 1382.0973553830293
   },
   "DLF": {
-    "masterScore": 50.45,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.91,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2974.8332478128473,
-    "downTarget": 2973.1667521871527
+    "upTarget": 2975.0120113907706,
+    "downTarget": 2972.9879886092294
   },
   "VBL": {
-    "masterScore": 51.25,
+    "masterScore": 53.99,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 4868.854154008998,
-    "downTarget": 4867.145845991002
+    "upTarget": 4868.943311417937,
+    "downTarget": 4867.056688582063
   },
   "PFC": {
-    "masterScore": 47.22,
+    "masterScore": 50.4,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_SHORT",
-      "INTRADAY_RISING_KNIFE"
-    ],
-    "upTarget": 4317.735456381307,
-    "downTarget": 4316.264543618693
+    "vetoReasons": [],
+    "upTarget": 4317.672447519266,
+    "downTarget": 4316.327552480734
   },
   "RECL": {
-    "masterScore": 50.71,
+    "masterScore": 53.42,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1424.8314541208224,
-    "downTarget": 1423.1685458791776
+    "upTarget": 1424.91909475355,
+    "downTarget": 1423.08090524645
   },
   "TRENT": {
-    "masterScore": 45.74,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 35.58,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2637.8436195524378,
-    "downTarget": 2636.1563804475622
+    "upTarget": 2638.136551016989,
+    "downTarget": 2635.863448983011
   },
   "ZOMATO": {
-    "masterScore": 51.02,
+    "masterScore": 54.37,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
@@ -649,33 +650,33 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_30.30_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 904.8373347893925,
-    "downTarget": 903.1626652106075
+    "upTarget": 904.9451392299944,
+    "downTarget": 903.0548607700056
   },
   "DMART": {
-    "masterScore": 50.93,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.51,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 3626.8467413511526,
-    "downTarget": 3625.1532586488474
+    "upTarget": 3626.996300756794,
+    "downTarget": 3625.003699243206
   },
   "BAJAJHLDNG": {
-    "masterScore": 40.74,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 37.54,
+    "verdict": "AVOID",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 4169.969754885409,
-    "downTarget": 4168.030245114591
+    "upTarget": 4170.0603332751725,
+    "downTarget": 4167.9396667248275
   },
   "CHOLAFIN": {
-    "masterScore": 50.73,
+    "masterScore": 54.28,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -683,156 +684,159 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2220.714600279959,
-    "downTarget": 2219.285399720041
+    "upTarget": 2220.8131945665446,
+    "downTarget": 2219.1868054334554
   },
   "TATACOMM": {
-    "masterScore": 50.18,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.02,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1718.6809467333399,
-    "downTarget": 1717.3190532666601
+    "upTarget": 1718.8118356209238,
+    "downTarget": 1717.1881643790762
   },
   "KPITTECH": {
-    "masterScore": 50.52,
+    "masterScore": 50.91,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2694.8240127658482,
-    "downTarget": 2693.1759872341518
+    "upTarget": 2694.8366054374264,
+    "downTarget": 2693.1633945625736
   },
   "PERSISTENT": {
-    "masterScore": 42.47,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 44.28,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_61.04_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1355.9074436468302,
-    "downTarget": 1354.0925563531698
+    "upTarget": 1355.8569526231363,
+    "downTarget": 1354.1430473768637
   },
   "COFORGE": {
-    "masterScore": 46.42,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 40.69,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_218.88_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 687.9104145574403,
-    "downTarget": 686.0895854425597
+    "upTarget": 688.0929434382707,
+    "downTarget": 685.9070565617293
   },
   "MPHASIS": {
-    "masterScore": 60.93,
+    "masterScore": 60.64,
     "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2754.139505127053,
-    "downTarget": 2751.860494872947
+    "upTarget": 2754.1303078966926,
+    "downTarget": 2751.8696921033074
   },
   "LTTS": {
-    "masterScore": 48.73,
+    "masterScore": 49.02,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 2727.833355502795,
-    "downTarget": 2726.166644497205
+    "upTarget": 2727.824155917876,
+    "downTarget": 2726.175844082124
   },
   "DIXON": {
-    "masterScore": 50.54,
+    "masterScore": 52.35,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1366.679029210524,
-    "downTarget": 1365.320970789476
+    "upTarget": 1366.7271514842535,
+    "downTarget": 1365.2728485157465
   },
   "POLYCAB": {
-    "masterScore": 51.17,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.86,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2972.8679180733034,
-    "downTarget": 2971.1320819266966
+    "upTarget": 2973.0234601353513,
+    "downTarget": 2970.9765398646487
   },
   "KEI": {
-    "masterScore": 46.05,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 35.38,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 4387.942792374786,
-    "downTarget": 4386.057207625214
+    "upTarget": 4388.290274054889,
+    "downTarget": 4385.709725945111
   },
   "HAVELLS": {
-    "masterScore": 57.03,
-    "verdict": "ACCUMULATE_ON_DIPS",
+    "masterScore": 53.75,
+    "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [],
-    "upTarget": 3807.8516427808704,
-    "downTarget": 3806.1483572191296
+    "upTarget": 3807.7644311567287,
+    "downTarget": 3806.2355688432713
   },
   "VOLTAS": {
-    "masterScore": 45.85,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 40.5,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_33.60_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2183.9491235011924,
-    "downTarget": 2182.0508764988076
+    "upTarget": 2184.1233194096444,
+    "downTarget": 2181.8766805903556
   },
   "BLUESTARCO": {
-    "masterScore": 50.31,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.67,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1096.683468015869,
-    "downTarget": 1095.316531984131
+    "upTarget": 1096.828208773082,
+    "downTarget": 1095.171791226918
   },
   "BHEL": {
-    "masterScore": 47.45,
+    "masterScore": 47,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2813.9293873333227,
-    "downTarget": 2812.0706126666773
+    "upTarget": 2813.9445678886764,
+    "downTarget": 2812.0554321113236
   },
   "SAIL": {
-    "masterScore": 56.46,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 42.29,
+    "verdict": "AVOID",
     "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 2658.0327780828543,
-    "downTarget": 2655.9672219171457
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT",
+      "INTRADAY_RISING_KNIFE"
+    ],
+    "upTarget": 2658.0738134485114,
+    "downTarget": 2655.9261865514886
   },
   "NMDC": {
-    "masterScore": 51.21,
+    "masterScore": 55.02,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -841,78 +845,78 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 170.72366901657503,
-    "downTarget": 169.27633098342497
+    "upTarget": 170.82886470345605,
+    "downTarget": 169.17113529654395
   },
   "GMRINFRA": {
-    "masterScore": 50.88,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.33,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1508.830553298973,
-    "downTarget": 1507.169446701027
+    "upTarget": 1508.973364820628,
+    "downTarget": 1507.026635179372
   },
   "IRFC": {
-    "masterScore": 51.21,
+    "masterScore": 52.1,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 982.7324961305361,
-    "downTarget": 981.2675038694639
+    "upTarget": 982.7573691391655,
+    "downTarget": 981.2426308608345
   },
   "RVNL": {
-    "masterScore": 50.49,
+    "masterScore": 53.43,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 3202.8020633247475,
-    "downTarget": 3201.1979366752525
+    "upTarget": 3202.8945727862915,
+    "downTarget": 3201.1054272137085
   },
   "IRCON": {
-    "masterScore": 39.13,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 36.64,
+    "verdict": "AVOID",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_37.26_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2010.0148575111755,
-    "downTarget": 2007.9851424888245
+    "upTarget": 2010.085306220482,
+    "downTarget": 2007.914693779518
   },
   "HUDCO": {
-    "masterScore": 45.15,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 39.9,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 3351.956531931857,
-    "downTarget": 3350.043468068143
+    "upTarget": 3352.124766191229,
+    "downTarget": 3349.875233808771
   },
   "NBCC": {
-    "masterScore": 50.85,
+    "masterScore": 54.66,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 4468.847338244409,
-    "downTarget": 4467.152661755591
+    "upTarget": 4468.972226395713,
+    "downTarget": 4467.027773604287
   },
   "PATANJALI": {
-    "masterScore": 50.36,
+    "masterScore": 50.95,
     "verdict": "SYSTEM_VETO",
     "dataQuality": 95,
     "vetoReasons": [
@@ -921,11 +925,11 @@
       "PROMOTER_PLEDGE_DISTRESS_VETO",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 680.8353171562648,
-    "downTarget": 679.1646828437352
+    "upTarget": 680.85475079673,
+    "downTarget": 679.14524920327
   },
   "AWL": {
-    "masterScore": 50.17,
+    "masterScore": 54.65,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
@@ -933,11 +937,11 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_48.71_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 438.81444041226666,
-    "downTarget": 437.18555958773334
+    "upTarget": 438.95940239267804,
+    "downTarget": 437.04059760732196
   },
   "NYKAA": {
-    "masterScore": 50.7,
+    "masterScore": 52.63,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
@@ -945,159 +949,166 @@
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_59.34_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 292.8086203078249,
-    "downTarget": 291.1913796921751
+    "upTarget": 292.8693454904748,
+    "downTarget": 291.1306545095252
   },
   "PAYTM": {
-    "masterScore": 50.81,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 43.86,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_51.82_PCT"
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_51.82_PCT",
+      "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1505.8333924346775,
-    "downTarget": 1504.1666075653225
+    "upTarget": 1506.0054955604749,
+    "downTarget": 1503.9945044395251
   },
   "LIC": {
-    "masterScore": 50.7,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.26,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_42.12_PCT",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 566.8371668596632,
-    "downTarget": 565.1628331403368
+    "upTarget": 566.985706971728,
+    "downTarget": 565.014293028272
   },
   "GICRE": {
-    "masterScore": 50.41,
+    "masterScore": 52.44,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 1832.8227598625253,
-    "downTarget": 1831.1772401374747
+    "upTarget": 1832.8884899892837,
+    "downTarget": 1831.1115100107163
   },
   "NIACL": {
-    "masterScore": 47.63,
+    "masterScore": 46.14,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 92.5,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 4099.7486567938095,
-    "downTarget": 4098.2513432061905
+    "upTarget": 4099.789413046011,
+    "downTarget": 4098.210586953989
   },
   "NHPC": {
-    "masterScore": 47.68,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 44.55,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
-      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_276.18_PCT"
+      "CANDLE_VETO_SHORT",
+      "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_276.18_PCT",
+      "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 637.8918687839777,
-    "downTarget": 636.1081312160223
+    "upTarget": 637.9940484799457,
+    "downTarget": 636.0059515200543
   },
   "SJVN": {
-    "masterScore": 46.17,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 41.26,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_43.84_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 1711.7833257041236,
-    "downTarget": 1710.2166742958764
+    "upTarget": 1711.9167328913331,
+    "downTarget": 1710.0832671086669
   },
   "NLCINDIA": {
-    "masterScore": 51.07,
-    "verdict": "NEUTRAL_WATCH",
+    "masterScore": 55.88,
+    "verdict": "ACCUMULATE_ON_DIPS",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2038.8237138115167,
-    "downTarget": 2037.1762861884833
+    "upTarget": 2038.9756916954213,
+    "downTarget": 2037.0243083045787
   },
   "TATAELXSI": {
-    "masterScore": 45.83,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 44.1,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "DATA_CORRUPTION: IMPROBABLE_DAILY_MOVE_264.66_PCT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 657.9829007713283,
-    "downTarget": 656.0170992286717
+    "upTarget": 658.0411941664054,
+    "downTarget": 655.9588058335946
   },
   "TATAINVEST": {
-    "masterScore": 55.47,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [],
-    "upTarget": 3471.8379050754834,
-    "downTarget": 3470.1620949245166
-  },
-  "CDSL": {
-    "masterScore": 50.38,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_LONG",
-      "INTRADAY_FALLING_KNIFE"
-    ],
-    "upTarget": 4094.822245995911,
-    "downTarget": 4093.177754004089
-  },
-  "MCX": {
-    "masterScore": 50.61,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_LONG",
-      "INTRADAY_FALLING_KNIFE"
-    ],
-    "upTarget": 1362.827300456586,
-    "downTarget": 1361.172699543414
-  },
-  "BSE": {
-    "masterScore": 50.23,
-    "verdict": "NEUTRAL_WATCH",
-    "dataQuality": 95,
-    "vetoReasons": [
-      "CANDLE_VETO_LONG",
-      "INTRADAY_FALLING_KNIFE"
-    ],
-    "upTarget": 1268.685192607961,
-    "downTarget": 1267.314807392039
-  },
-  "MUTHOOTFIN": {
-    "masterScore": 44.77,
-    "verdict": "SELL_ON_RALLIES",
+    "masterScore": 39.93,
+    "verdict": "AVOID",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_SHORT",
       "INTRADAY_RISING_KNIFE"
     ],
-    "upTarget": 2851.999628661603,
-    "downTarget": 2850.000371338397
+    "upTarget": 3471.9644020675155,
+    "downTarget": 3470.0355979324845
   },
-  "MANAPPURAM": {
-    "masterScore": 50.62,
+  "CDSL": {
+    "masterScore": 51.7,
     "verdict": "NEUTRAL_WATCH",
     "dataQuality": 95,
     "vetoReasons": [
       "CANDLE_VETO_LONG",
       "INTRADAY_FALLING_KNIFE"
     ],
-    "upTarget": 2244.842500164907,
-    "downTarget": 2243.157499835093
+    "upTarget": 4094.8650105630745,
+    "downTarget": 4093.1349894369255
+  },
+  "MCX": {
+    "masterScore": 51.09,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_LONG",
+      "INTRADAY_FALLING_KNIFE"
+    ],
+    "upTarget": 1362.8428062831836,
+    "downTarget": 1361.1571937168164
+  },
+  "BSE": {
+    "masterScore": 55.24,
+    "verdict": "ACCUMULATE_ON_DIPS",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_LONG",
+      "INTRADAY_FALLING_KNIFE"
+    ],
+    "upTarget": 1268.8212534468785,
+    "downTarget": 1267.1787465531215
+  },
+  "MUTHOOTFIN": {
+    "masterScore": 34.21,
+    "verdict": "AVOID",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_SHORT",
+      "INTRADAY_RISING_KNIFE"
+    ],
+    "upTarget": 2852.348820810678,
+    "downTarget": 2849.651179189322
+  },
+  "MANAPPURAM": {
+    "masterScore": 54.06,
+    "verdict": "NEUTRAL_WATCH",
+    "dataQuality": 95,
+    "vetoReasons": [
+      "CANDLE_VETO_LONG",
+      "INTRADAY_FALLING_KNIFE"
+    ],
+    "upTarget": 2244.955622747549,
+    "downTarget": 2243.044377252451
   }
 }
