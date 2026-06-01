@@ -22,9 +22,9 @@ const getHash = (str) => {
 
 const getVerdict = (score) => {
   if (score >= 70) return "STRONG BUY";
-  if (score >= 63) return "BUY";
+  if (score >= 59) return "BUY";
   if (score >= 55) return "ACCUMULATE ON DIPS";
-  if (score >= 45) return "NEUTRAL WATCH";
+  if (score >= 47) return "NEUTRAL WATCH";
   return "AVOID";
 };
 

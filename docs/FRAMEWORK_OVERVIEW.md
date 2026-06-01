@@ -432,12 +432,11 @@ The final clamped score maps to a clear verdict:
 
 | Score Range | Verdict | Action Guidance |
 | :---: | :--- | :--- |
-| **≥ 75** | **STRONG BUY** | High-conviction entry with full position sizing |
-| **58 – 74** | **BUY / ACCUMULATE** | Favorable setup; size according to conviction tier |
-| **50 – 57** | **NEUTRAL** | Insufficient edge; no action recommended |
-| **38 – 49** | **HOLD / CAUTION** | Existing positions may hold; no new entries |
-| **28 – 37** | **AVOID** | Unfavorable risk/reward; close or reduce positions |
-| **< 28** | **STRONG AVOID** | High-conviction bearish signal; potential short candidate |
+| **100 – 70** | **STRONG BUY** | High-conviction entry with full position sizing |
+| **69.99 – 59** | **BUY** | Favorable setup; size according to conviction tier |
+| **58.99 – 55** | **ACCUMULATE ON DIPS** | Scale in slowly on dips |
+| **54.99 – 47** | **NEUTRAL WATCH** | Monitor for setup; sideline no trade |
+| **Below 47** | **AVOID** | Unfavorable risk/reward; do not trade |
 
 ### Dynamic Weight Vectors
 

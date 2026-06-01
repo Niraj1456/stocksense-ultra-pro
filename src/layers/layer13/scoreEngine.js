@@ -10,9 +10,9 @@ const {
 
 function getVerdict(score) {
   if (score >= 70) return "STRONG_BUY";
-  if (score >= 63) return "BUY";
+  if (score >= 59) return "BUY";
   if (score >= 55) return "ACCUMULATE_ON_DIPS";
-  if (score >= 45) return "NEUTRAL_WATCH";
+  if (score >= 47) return "NEUTRAL_WATCH";
   return "AVOID";
 }
 

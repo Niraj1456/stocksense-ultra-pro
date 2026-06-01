@@ -200,24 +200,24 @@ function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered
     conviction_multiplier = Math.max(0.53, 1.0 - cautionPenalty);
     
     // Score based logic with conviction gating
-    // User-defined tiers: 70-100 Strong Buy | 55-69 Buy | 45-54.99 Neutral Watch | 0-44.99 Avoid
+    // User-defined tiers: 70-100 Strong Buy | 59-69.99 Buy | 55-58.99 Accumulate on Dips | 47-54.99 Neutral Watch | below 47 Avoid
     if (total_score >= 70) {
       verdict = "STRONG_BUY";
       conviction_level = "MAXIMUM";
       action = "EXECUTE_IMMEDIATELY_AT_MARKET";
-    } else if (total_score >= 63 && total_score < 70) {
+    } else if (total_score >= 59 && total_score < 70) {
       verdict = "BUY";
       conviction_level = "HIGH";
       action = "EXECUTE_WITH_LIMIT_ORDERS";
-    } else if (total_score >= 55 && total_score < 63) {
+    } else if (total_score >= 55 && total_score < 59) {
       verdict = "ACCUMULATE_ON_DIPS";
       conviction_level = "MODERATE";
       action = "SCALE_IN_SLOWLY";
-    } else if (total_score >= 45 && total_score < 55) {
+    } else if (total_score >= 47 && total_score < 55) {
       verdict = "NEUTRAL_WATCH";
       conviction_level = "LOW";
       action = "MONITOR_FOR_SETUP";
-    } else if (total_score < 45) {
+    } else if (total_score < 47) {
       verdict = "AVOID";
       conviction_level = "LOW";
       action = "SIDELINED_NO_TRADE";
