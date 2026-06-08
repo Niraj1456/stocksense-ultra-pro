@@ -1984,17 +1984,20 @@ export default function App() {
     setLoginError("");
     setIsLoggingIn(true);
 
-    if ((loginUsername === "admin" && loginPassword === "StockSense@2026") || 
-        (loginUsername === "Alpha" && loginPassword === "AlphaTrader@2026") ||
-        (loginUsername === "Trader" && loginPassword === "TraderPro@2026") ||
-        (loginUsername === "Bees Investment" && loginPassword === "Bees@Invest2026")) {
+    const cleanUsername = loginUsername.trim().toLowerCase();
+    const cleanPassword = loginPassword.trim();
+
+    if ((cleanUsername === "admin" && cleanPassword === "StockSense@2026") || 
+        (cleanUsername === "alpha" && cleanPassword === "AlphaTrader@2026") ||
+        (cleanUsername === "trader" && cleanPassword === "TraderPro@2026") ||
+        (cleanUsername === "bees investment" && cleanPassword === "Bees@Invest2026")) {
       const keyToUse = "stocksense-secret-api-key"; 
       localStorage.setItem('stocksense_logged_in', 'true');
       localStorage.setItem('stocksense_api_key', keyToUse);
-      localStorage.setItem('stocksense_user', loginUsername.toLowerCase());
+      localStorage.setItem('stocksense_user', cleanUsername);
       setIsLoggedIn(true);
       setApiKey(keyToUse);
-      setLoggedInUser(loginUsername.toLowerCase());
+      setLoggedInUser(cleanUsername);
       setIsLoggingIn(false);
       setViewMode("terminal");
     } else {
