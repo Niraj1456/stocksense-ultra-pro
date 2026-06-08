@@ -1986,7 +1986,8 @@ export default function App() {
 
     if ((loginUsername === "admin" && loginPassword === "StockSense@2026") || 
         (loginUsername === "Alpha" && loginPassword === "AlphaTrader@2026") ||
-        (loginUsername === "Trader" && loginPassword === "TraderPro@2026")) {
+        (loginUsername === "Trader" && loginPassword === "TraderPro@2026") ||
+        (loginUsername === "Bees Investment" && loginPassword === "Bees@Invest2026")) {
       const keyToUse = "stocksense-secret-api-key"; 
       localStorage.setItem('stocksense_logged_in', 'true');
       localStorage.setItem('stocksense_api_key', keyToUse);
