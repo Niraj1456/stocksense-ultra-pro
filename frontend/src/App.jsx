@@ -1990,7 +1990,8 @@ export default function App() {
     if ((cleanUsername === "admin" && cleanPassword === "StockSense@2026") || 
         (cleanUsername === "alpha" && cleanPassword === "AlphaTrader@2026") ||
         (cleanUsername === "trader" && cleanPassword === "TraderPro@2026") ||
-        (cleanUsername === "bees investment" && cleanPassword === "Bees@Invest2026")) {
+        (cleanUsername === "bees investment" && cleanPassword === "Bees@Invest2026") ||
+        (cleanUsername === "angelone" && cleanPassword === "Angelone@2026")) {
       const keyToUse = "stocksense-secret-api-key"; 
       localStorage.setItem('stocksense_logged_in', 'true');
       localStorage.setItem('stocksense_api_key', keyToUse);
