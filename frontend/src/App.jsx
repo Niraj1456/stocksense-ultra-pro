@@ -2882,12 +2882,12 @@ export default function App() {
             const allSessions = tracker.activityData.sessions || [];
             
             // Get unique users who have logs (excluding 'admin')
-            const uniqueUsers = Array.from(new Set(allSessions.map(s => s.user).filter(u => u && u.toLowerCase() !== 'admin')));
+            const uniqueUsers = Array.from(new Set(allSessions.map(s => s && s.user ? s.user.toLowerCase() : '').filter(u => u && u !== 'admin')));
             
             // Filter sessions based on selection (always exclude admin's own sessions if any)
             const filteredSessions = selectedUserFilter === 'all'
-              ? allSessions.filter(s => s.user && s.user.toLowerCase() !== 'admin')
-              : allSessions.filter(s => s.user && s.user.toLowerCase() === selectedUserFilter.toLowerCase());
+              ? allSessions.filter(s => s && s.user && s.user.toLowerCase() !== 'admin')
+              : allSessions.filter(s => s && s.user && s.user.toLowerCase() === selectedUserFilter.toLowerCase());
 
             // Recalculate stats dynamically for the filtered sessions
             const stats = (() => {

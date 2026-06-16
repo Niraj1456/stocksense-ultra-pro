@@ -8,30 +8,36 @@ const generateSessionId = () => `session-${Date.now()}-${Math.random().toString(
 const getStoredData = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.sessions)) {
+        return parsed;
+      }
+    }
   } catch (e) { /* ignore */ }
   return { sessions: [], stats: { totalSessions: 0, totalTimeSpent: 0, totalSearches: 0, totalAnalyses: 0, mostSearchedStocks: [], peakUsageHours: [], avgSessionDuration: 0 } };
 };
 
 const persistData = (data) => {
   try {
-    // Keep only the last 50 sessions to avoid localStorage bloat
-    if (data.sessions.length > 50) {
-      data.sessions = data.sessions.slice(-50);
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (!data) return;
+    const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+    const limitedSessions = sessions.length > 50 ? sessions.slice(-50) : sessions;
+    const dataToSave = { ...data, sessions: limitedSessions };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   } catch (e) { /* ignore quota errors */ }
 };
 
 const recalcStats = (sessions) => {
-  const totalSessions = sessions.length;
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const totalSessions = safeSessions.length;
   let totalTimeSpent = 0;
   let totalSearches = 0;
   let totalAnalyses = 0;
   const stockSearchCounts = {};
   const hourCounts = {};
 
-  sessions.forEach(s => {
+  safeSessions.forEach(s => {
     totalTimeSpent += s.totalDuration || 0;
     totalSearches += (s.searches || []).length;
     totalAnalyses += (s.analyses || []).length;
@@ -104,7 +110,8 @@ const useActivityTracker = (isLoggedIn, loggedInUser) => {
       isIdleRef.current = false;
 
       setActivityData(prev => {
-        const updated = { ...prev, sessions: [...prev.sessions, newSession] };
+        const prevSessions = Array.isArray(prev?.sessions) ? prev.sessions : [];
+        const updated = { ...prev, sessions: [...prevSessions, newSession] };
         updated.stats = recalcStats(updated.sessions);
         return updated;
       });
@@ -200,8 +207,8 @@ const useActivityTracker = (isLoggedIn, loggedInUser) => {
   const updateCurrentSession = useCallback(() => {
     if (!sessionRef.current) return;
     setActivityData(prev => {
-      const sessions = [...prev.sessions];
-      const idx = sessions.findIndex(s => s.id === sessionRef.current.id);
+      const sessions = Array.isArray(prev?.sessions) ? [...prev.sessions] : [];
+      const idx = sessions.findIndex(s => s && s.id === sessionRef.current.id);
       if (idx >= 0) {
         const now = Date.now();
         const total = Math.floor((now - new Date(sessionRef.current.loginAt).getTime()) / 1000);
