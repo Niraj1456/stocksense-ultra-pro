@@ -3979,7 +3979,7 @@ export default function App() {
                   const metrics = adv.metrics || {};
 
                   // Get active weights vs baseline comparison
-                  const activeWeights = currentData.activeWeights || BASELINE_WEIGHTS[mode === "LONG_TERM" ? "INVESTMENT" : "INTRADAY"];
+                  const activeWeights = (currentData && currentData.activeWeights) || BASELINE_WEIGHTS[mode === "LONG_TERM" ? "INVESTMENT" : "INTRADAY"];
                   const baseline = BASELINE_WEIGHTS[mode === "LONG_TERM" ? "INVESTMENT" : "INTRADAY"];
 
                   return (
