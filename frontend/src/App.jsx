@@ -4004,6 +4004,7 @@ export default function App() {
                   const jobs = details.jobs || {};
                   const wf = details.walk_forward || {};
                   const calib = details.calibration || {};
+                  const corp = details.corporate_actions || {};
                   const oracle = details.oracle || {};
                   const stats = oracle.last_7_days || {};
                   const adv = details.advanced_diagnostics || {};
