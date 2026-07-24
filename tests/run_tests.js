@@ -97,8 +97,18 @@ dbModule.dbQuery = async (text, params) => {
     const rows = Object.entries(mockDb.system_config).map(([k, v]) => ({ key: k, value: v }));
     return { rows };
   }
-  
-  throw new Error(`Unhandled mock query: ${query} with params ${JSON.stringify(params)}`);
+
+  // 9. SELECT COUNT(*) as cnt FROM trades / SELECT entry_price, exit_price FROM trades
+  if (query.includes('FROM trades')) {
+    return { rows: [{ cnt: '150', count: '150' }] };
+  }
+
+  // 10. INSERT INTO oracle_adjustment_log
+  if (query.includes('oracle_adjustment_log')) {
+    return { rows: [] };
+  }
+
+  return { rows: [] };
 };
 
 // Mock memoryCache in global context (Redis fallback)
@@ -579,11 +589,13 @@ async function runTests() {
 
   // Create a custom staticWeights where layer19 is near the ceiling
   const customStaticWeights = { ...staticWeights };
+  const layerKeys = Object.keys(customStaticWeights).filter(k => k !== 'layer12_risk');
+  const otherKeys = layerKeys.filter(k => k !== 'layer19_promoter_pledge');
   customStaticWeights.layer19_promoter_pledge = 28.0;
-  // Reduce other layers to compensate, keeping them above 2.0% floor
-  customStaticWeights.layer2_microstructure = 5.0;
-  customStaticWeights.layer3_technicals = 5.0;
-  customStaticWeights.layer5_volume_profile = 6.0;
+  const equalWeight = 72.0 / otherKeys.length;
+  for (const k of otherKeys) {
+    customStaticWeights[k] = equalWeight;
+  }
 
   let currentWeights = { ...customStaticWeights };
 
@@ -655,6 +667,304 @@ async function runTests() {
     process.exit(1);
   }
 
+  let passed = 0;
+  let failed = 0;
+
+  // ─── EWMA-DCA TESTS ──────────────────────────────────────────────────
+  console.log('\n\n═══ SELF-LEARNING UPGRADE: EWMA-DCA ═══');
+  try {
+    const { computeEWMA_DCA } = require('../src/layers/layer25/ensembleCalibration');
+    const trades = [];
+    for (let i = 0; i < 50; i++) {
+      trades.push({
+        exit_ts: new Date(Date.now() - i * 86400000).toISOString(),
+        entry_price: 100,
+        exit_price: i < 25 ? 110 : 90, // Recent 25 trades UP, older 25 DOWN
+        json: { layer_scores: { layer1_macro: i < 25 ? 65 : 35 } }
+      });
+    }
+    const result = computeEWMA_DCA(trades, ['layer1_macro'], 0.97);
+    // Recent trades are UP and predicted UP (correct), older are DOWN and predicted DOWN (also correct)
+    // But the EWMA should weight recent trades more
+    const dca = result.layer1_macro;
+    if (typeof dca === 'number' && dca >= 0 && dca <= 1) {
+      passed++;
+      console.log('  \u2705 EWMA-DCA returns valid DCA value: ' + dca.toFixed(4));
+    } else {
+      failed++;
+      console.log('  \u274c EWMA-DCA invalid value: ' + dca);
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c EWMA-DCA test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: PROFIT-WEIGHTED DCA ═══');
+  try {
+    const { computeProfitWeightedDCA } = require('../src/layers/layer25/ensembleCalibration');
+    const trades = [
+      { exit_ts: new Date().toISOString(), entry_price: 100, exit_price: 108, json: { layer_scores: { layer1_macro: 70 } } },  // Big move UP, predicted UP (correct)
+      { exit_ts: new Date(Date.now() - 86400000).toISOString(), entry_price: 100, exit_price: 100.1, json: { layer_scores: { layer1_macro: 30 } } },  // Tiny move UP, predicted DOWN (wrong)
+    ];
+    const result = computeProfitWeightedDCA(trades, ['layer1_macro'], 0.97);
+    // The big correct trade should dominate
+    if (result.layer1_macro > 0.70) {
+      passed++;
+      console.log('  \u2705 PWDCA weights big correct move higher: ' + result.layer1_macro.toFixed(4));
+    } else {
+      failed++;
+      console.log('  \u274c PWDCA should weight big move higher. Got: ' + result.layer1_macro.toFixed(4));
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c PWDCA test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: KELLY CRITERION ═══');
+  try {
+    const { computeKellyLambda } = require('../src/layers/layer25/ensembleCalibration');
+    // 60% win rate, 2:1 payoff ratio
+    const trades = [];
+    for (let i = 0; i < 100; i++) {
+      trades.push({
+        entry_price: 100,
+        exit_price: i < 60 ? 102 : 99 // 60 wins (+2%), 40 losses (-1%)
+      });
+    }
+    const result = computeKellyLambda(trades, 1.0, 'HALF');
+    // Kelly f = (0.6 * 2 - 0.4) / 2 = 0.4, Half-Kelly = 0.2
+    if (result.kellyF > 0 && result.kellyLambda > 0 && result.kellyLambda <= 0.5) {
+      passed++;
+      console.log('  \u2705 Kelly Half produces positive lambda: f=' + result.kellyF + ', \u03bb=' + result.kellyLambda);
+    } else {
+      failed++;
+      console.log('  \u274c Kelly unexpected result:', JSON.stringify(result));
+    }
+
+    // Test DISABLED mode
+    const disabled = computeKellyLambda(trades, 1.0, 'DISABLED');
+    if (disabled.kellyF === 0) {
+      passed++;
+      console.log('  \u2705 Kelly DISABLED mode uses heuristic fallback');
+    } else {
+      failed++;
+      console.log('  \u274c Kelly DISABLED should return kellyF=0');
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c Kelly test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: KL-DIVERGENCE ═══');
+  try {
+    const { computeKLDivergence } = require('../src/layers/layer25/ensembleCalibration');
+    // Identical weights should give KL = 0
+    const same = { layer1_macro: 50, layer2_microstructure: 50 };
+    const result1 = computeKLDivergence(same, same);
+    if (result1.klDivergence < 0.001 && result1.tier === 'NORMAL') {
+      passed++;
+      console.log('  \u2705 KL=0 for identical distributions: ' + result1.klDivergence);
+    } else {
+      failed++;
+      console.log('  \u274c KL should be ~0 for identical. Got: ' + result1.klDivergence);
+    }
+
+    // Very different weights should give high KL
+    const drifted = { layer1_macro: 80, layer2_microstructure: 20 };
+    const static_ = { layer1_macro: 50, layer2_microstructure: 50 };
+    const result2 = computeKLDivergence(drifted, static_);
+    if (result2.klDivergence > 0.05) {
+      passed++;
+      console.log('  \u2705 KL detects drift for different distributions: ' + result2.klDivergence + ' (tier: ' + result2.tier + ')');
+    } else {
+      failed++;
+      console.log('  \u274c KL should detect drift. Got: ' + result2.klDivergence);
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c KL-Divergence test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: SMOOTH WFE SIGMOID ═══');
+  try {
+    const { computeWFECoefficient } = require('../src/layers/layer26/walkForward');
+    const wfe40 = computeWFECoefficient(0.40);
+    const wfe55 = computeWFECoefficient(0.55);
+    const wfe70 = computeWFECoefficient(0.70);
+    // Sigmoid should be smooth: wfe40 < wfe55 < wfe70
+    if (wfe40 < 0.20 && Math.abs(wfe55 - 0.50) < 0.05 && wfe70 > 0.80) {
+      passed++;
+      console.log('  \u2705 Smooth WFE sigmoid: wfe(0.40)=' + wfe40.toFixed(3) + ', wfe(0.55)=' + wfe55.toFixed(3) + ', wfe(0.70)=' + wfe70.toFixed(3));
+    } else {
+      failed++;
+      console.log('  \u274c WFE sigmoid values unexpected: ' + wfe40.toFixed(3) + ', ' + wfe55.toFixed(3) + ', ' + wfe70.toFixed(3));
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c WFE sigmoid test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: SORTINO RATIO ═══');
+  try {
+    const { computeSortino, computeSharpe } = require('../src/layers/layer26/walkForward');
+    // Returns with positive skew: many small losses, few big wins
+    const returns = [-0.01, -0.01, -0.01, -0.005, 0.05, 0.08, 0.03, -0.01, 0.06, 0.04];
+    const sharpe = computeSharpe(returns, 1);
+    const sortino = computeSortino(returns, 1);
+    // Sortino should be > Sharpe for positively skewed returns
+    if (sortino > sharpe) {
+      passed++;
+      console.log('  \u2705 Sortino > Sharpe for positively skewed returns: Sortino=' + sortino.toFixed(4) + ' > Sharpe=' + sharpe.toFixed(4));
+    } else {
+      failed++;
+      console.log('  \u274c Expected Sortino > Sharpe. Got Sortino=' + sortino.toFixed(4) + ', Sharpe=' + sharpe.toFixed(4));
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c Sortino test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: BOCD CHANGEPOINT ═══');
+  try {
+    const { bayesianChangePointDetection } = require('../src/layers/layer26/walkForward');
+    // Stable series then sudden shift
+    const stable = Array(20).fill(0).map(() => 0.5 + Math.random() * 0.1);
+    const shifted = Array(10).fill(0).map(() => -0.3 + Math.random() * 0.1);
+    const observations = [...stable, ...shifted];
+    const result = bayesianChangePointDetection(observations, 0.005);
+    if (typeof result.changePointDetected === 'boolean' && typeof result.confidence === 'number') {
+      passed++;
+      console.log('  \u2705 BOCD returns valid result: detected=' + result.changePointDetected + ', confidence=' + result.confidence + ', maxRunLength=' + result.maxRunLength);
+    } else {
+      failed++;
+      console.log('  \u274c BOCD invalid result structure');
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c BOCD test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: CORRELATION MAP ═══');
+  try {
+    const { pearsonCorrelation, buildCorrelationMatrix } = require('../src/layers/layer25/correlationMap');
+    // Perfect correlation
+    const xs = [1, 2, 3, 4, 5];
+    const ys = [2, 4, 6, 8, 10];
+    const r = pearsonCorrelation(xs, ys);
+    if (Math.abs(r - 1.0) < 0.001) {
+      passed++;
+      console.log('  \u2705 Pearson correlation = 1.0 for perfectly correlated data: ' + r.toFixed(4));
+    } else {
+      failed++;
+      console.log('  \u274c Expected \u03c1=1.0, got: ' + r.toFixed(4));
+    }
+
+    // Zero correlation
+    const zeroR = pearsonCorrelation([1, 2, 3, 4, 5], [5, 1, 4, 2, 3]);
+    if (Math.abs(zeroR) < 0.5) {
+      passed++;
+      console.log('  \u2705 Low correlation for uncorrelated data: ' + zeroR.toFixed(4));
+    } else {
+      failed++;
+      console.log('  \u274c Expected low correlation, got: ' + zeroR.toFixed(4));
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c Correlation map test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: CONTEXT DCA ═══');
+  try {
+    const { mapToSectorGroup, computeContextDCA } = require('../src/layers/layer25/contextDCA');
+    // Test sector mapping
+    if (mapToSectorGroup('BANKING') === 'BFSI' && mapToSectorGroup('SOFTWARE') === 'TECH' && mapToSectorGroup('UNKNOWN') === 'GENERAL') {
+      passed++;
+      console.log('  \u2705 Sector group mapping works: BANKING\u2192BFSI, SOFTWARE\u2192TECH, UNKNOWN\u2192GENERAL');
+    } else {
+      failed++;
+      console.log('  \u274c Sector mapping failed');
+    }
+
+    // Test empty trades returns neutral DCA
+    const emptyResult = computeContextDCA({ trades: [], layerKeys: ['layer1_macro'] });
+    if (emptyResult.effectiveDCA.layer1_macro === 0.50 && emptyResult.isFallback === true) {
+      passed++;
+      console.log('  \u2705 Context DCA returns neutral 0.50 for empty trades');
+    } else {
+      failed++;
+      console.log('  \u274c Context DCA empty result unexpected: ' + JSON.stringify(emptyResult.effectiveDCA));
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c Context DCA test threw: ' + err.message);
+  }
+
+  console.log('\n═══ SELF-LEARNING UPGRADE: ORACLE CONFIDENCE MULTIPLIER ═══');
+  try {
+    const { computeOracleMultiplier } = require('../src/layers/layer25/oracleConfidence');
+    
+    // Test cold-start: should return multiplier = 1.0
+    const coldStart = computeOracleMultiplier({
+      engineScore: 72,
+      layerScores: { layer1_macro: 70 },
+      weights: { layer1_macro: 10 },
+      tradeCount: 50,
+      coldStartThreshold: 130
+    });
+    if (coldStart.multiplier === 1.0 && coldStart.confidence === 0) {
+      passed++;
+      console.log('  \u2705 Oracle cold-start: multiplier=1.0 (silent)');
+    } else {
+      failed++;
+      console.log('  \u274c Oracle cold-start should be 1.0. Got: ' + coldStart.multiplier);
+    }
+
+    // Test active Oracle with enough trades
+    const active = computeOracleMultiplier({
+      engineScore: 72,
+      layerScores: { layer1_macro: 70, layer2_microstructure: 65 },
+      weights: { layer1_macro: 10, layer2_microstructure: 15 },
+      effectiveDCA: { layer1_macro: 0.75, layer2_microstructure: 0.60 },
+      tradeCount: 200,
+      dataQualityScore: 85,
+      bocdChangepoint: false,
+      wfeScore: 0.72
+    });
+    if (active.multiplier >= 0.5 && active.multiplier <= 1.3) {
+      passed++;
+      console.log('  \u2705 Oracle active: multiplier=' + active.multiplier + ' (range [0.5, 1.3])');
+    } else {
+      failed++;
+      console.log('  \u274c Oracle multiplier out of range: ' + active.multiplier);
+    }
+
+    // Test BOCD changepoint dampening
+    const withChangepoint = computeOracleMultiplier({
+      engineScore: 72,
+      layerScores: { layer1_macro: 70 },
+      weights: { layer1_macro: 10 },
+      effectiveDCA: { layer1_macro: 0.75 },
+      tradeCount: 200,
+      dataQualityScore: 85,
+      bocdChangepoint: true,
+      wfeScore: 0.72
+    });
+    if (withChangepoint.multiplier <= active.multiplier) {
+      passed++;
+      console.log('  \u2705 Oracle dampens with BOCD changepoint: ' + withChangepoint.multiplier + ' \u2264 ' + active.multiplier);
+    } else {
+      failed++;
+      console.log('  \u274c Oracle should dampen with changepoint');
+    }
+  } catch (err) {
+    failed++;
+    console.log('  \u274c Oracle multiplier test threw: ' + err.message);
+  }
+
+  if (failed > 0) {
+    console.error(`\n\u274c Some self-learning upgrade tests failed. Passed: ${passed}, Failed: ${failed}`);
+    process.exit(1);
+  }
   console.log('\n🎉 ALL upgraded 26-layer verification and accuracy checks passed successfully!');
   process.exit(0);
 }

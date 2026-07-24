@@ -343,3 +343,76 @@ BEGIN
         (p_mode, p_regime, p_lambda, p_wfe, p_weights, p_ceiling_hit_streak, TRUE);
 END;
 $$;
+
+-- ==========================================
+-- SELF-LEARNING UPGRADE SCHEMA ADDITIONS
+-- ==========================================
+
+-- 13. New system_config entries for self-learning algorithms
+INSERT INTO system_config (key, value) VALUES ('l25_ewma_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l25_ewma_lambda', '0.97') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l25_kelly_mode', 'HALF') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l26_bocd_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l26_bocd_hazard_rate', '0.005') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('oracle_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('oracle_cold_start_trades', '130') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l25_context_dca_min_trades', '30') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l25_correlation_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_config (key, value) VALUES ('l25_kl_divergence_enabled', 'true') ON CONFLICT (key) DO NOTHING;
+
+-- 14. Add diagnostics_json column to weight_calibration_log for storing advanced metrics
+ALTER TABLE weight_calibration_log 
+ADD COLUMN IF NOT EXISTS diagnostics_json JSONB DEFAULT '{}';
+
+-- 15. Oracle Adjustment Audit Log
+CREATE TABLE IF NOT EXISTS oracle_adjustment_log (
+    id BIGSERIAL PRIMARY KEY,
+    symbol VARCHAR(30) NOT NULL,
+    mode VARCHAR(20) NOT NULL,
+    regime VARCHAR(25) NOT NULL,
+    ts TIMESTAMPTZ DEFAULT NOW(),
+    engine_score NUMERIC(5,2) NOT NULL,
+    oracle_multiplier NUMERIC(5,4) NOT NULL,
+    adjusted_score NUMERIC(5,2) NOT NULL,
+    oracle_confidence NUMERIC(5,4),
+    components JSONB DEFAULT '{}',
+    reasons TEXT[]
+);
+CREATE INDEX IF NOT EXISTS idx_oracle_adjustment_symbol ON oracle_adjustment_log(symbol, ts);
+CREATE INDEX IF NOT EXISTS idx_oracle_adjustment_ts ON oracle_adjustment_log(ts);
+
+-- 16. Updated rotate_active_weights with diagnostics support
+CREATE OR REPLACE PROCEDURE rotate_active_weights_v2(
+    p_mode VARCHAR(20),
+    p_regime VARCHAR(25),
+    p_lambda NUMERIC(4,2),
+    p_wfe NUMERIC(5,2),
+    p_weights JSONB,
+    p_ceiling_hit_streak JSONB,
+    p_diagnostics JSONB DEFAULT '{}'
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_lock_key BIGINT;
+BEGIN
+    v_lock_key := CASE 
+        WHEN p_mode = 'INTRADAY' AND p_regime = 'LOW_VIX' THEN 26001
+        WHEN p_mode = 'INTRADAY' AND p_regime = 'HIGH_VIX' THEN 26002
+        WHEN p_mode = 'INVESTMENT' AND p_regime = 'LOW_VIX' THEN 26003
+        WHEN p_mode = 'INVESTMENT' AND p_regime = 'HIGH_VIX' THEN 26004
+        ELSE 26000
+    END;
+    PERFORM pg_advisory_xact_lock(v_lock_key);
+
+    WITH deactivate AS (
+        UPDATE weight_calibration_log
+        SET is_active = FALSE
+        WHERE mode = p_mode AND regime = p_regime AND is_active = TRUE
+        RETURNING id
+    )
+    INSERT INTO weight_calibration_log 
+        (mode, regime, lambda_value, wfe_score, calibrated_weights, ceiling_hit_streak, is_active, diagnostics_json)
+    VALUES 
+        (p_mode, p_regime, p_lambda, p_wfe, p_weights, p_ceiling_hit_streak, TRUE, p_diagnostics);
+END;
+$$;

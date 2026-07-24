@@ -8,6 +8,13 @@
 // based on each layer's Directional Conviction Accuracy (DCA):
 //   DCA_i = CorrectTrades_i / TotalTrades_i
 //
+// ═══════════════ SELF-LEARNING UPGRADE ═══════════════════════════════════
+// Now supports:
+//   - EWMA-Weighted DCA: Recent trades weighted higher (λ^k decay)
+//   - Profit-Weighted DCA: Accuracy weighted by return magnitude
+//   - Kelly Criterion Lambda: Optimal learning rate from win/loss ratios
+//   - KL-Divergence Monitoring: Statistical drift detection
+//
 // Includes strict safety rails:
 //   - Max ±3% weight shift per layer per cycle.
 //   - Active layers floor: 2%, inactive layers floor: 1%.
@@ -19,6 +26,11 @@
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────
 const LAYER_ID = 'L25';
+const {
+  EWMA_LAMBDA,
+  KL_DIVERGENCE_MODERATE,
+  KL_DIVERGENCE_SEVERE
+} = require('../../config/mathConstants');
 
 function logEvent(eventCode, severity, message, details = {}) {
   console.log(JSON.stringify({
@@ -160,8 +172,341 @@ function blendWeights(staticWeights, calibratedWeights, lambda) {
   return blended;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SELF-LEARNING UPGRADE: NEW ALGORITHM FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Computes EWMA-Weighted Directional Conviction Accuracy per layer.
+ * Recent trades are weighted exponentially higher than older trades.
+ *
+ * Formula: EWMA_DCA_i = Σ(λ^k × correct_k) / Σ(λ^k)
+ * where k = recency index (0 = most recent), λ = decay factor (default 0.97)
+ * Halflife ≈ ln(0.5) / ln(λ) ≈ 23 trades for λ=0.97
+ *
+ * @param {Object[]} sortedTrades - Trades sorted by exit_ts DESCENDING (most recent first)
+ * @param {string[]} layerKeys - Layer keys to compute DCA for
+ * @param {number} [lambda] - EWMA decay factor (default from mathConstants)
+ * @returns {Object} { layer1_macro: 0.62, layer2_microstructure: 0.71, ... }
+ */
+function computeEWMA_DCA(sortedTrades, layerKeys, lambda = null) {
+  const ewmaLambda = lambda ?? EWMA_LAMBDA;
+  const ewmaDCA = {};
+
+  for (const key of layerKeys) {
+    let correctWeightedSum = 0;
+    let totalWeightedSum = 0;
+
+    for (let k = 0; k < sortedTrades.length; k++) {
+      const trade = sortedTrades[k];
+      const entry = Number(trade.entry_price);
+      const exit = Number(trade.exit_price);
+
+      if (!entry || !exit || entry === exit) continue;
+
+      const actualDirection = exit > entry ? 'UP' : 'DOWN';
+
+      // Parse layer scores
+      let lScores = {};
+      if (typeof trade.json === 'object' && trade.json !== null) {
+        lScores = trade.json.layer_scores || trade.json.layer_scores_json || {};
+      } else if (typeof trade.layer_scores_json === 'object' && trade.layer_scores_json !== null) {
+        lScores = trade.layer_scores_json;
+      } else if (typeof trade.json === 'string') {
+        try {
+          const parsed = JSON.parse(trade.json);
+          lScores = parsed.layer_scores || parsed.layer_scores_json || {};
+        } catch (e) { /* skip */ }
+      }
+
+      const score = lScores[key];
+      const decayWeight = Math.pow(ewmaLambda, k);
+
+      if (score == null) {
+        // Missing score → 0.5 credit (neutral)
+        correctWeightedSum += 0.5 * decayWeight;
+        totalWeightedSum += decayWeight;
+        continue;
+      }
+
+      const predictedDirection = score > 50 ? 'UP' : (score < 50 ? 'DOWN' : 'NEUTRAL');
+      if (predictedDirection === 'NEUTRAL') continue;
+
+      const correct = predictedDirection === actualDirection ? 1 : 0;
+      correctWeightedSum += correct * decayWeight;
+      totalWeightedSum += decayWeight;
+    }
+
+    ewmaDCA[key] = totalWeightedSum > 0 ? correctWeightedSum / totalWeightedSum : 0.50;
+  }
+
+  return ewmaDCA;
+}
+
+/**
+ * Computes Profit-Weighted DCA per layer.
+ * Weights each accuracy observation by the MAGNITUDE of the trade return.
+ * A layer correctly predicting a +5% move gets 50× more credit than one
+ * correct on a +0.1% move.
+ *
+ * Formula: PWDCA_i = Σ(λ^k × correct_k × |return_k|) / Σ(λ^k × |return_k|)
+ *
+ * @param {Object[]} sortedTrades - Trades sorted by exit_ts DESCENDING
+ * @param {string[]} layerKeys - Layer keys to compute PWDCA for
+ * @param {number} [lambda] - EWMA decay factor
+ * @returns {Object} { layer1_macro: 0.71, layer2_microstructure: 0.68, ... }
+ */
+function computeProfitWeightedDCA(sortedTrades, layerKeys, lambda = null) {
+  const ewmaLambda = lambda ?? EWMA_LAMBDA;
+  const pwDCA = {};
+
+  for (const key of layerKeys) {
+    let correctWeightedSum = 0;
+    let totalWeightedSum = 0;
+
+    for (let k = 0; k < sortedTrades.length; k++) {
+      const trade = sortedTrades[k];
+      const entry = Number(trade.entry_price);
+      const exit = Number(trade.exit_price);
+
+      if (!entry || !exit || entry === exit) continue;
+
+      const actualDirection = exit > entry ? 'UP' : 'DOWN';
+      const returnMagnitude = Math.abs((exit - entry) / entry);
+
+      // Skip negligible moves (< 0.01% — effectively noise)
+      if (returnMagnitude < 0.0001) continue;
+
+      // Parse layer scores
+      let lScores = {};
+      if (typeof trade.json === 'object' && trade.json !== null) {
+        lScores = trade.json.layer_scores || trade.json.layer_scores_json || {};
+      } else if (typeof trade.layer_scores_json === 'object' && trade.layer_scores_json !== null) {
+        lScores = trade.layer_scores_json;
+      } else if (typeof trade.json === 'string') {
+        try {
+          const parsed = JSON.parse(trade.json);
+          lScores = parsed.layer_scores || parsed.layer_scores_json || {};
+        } catch (e) { /* skip */ }
+      }
+
+      const score = lScores[key];
+      if (score == null) continue; // Skip missing scores for profit-weighting (no neutral credit)
+
+      const predictedDirection = score > 50 ? 'UP' : (score < 50 ? 'DOWN' : 'NEUTRAL');
+      if (predictedDirection === 'NEUTRAL') continue;
+
+      const correct = predictedDirection === actualDirection ? 1 : 0;
+      const decayWeight = Math.pow(ewmaLambda, k);
+      const profitWeight = decayWeight * returnMagnitude;
+
+      correctWeightedSum += correct * profitWeight;
+      totalWeightedSum += profitWeight;
+    }
+
+    pwDCA[key] = totalWeightedSum > 0 ? correctWeightedSum / totalWeightedSum : 0.50;
+  }
+
+  return pwDCA;
+}
+
+/**
+ * Computes the effective DCA by blending EWMA-DCA and Profit-Weighted DCA.
+ * 60% profit-weighted (what makes money) + 40% EWMA directional (stability).
+ *
+ * @param {Object} ewmaDCA - EWMA-weighted DCA per layer
+ * @param {Object} profitWeightedDCA - Profit-weighted DCA per layer
+ * @param {string[]} layerKeys - Layer keys
+ * @param {number} [pwBlend=0.6] - Weight for profit-weighted component
+ * @returns {Object} Blended effective DCA per layer
+ */
+function computeEffectiveDCA(ewmaDCA, profitWeightedDCA, layerKeys, pwBlend = 0.6) {
+  const effectiveDCA = {};
+  const ewmaBlend = 1 - pwBlend;
+
+  for (const key of layerKeys) {
+    const ewma = ewmaDCA[key] ?? 0.50;
+    const pw = profitWeightedDCA[key] ?? 0.50;
+    effectiveDCA[key] = Math.round((pwBlend * pw + ewmaBlend * ewma) * 10000) / 10000;
+  }
+
+  return effectiveDCA;
+}
+
+/**
+ * Computes Kelly Criterion optimal learning rate (lambda).
+ * Replaces the heuristic min(1, trades/100) × WFE formula.
+ *
+ * Kelly_f = (p × b - q) / b
+ * where:
+ *   p = win rate (fraction of profitable trades)
+ *   q = 1 - p (fraction of losing trades)
+ *   b = average win / average loss (payoff ratio)
+ *
+ * Half-Kelly: λ = Kelly_f / 2 (reduces variance by 50%, retains 75% of growth)
+ * Quarter-Kelly: λ = Kelly_f / 4 (ultra-conservative)
+ *
+ * @param {Object[]} trades - Closed trades with entry_price and exit_price
+ * @param {number} wfeCoefficient - Walk-Forward Efficiency coefficient (0-1)
+ * @param {string} [kellyMode='HALF'] - 'HALF', 'QUARTER', or 'DISABLED'
+ * @returns {{ kellyLambda: number, kellyF: number, winRate: number, payoffRatio: number }}
+ */
+function computeKellyLambda(trades, wfeCoefficient, kellyMode = 'HALF') {
+  if (kellyMode === 'DISABLED' || !trades || trades.length < 30) {
+    return {
+      kellyLambda: Math.min(1.0, (trades ? trades.length : 0) / 100) * wfeCoefficient, // fallback to heuristic
+      kellyF: 0,
+      winRate: 0,
+      payoffRatio: 0
+    };
+  }
+
+  let wins = 0;
+  let losses = 0;
+  let totalWinReturn = 0;
+  let totalLossReturn = 0;
+
+  for (const trade of trades) {
+    const entry = Number(trade.entry_price);
+    const exit = Number(trade.exit_price);
+    if (!entry || !exit || entry === exit) continue;
+
+    const returnPct = (exit - entry) / entry;
+
+    if (returnPct > 0) {
+      wins++;
+      totalWinReturn += returnPct;
+    } else {
+      losses++;
+      totalLossReturn += Math.abs(returnPct);
+    }
+  }
+
+  if (wins === 0 || losses === 0) {
+    // Edge case: all wins or all losses → use heuristic
+    return {
+      kellyLambda: Math.min(1.0, trades.length / 100) * wfeCoefficient,
+      kellyF: 0,
+      winRate: wins / (wins + losses || 1),
+      payoffRatio: 0
+    };
+  }
+
+  const p = wins / (wins + losses);
+  const q = 1 - p;
+  const avgWin = totalWinReturn / wins;
+  const avgLoss = totalLossReturn / losses;
+  const b = avgWin / (avgLoss || 0.0001); // Payoff ratio
+
+  // Kelly fraction
+  const kellyF = (p * b - q) / b;
+
+  // If Kelly is negative, the edge is against us → force lambda to 0 (static weights)
+  if (kellyF <= 0) {
+    logEvent('L25_KELLY_NEGATIVE_EDGE', 'WARN',
+      `Kelly criterion yields negative edge (f=${kellyF.toFixed(4)}). Forcing static weights.`,
+      { kellyF: +kellyF.toFixed(4), winRate: +p.toFixed(4), payoffRatio: +b.toFixed(4) });
+    return {
+      kellyLambda: 0,
+      kellyF: +kellyF.toFixed(4),
+      winRate: +p.toFixed(4),
+      payoffRatio: +b.toFixed(4)
+    };
+  }
+
+  // Fractional Kelly
+  let fraction;
+  switch (kellyMode) {
+    case 'QUARTER':
+      fraction = 0.25;
+      break;
+    case 'HALF':
+    default:
+      fraction = 0.50;
+      break;
+  }
+
+  // Apply fractional Kelly × WFE coefficient
+  const kellyLambda = Math.min(1.0, kellyF * fraction) * wfeCoefficient;
+
+  return {
+    kellyLambda: Math.round(kellyLambda * 10000) / 10000,
+    kellyF: Math.round(kellyF * 10000) / 10000,
+    winRate: Math.round(p * 10000) / 10000,
+    payoffRatio: Math.round(b * 10000) / 10000
+  };
+}
+
+/**
+ * Computes KL-Divergence between calibrated and static weight distributions.
+ * Measures how far the calibrated weights have drifted from the static baseline.
+ *
+ * D_KL(P || Q) = Σ P_i × ln(P_i / Q_i)
+ * where P = calibrated weight distribution, Q = static weight distribution
+ *
+ * Alert thresholds:
+ *   < 0.05  → NORMAL (minor drift, expected)
+ *   0.05-0.15 → MODERATE (significant drift, worth monitoring)
+ *   > 0.15  → SEVERE (extreme drift, possible overfitting or regime change)
+ *
+ * @param {Object} calibratedWeights - Normalized calibrated weights (sum to 100)
+ * @param {Object} staticWeights - Normalized static weights (sum to 100)
+ * @returns {{ klDivergence: number, tier: string, driftingLayers: string[] }}
+ */
+function computeKLDivergence(calibratedWeights, staticWeights) {
+  if (!calibratedWeights || !staticWeights) {
+    return { klDivergence: 0, tier: 'NORMAL', driftingLayers: [] };
+  }
+
+  const layerKeys = Object.keys(staticWeights).filter(k => k !== 'layer12_risk');
+  let kl = 0;
+  const driftingLayers = [];
+
+  for (const k of layerKeys) {
+    const p = (calibratedWeights[k] || 0.001) / 100; // Normalize to probability
+    const q = (staticWeights[k] || 0.001) / 100;
+
+    // Avoid log(0) by clamping both distributions
+    const pClamped = Math.max(p, 1e-6);
+    const qClamped = Math.max(q, 1e-6);
+
+    const layerKL = pClamped * Math.log(pClamped / qClamped);
+    kl += layerKL;
+
+    // Track individual layers with high drift contribution
+    if (Math.abs(layerKL) > 0.01) {
+      driftingLayers.push(k);
+    }
+  }
+
+  // Ensure non-negative (numerical precision)
+  kl = Math.max(0, kl);
+
+  let tier;
+  if (kl >= KL_DIVERGENCE_SEVERE) {
+    tier = 'SEVERE';
+    logEvent('L25_KL_DIVERGENCE_SEVERE', 'WARN',
+      `KL-Divergence is SEVERE (${kl.toFixed(4)} ≥ ${KL_DIVERGENCE_SEVERE}). Calibrated weights have drifted far from baseline.`,
+      { klDivergence: +kl.toFixed(4), driftingLayers });
+  } else if (kl >= KL_DIVERGENCE_MODERATE) {
+    tier = 'MODERATE';
+    logEvent('L25_KL_DIVERGENCE_MODERATE', 'INFO',
+      `KL-Divergence is MODERATE (${kl.toFixed(4)}). Some weight drift detected.`,
+      { klDivergence: +kl.toFixed(4), driftingLayers });
+  } else {
+    tier = 'NORMAL';
+  }
+
+  return {
+    klDivergence: Math.round(kl * 10000) / 10000,
+    tier,
+    driftingLayers
+  };
+}
+
 /**
  * Calibrates static weights using trade history and walk-forward results.
+ * This is the enhanced version with EWMA-DCA, Profit-Weighted DCA, and Kelly lambda.
  *
  * @param {Object} params
  * @param {Object} params.staticWeights - Current static weight priors
@@ -170,6 +515,10 @@ function blendWeights(staticWeights, calibratedWeights, lambda) {
  * @param {Object} [params.dirichletMultipliers] - Custom multipliers per layer
  * @param {Object} [params.ceilingHitStreak] - Current count of consecutive hits at 30% ceiling
  * @param {string} [params.engineUpgradeDate] - PIT start date for trade filtration
+ * @param {boolean} [params.ewmaEnabled=true] - Enable EWMA-weighted DCA
+ * @param {number} [params.ewmaLambda] - EWMA decay factor override
+ * @param {string} [params.kellyMode='HALF'] - Kelly sizing: 'HALF', 'QUARTER', 'DISABLED'
+ * @param {number} [params.wfeCoefficient] - Pre-computed WFE coefficient (if using smooth sigmoid)
  * @returns {Object} result
  */
 function calibrateWeights({
@@ -178,14 +527,32 @@ function calibrateWeights({
   wfeScore,
   dirichletMultipliers = {},
   ceilingHitStreak = {},
-  engineUpgradeDate = null
+  engineUpgradeDate = null,
+  ewmaEnabled = true,
+  ewmaLambda = null,
+  kellyMode = 'HALF',
+  wfeCoefficient = null
 }) {
   const result = {
     calibratedWeights: { ...staticWeights },
     lambda: 0,
     newCeilingHitStreak: { ...ceilingHitStreak },
     shouldReset: false,
-    driftAlerts: []
+    driftAlerts: [],
+    // ── NEW DIAGNOSTICS ──────────────────────────────────────────────
+    diagnostics: {
+      ewmaDCA: null,
+      profitWeightedDCA: null,
+      effectiveDCA: null,
+      kellyResult: null,
+      klDivergence: null,
+      algorithmStatus: {
+        ewmaDCA: ewmaEnabled ? 'ACTIVE' : 'DISABLED',
+        profitWeightedDCA: ewmaEnabled ? 'ACTIVE' : 'DISABLED',
+        kellyCriterion: kellyMode !== 'DISABLED' ? kellyMode : 'DISABLED',
+        klDivergence: 'MONITORING'
+      }
+    }
   };
 
   // Filter trade history based on engine upgrade date
@@ -205,85 +572,114 @@ function calibrateWeights({
     return result;
   }
 
-  // 2. Compute WFE coefficient
-  let wfeCoefficient = 0.00;
-  if (wfeScore > 0.70) {
-    wfeCoefficient = 1.00;
-  } else if (wfeScore >= 0.55) {
-    wfeCoefficient = 0.70;
-  } else {
-    wfeCoefficient = 0.00;
+  // 2. Compute WFE coefficient (use pre-computed smooth sigmoid if provided)
+  let wfeCoeff = wfeCoefficient;
+  if (wfeCoeff == null) {
+    // Fallback to legacy discrete mapping if smooth coefficient not provided
+    if (wfeScore > 0.70) {
+      wfeCoeff = 1.00;
+    } else if (wfeScore >= 0.55) {
+      wfeCoeff = 0.70;
+    } else {
+      wfeCoeff = 0.00;
+    }
   }
 
-  // Learning rate lambda
-  const lambda = Math.min(1.0, tradeCount / 100) * wfeCoefficient;
+  // 3. Compute learning rate lambda using Kelly Criterion or heuristic
+  const kellyResult = computeKellyLambda(filteredTrades, wfeCoeff, kellyMode);
+  const lambda = kellyResult.kellyLambda;
   result.lambda = +lambda.toFixed(4);
+  result.diagnostics.kellyResult = kellyResult;
 
   if (lambda === 0) {
     logEvent('L25_CALIBRATION_SKIPPED_LAMBDA_ZERO', 'INFO',
-      `Learning rate lambda is 0 (WFE score: ${wfeScore}). Retaining static weights.`,
-      { tradeCount, wfeScore, wfeCoefficient });
+      `Learning rate lambda is 0 (WFE score: ${wfeScore}, Kelly: ${kellyResult.kellyF}). Retaining static weights.`,
+      { tradeCount, wfeScore, wfeCoeff, kellyMode, kellyF: kellyResult.kellyF });
     return result;
   }
 
-  // 3. Calculate Directional Conviction Accuracy (DCA) per layer
-  // Extract layer scores from trade records
+  // 4. Calculate DCA per layer (EWMA-weighted + Profit-weighted or flat)
   const layerKeys = Object.keys(staticWeights).filter(k => k !== 'layer12_risk');
-  const layerCorrectCount = {};
-  const layerTotalCount = {};
 
-  for (const k of layerKeys) {
-    layerCorrectCount[k] = 0;
-    layerTotalCount[k] = 0;
-  }
+  // Sort trades by exit_ts descending for EWMA weighting
+  const sortedTrades = [...filteredTrades]
+    .filter(t => t.exit_ts)
+    .sort((a, b) => new Date(b.exit_ts) - new Date(a.exit_ts));
 
-  for (const trade of filteredTrades) {
-    // Determine trade actual direction
-    const entry = Number(trade.entry_price);
-    const exit = Number(trade.exit_price);
-    if (!entry || !exit || entry === exit) continue;
-    const actualDirection = exit > entry ? 'UP' : 'DOWN';
+  let dca;
 
-    // Parse layer scores from JSON
-    let lScores = {};
-    if (typeof trade.json === 'object' && trade.json !== null) {
-      lScores = trade.json.layer_scores || trade.json.layer_scores_json || {};
-    } else if (typeof trade.layer_scores_json === 'object' && trade.layer_scores_json !== null) {
-      lScores = trade.layer_scores_json;
-    } else if (typeof trade.json === 'string') {
-      try {
-        const parsed = JSON.parse(trade.json);
-        lScores = parsed.layer_scores || parsed.layer_scores_json || {};
-      } catch (e) {}
-    }
+  if (ewmaEnabled && sortedTrades.length >= 30) {
+    // ── UPGRADED PATH: EWMA + Profit-Weighted DCA ────────────────
+    const ewmaDCA = computeEWMA_DCA(sortedTrades, layerKeys, ewmaLambda);
+    const profitWeightedDCA = computeProfitWeightedDCA(sortedTrades, layerKeys, ewmaLambda);
+    const effectiveDCA = computeEffectiveDCA(ewmaDCA, profitWeightedDCA, layerKeys);
+
+    dca = effectiveDCA;
+
+    result.diagnostics.ewmaDCA = ewmaDCA;
+    result.diagnostics.profitWeightedDCA = profitWeightedDCA;
+    result.diagnostics.effectiveDCA = effectiveDCA;
+
+    logEvent('L25_EWMA_DCA_COMPUTED', 'INFO',
+      `EWMA+PW DCA computed over ${sortedTrades.length} sorted trades (λ=${ewmaLambda ?? EWMA_LAMBDA})`,
+      { tradeCount: sortedTrades.length });
+  } else {
+    // ── LEGACY PATH: Flat DCA (original algorithm) ───────────────
+    const layerCorrectCount = {};
+    const layerTotalCount = {};
 
     for (const k of layerKeys) {
-      const score = lScores[k];
-      if (score == null) {
-        // Default historical missing scores to 0.50 (DCA neutral)
-        layerTotalCount[k]++;
-        layerCorrectCount[k] += 0.5; // half credit / neutral
-        continue;
+      layerCorrectCount[k] = 0;
+      layerTotalCount[k] = 0;
+    }
+
+    for (const trade of filteredTrades) {
+      const entry = Number(trade.entry_price);
+      const exit = Number(trade.exit_price);
+      if (!entry || !exit || entry === exit) continue;
+      const actualDirection = exit > entry ? 'UP' : 'DOWN';
+
+      let lScores = {};
+      if (typeof trade.json === 'object' && trade.json !== null) {
+        lScores = trade.json.layer_scores || trade.json.layer_scores_json || {};
+      } else if (typeof trade.layer_scores_json === 'object' && trade.layer_scores_json !== null) {
+        lScores = trade.layer_scores_json;
+      } else if (typeof trade.json === 'string') {
+        try {
+          const parsed = JSON.parse(trade.json);
+          lScores = parsed.layer_scores || parsed.layer_scores_json || {};
+        } catch (e) {}
       }
 
-      const predictedDirection = score > 50 ? 'UP' : (score < 50 ? 'DOWN' : 'NEUTRAL');
-      if (predictedDirection === 'NEUTRAL') continue;
+      for (const k of layerKeys) {
+        const score = lScores[k];
+        if (score == null) {
+          layerTotalCount[k]++;
+          layerCorrectCount[k] += 0.5;
+          continue;
+        }
 
-      layerTotalCount[k]++;
-      if (predictedDirection === actualDirection) {
-        layerCorrectCount[k]++;
+        const predictedDirection = score > 50 ? 'UP' : (score < 50 ? 'DOWN' : 'NEUTRAL');
+        if (predictedDirection === 'NEUTRAL') continue;
+
+        layerTotalCount[k]++;
+        if (predictedDirection === actualDirection) {
+          layerCorrectCount[k]++;
+        }
       }
     }
+
+    dca = {};
+    for (const k of layerKeys) {
+      const total = layerTotalCount[k] || 0;
+      dca[k] = total > 0 ? (layerCorrectCount[k] / total) : 0.50;
+    }
+
+    result.diagnostics.algorithmStatus.ewmaDCA = 'DISABLED';
+    result.diagnostics.algorithmStatus.profitWeightedDCA = 'DISABLED';
   }
 
-  // Compute final DCA per layer
-  const dca = {};
-  for (const k of layerKeys) {
-    const total = layerTotalCount[k] || 0;
-    dca[k] = total > 0 ? (layerCorrectCount[k] / total) : 0.50; // Default to neutral if no signals
-  }
-
-  // 4. Run Dirichlet Prior Update
+  // 5. Run Dirichlet Prior Update (using the computed DCA — flat or effective)
   // alpha_i = w_i * dirichlet_multiplier
   // updated_alpha_i = alpha_i + DCA_i
   // normalized_weight_i = updated_alpha_i / sum(updated_alpha)
@@ -309,7 +705,7 @@ function calibrateWeights({
     dirichletWeights[k] = (alphas[k] / totalUpdatedAlpha) * 100;
   }
 
-  // 5. Establish Floors and Ceilings
+  // 6. Establish Floors and Ceilings
   const floors = {};
   const ceilings = {};
   for (const k of layerKeys) {
@@ -320,14 +716,14 @@ function calibrateWeights({
     ceilings[k] = 30.0; // Max 30% ceiling per layer
   }
 
-  // 6. Iterative Normalization
+  // 7. Iterative Normalization
   let normalizedCalibrated = iterativeBoundedNormalize(dirichletWeights, floors, ceilings, 30);
   if (!normalizedCalibrated) {
     // If convergence fails, use static weights
     return result;
   }
 
-  // 7. Enforce max shift per calibration cycle (max ±3% from static weights)
+  // 8. Enforce max shift per calibration cycle (max ±3% from static weights)
   // Ensure that no layer shifts by more than ±3% from the static baseline in the calibrated weight
   let shiftNeedsRenormalization = false;
   for (const k of layerKeys) {
@@ -347,10 +743,10 @@ function calibrateWeights({
     }
   }
 
-  // 8. Blend calibrated and static weights
+  // 9. Blend calibrated and static weights
   const finalWeights = blendWeights(staticWeights, normalizedCalibrated, lambda);
 
-  // 9. Ceiling Streak Tracking & Reset check
+  // 10. Ceiling Streak Tracking & Reset check
   let shouldReset = false;
   const newCeilingHitStreak = { ...ceilingHitStreak };
 
@@ -370,7 +766,7 @@ function calibrateWeights({
     }
   }
 
-  // 10. Cumulative weight drift check: |w_calibrated - w_static| > 8% for any layer
+  // 11. Cumulative weight drift check: |w_calibrated - w_static| > 8% for any layer
   const driftAlerts = [];
   for (const k of layerKeys) {
     const staticW = staticWeights[k] || 0;
@@ -383,6 +779,10 @@ function calibrateWeights({
     }
   }
 
+  // 12. KL-Divergence monitoring (NEW)
+  const klResult = computeKLDivergence(normalizedCalibrated, staticWeights);
+  result.diagnostics.klDivergence = klResult;
+
   result.calibratedWeights = finalWeights;
   result.newCeilingHitStreak = newCeilingHitStreak;
   result.shouldReset = shouldReset;
@@ -394,5 +794,10 @@ function calibrateWeights({
 module.exports = {
   calibrateWeights,
   iterativeBoundedNormalize,
-  blendWeights
+  blendWeights,
+  computeEWMA_DCA,
+  computeProfitWeightedDCA,
+  computeEffectiveDCA,
+  computeKellyLambda,
+  computeKLDivergence
 };

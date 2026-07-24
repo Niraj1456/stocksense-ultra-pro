@@ -260,6 +260,115 @@ async function handleWithDatabase(req, res, databaseUrl) {
       );
     }
 
+    // 6. Oracle Confidence Multiplier Statistics
+    details.oracle = { enabled: config.oracle_enabled === 'true', cold_start_trades: parseInt(config.oracle_cold_start_trades || '130', 10) };
+    try {
+      const oracleStatsRes = await pool.query(
+        `SELECT
+           COUNT(*) AS total,
+           AVG(oracle_multiplier) AS avg_multiplier,
+           AVG(oracle_confidence) AS avg_confidence,
+           COUNT(*) FILTER (WHERE oracle_multiplier < 0.85) AS strong_dampening,
+           COUNT(*) FILTER (WHERE oracle_multiplier >= 0.85 AND oracle_multiplier < 0.95) AS mild_dampening,
+           COUNT(*) FILTER (WHERE oracle_multiplier >= 0.95 AND oracle_multiplier <= 1.05) AS neutral,
+           COUNT(*) FILTER (WHERE oracle_multiplier > 1.05 AND oracle_multiplier <= 1.15) AS mild_amplification,
+           COUNT(*) FILTER (WHERE oracle_multiplier > 1.15) AS strong_amplification
+         FROM oracle_adjustment_log
+         WHERE ts > NOW() - INTERVAL '7 days'`
+      );
+
+      if (oracleStatsRes && oracleStatsRes.rows && oracleStatsRes.rows.length > 0) {
+        const stats = oracleStatsRes.rows[0];
+        details.oracle.last_7_days = {
+          total_adjustments: parseInt(stats.total || '0', 10),
+          avg_multiplier: stats.avg_multiplier ? parseFloat(parseFloat(stats.avg_multiplier).toFixed(4)) : null,
+          avg_confidence: stats.avg_confidence ? parseFloat(parseFloat(stats.avg_confidence).toFixed(4)) : null,
+          strong_dampening: parseInt(stats.strong_dampening || '0', 10),
+          mild_dampening: parseInt(stats.mild_dampening || '0', 10),
+          neutral: parseInt(stats.neutral || '0', 10),
+          mild_amplification: parseInt(stats.mild_amplification || '0', 10),
+          strong_amplification: parseInt(stats.strong_amplification || '0', 10)
+        };
+
+        // Degradation: > 30% strong dampening means Oracle consistently disagrees with engine
+        const totalAdj = details.oracle.last_7_days.total_adjustments;
+        if (totalAdj > 20 && details.oracle.last_7_days.strong_dampening / totalAdj > 0.30) {
+          status = "DEGRADED";
+          reasons.push(
+            `Oracle Confidence: ${(details.oracle.last_7_days.strong_dampening / totalAdj * 100).toFixed(0)}% of adjustments are strong dampening (>30% threshold)`
+          );
+        }
+      }
+    } catch (oracleErr) {
+      // Table may not exist yet — not a degradation
+      details.oracle.last_7_days = null;
+      details.oracle.note = "oracle_adjustment_log table not available";
+    }
+
+    // 7. Advanced Algorithm Diagnostics
+    details.advanced_diagnostics = {
+      algorithm_status: {
+        ewma_dca: config.l25_ewma_enabled === 'true' ? 'ACTIVE' : 'DISABLED',
+        profit_weighted_dca: config.l25_ewma_enabled === 'true' ? 'ACTIVE' : 'DISABLED',
+        kelly_criterion: config.l25_kelly_mode || 'HALF',
+        bocd: config.l26_bocd_enabled === 'true' ? 'ACTIVE' : 'DISABLED',
+        kl_divergence: config.l25_kl_divergence_enabled === 'true' ? 'MONITORING' : 'DISABLED',
+        correlation_adjustment: config.l25_correlation_enabled === 'true' ? 'ACTIVE' : 'DISABLED'
+      },
+      metrics: {}
+    };
+
+    // Collect advanced metrics per mode and regime
+    for (const mode of modes) {
+      const regimes = ['LOW_VIX', 'HIGH_VIX'];
+      for (const regime of regimes) {
+        const modeRegimeKey = `${mode}_${regime}`;
+
+        // KL-Divergence
+        const klVal = config[`kl_divergence_${mode}_${regime}`];
+        if (klVal != null) {
+          details.advanced_diagnostics.metrics[`kl_divergence_${modeRegimeKey}`] = parseFloat(klVal);
+          // Degradation: KL > 0.15 = severe drift
+          if (parseFloat(klVal) >= 0.15) {
+            status = "DEGRADED";
+            reasons.push(`KL-Divergence for ${mode}/${regime} is SEVERE: ${klVal} (threshold: 0.15)`);
+          }
+        }
+
+        // Kelly Lambda
+        const kellyVal = config[`kelly_lambda_${mode}_${regime}`];
+        if (kellyVal != null) {
+          details.advanced_diagnostics.metrics[`kelly_lambda_${modeRegimeKey}`] = parseFloat(kellyVal);
+        }
+      }
+
+      // BOCD Changepoint (per mode)
+      const bocdVal = config[`bocd_changepoint_${mode}`];
+      if (bocdVal != null) {
+        details.advanced_diagnostics.metrics[`bocd_changepoint_${mode}`] = bocdVal === 'true';
+        if (bocdVal === 'true') {
+          status = "DEGRADED";
+          reasons.push(`BOCD detected regime changepoint for mode ${mode}`);
+        }
+      }
+
+      // Sortino WFE (per mode)
+      const sortinoVal = config[`wfe_sortino_score_${mode}`];
+      if (sortinoVal != null) {
+        details.advanced_diagnostics.metrics[`sortino_wfe_${mode}`] = parseFloat(sortinoVal);
+        if (parseFloat(sortinoVal) < 0.45) {
+          status = "DEGRADED";
+          reasons.push(`Sortino WFE for mode ${mode} is below threshold: ${sortinoVal} (need >= 0.45)`);
+        }
+      }
+
+      // Effective WFE (per mode)
+      const effectiveWfe = config[`wfe_effective_score_${mode}`];
+      if (effectiveWfe != null) {
+        details.advanced_diagnostics.metrics[`effective_wfe_${mode}`] = parseFloat(effectiveWfe);
+      }
+    }
+
     return res.status(200).json({
       status,
       timestamp: new Date().toISOString(),
@@ -355,6 +464,23 @@ function buildStaticBaseline() {
         status: "NOT_AVAILABLE",
         last_action: null,
       },
+      oracle: {
+        enabled: false,
+        cold_start_trades: 130,
+        last_7_days: null,
+        note: "SERVERLESS_MODE"
+      },
+      advanced_diagnostics: {
+        algorithm_status: {
+          ewma_dca: "DISABLED",
+          profit_weighted_dca: "DISABLED",
+          kelly_criterion: "DISABLED",
+          bocd: "DISABLED",
+          kl_divergence: "DISABLED",
+          correlation_adjustment: "DISABLED"
+        },
+        metrics: {}
+      }
     },
     deployment_mode: "SERVERLESS",
   };

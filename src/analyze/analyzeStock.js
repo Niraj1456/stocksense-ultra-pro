@@ -23,6 +23,7 @@ const Layer21 = require("../layers/layer21");
 const Layer22 = require("../layers/layer22");
 const Layer23 = require("../layers/layer23");
 const Layer24 = require("../layers/layer24");
+const OracleConfidence = require('../layers/layer25/oracleConfidence');
 
 const { dbQuery } = require("../lib/db");
 const { BROAD_SECTOR_MAP } = require("../config/sectorConstants");
@@ -1472,6 +1473,113 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     }));
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // SELF-LEARNING ORACLE — CONFIDENCE MULTIPLIER
+  // ═══════════════════════════════════════════════════════════════
+  let oracleResult = { multiplier: 1.0, confidence: 0, reasons: [], components: {} };
+  try {
+    // Fetch Oracle configuration
+    const oracleConfigRes = await dbQuery(
+      `SELECT key, value FROM system_config WHERE key IN ('oracle_enabled', 'oracle_cold_start_trades')`
+    );
+    const oracleConfig = {};
+    if (oracleConfigRes && oracleConfigRes.rows) {
+      for (const row of oracleConfigRes.rows) oracleConfig[row.key] = row.value;
+    }
+
+    const oracleEnabled = oracleConfig.oracle_enabled !== 'false';
+    const coldStartThreshold = parseInt(oracleConfig.oracle_cold_start_trades || '130', 10);
+
+    if (oracleEnabled && scoreOut?.data?.engineResult && !scoreOut.data.engineResult.isVetoed) {
+      // Fetch trade count for cold-start check
+      const tradeCountRes = await dbQuery(
+        `SELECT COUNT(*) as cnt FROM trades WHERE exit_ts IS NOT NULL AND entry_ts >= $1`,
+        [process.env.ENGINE_UPGRADE_DATE || '2026-05-25']
+      );
+      const tradeCount = parseInt(tradeCountRes?.rows?.[0]?.cnt || '0', 10);
+
+      // Fetch Oracle calibration data (context DCA, correlation penalties)
+      const oracleDataRes = await dbQuery(
+        `SELECT diagnostics_json FROM weight_calibration_log
+         WHERE mode = $1 AND regime = $2 AND is_active = TRUE LIMIT 1`,
+        [masterMode, activeRegime]
+      );
+      const diagnosticsJson = oracleDataRes?.rows?.[0]?.diagnostics_json || {};
+
+      // Fetch BOCD changepoint status
+      const bocdRes = await dbQuery(
+        `SELECT value FROM system_config WHERE key = $1`,
+        [`bocd_changepoint_${masterMode}`]
+      );
+      const bocdChangepoint = bocdRes?.rows?.[0]?.value === 'true';
+
+      // Fetch WFE score
+      const wfeRes = await dbQuery(
+        `SELECT value FROM system_config WHERE key = $1`,
+        [`wfe_score_${masterMode}`]
+      );
+      const wfeScore = parseFloat(wfeRes?.rows?.[0]?.value) || null;
+
+      // Fetch recent trade history for score-level hit rate
+      const tradeHistoryRes = await dbQuery(
+        `SELECT entry_price, exit_price, total_score as engine_score, json
+         FROM trades t
+         LEFT JOIN scores s ON t.symbol = s.symbol AND t.mode = s.mode
+         WHERE t.exit_ts IS NOT NULL AND t.entry_ts >= $1
+         ORDER BY t.exit_ts DESC LIMIT 200`,
+        [process.env.ENGINE_UPGRADE_DATE || '2026-05-25']
+      );
+      const tradeHistory = tradeHistoryRes?.rows || [];
+
+      oracleResult = OracleConfidence.computeOracleMultiplier({
+        engineScore: scoreOut.data.totalScore,
+        layerScores: scoreOut.data.engineResult?.layerScores || {},
+        weights: activeWeights,
+        effectiveDCA: diagnosticsJson?.effectiveDCA || null,
+        correlationPenalties: diagnosticsJson?.correlationPairs ? {} : null,
+        wfeScore,
+        bocdChangepoint,
+        tradeCount,
+        dataQualityScore,
+        tradeHistory,
+        coldStartThreshold
+      });
+    }
+  } catch (oracleErr) {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      layer_id: 'ORACLE',
+      event_code: 'ORACLE_COMPUTATION_FAILED',
+      severity: 'WARN',
+      message: 'Oracle confidence computation failed — using raw engine score',
+      details: { error: oracleErr.message }
+    }));
+  }
+
+  // Apply Oracle confidence multiplier to engine score
+  const oracleAdjustedScore = scoreOut?.data?.engineResult?.isVetoed
+    ? scoreOut.data.totalScore
+    : Math.max(5, Math.min(95, 50 + (scoreOut.data.totalScore - 50) * oracleResult.multiplier));
+
+  // Log Oracle adjustment for audit trail (non-blocking)
+  if (oracleResult.multiplier !== 1.0) {
+    dbQuery(
+      `INSERT INTO oracle_adjustment_log (symbol, mode, regime, engine_score, oracle_multiplier, adjusted_score, oracle_confidence, components, reasons)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        cleanSymbol, masterMode, activeRegime,
+        scoreOut.data?.totalScore || 50,
+        oracleResult.multiplier,
+        oracleAdjustedScore,
+        oracleResult.confidence,
+        JSON.stringify(oracleResult.components || {}),
+        oracleResult.reasons || []
+      ]
+    ).catch(logErr => {
+      console.error('Oracle audit log failed:', logErr.message);
+    });
+  }
+
   const verdictOut = Layer13.verdictClassifierEngine({
     total_score: scoreOut?.data?.totalScore || 50,
     veto_data: scoreOut?.data?.engineResult?.isVetoed ? { veto_triggered: true, veto_reasons: scoreOut.data.engineResult.vetoReasons } : { veto_triggered: false, veto_reasons: [] },
@@ -1540,7 +1648,11 @@ async function analyzeStock(symbol, mode = "ST", options = {}) {
     layers: context,
     final: layer14.data,
     data: {
-      masterScore: scoreOut.data?.totalScore || 50,
+      masterScore: Number(oracleAdjustedScore.toFixed(2)),
+      engineScore: scoreOut.data?.totalScore || 50,
+      oracleMultiplier: oracleResult.multiplier,
+      oracleConfidence: oracleResult.confidence,
+      oracleReasons: oracleResult.reasons,
       verdict: scoreOut.data?.engineResult?.verdict || verdictOut.data?.verdict || "NEUTRAL",
       aiReasoning: layer14.data?.response_text || "Analysis complete.",
       data_quality_score: Number(dataQualityScore.toFixed(2)),

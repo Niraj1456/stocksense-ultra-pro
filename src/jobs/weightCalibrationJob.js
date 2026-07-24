@@ -11,6 +11,8 @@ const { dbQuery } = require('../lib/db');
 const { getWeights } = require('../layers/layer13/weightTable');
 const ensembleCalibration = require('../layers/layer25/ensembleCalibration');
 const walkForward = require('../layers/layer26/walkForward');
+const { computeContextDCA, computeAllContextDCA } = require('../layers/layer25/contextDCA');
+const { buildCorrelationMatrix, computeRedundancyPenalties } = require('../layers/layer25/correlationMap');
 
 const JOB_NAME = 'weightCalibrationJob';
 const LAYER_ID = 'L25';
@@ -227,6 +229,22 @@ async function run() {
           [`wfe_alpha_decay_veto_${m}`, String(wfeResult.data.alphaDecayVeto)]
         );
 
+        // Store Sortino WFE and BOCD metrics
+        if (wfeResult.data.sortinoWfeScore != null) {
+          await dbQuery(
+            `INSERT INTO system_config (key, value) VALUES ($1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+            [`wfe_sortino_score_${m}`, String(wfeResult.data.sortinoWfeScore)]
+          );
+        }
+        if (wfeResult.data.effectiveWfeScore != null) {
+          await dbQuery(
+            `INSERT INTO system_config (key, value) VALUES ($1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+            [`wfe_effective_score_${m}`, String(wfeResult.data.effectiveWfeScore)]
+          );
+        }
+
         if (wfeResult.data.alphaDecayVeto) {
           log('ERROR', 'ALPHA_DECAY_HALT_ALERT', `Alpha decay halt veto triggered for mode ${m}!`, {
             mode: m,
@@ -283,6 +301,25 @@ async function run() {
           }
         }
 
+        // Fetch new algorithm configuration from system_config
+        const algoConfigRes = await dbQuery(
+          `SELECT key, value FROM system_config WHERE key IN (
+            'l25_ewma_enabled', 'l25_ewma_lambda', 'l25_kelly_mode',
+            'l25_correlation_enabled', 'l25_kl_divergence_enabled'
+          )`
+        );
+        const algoConfig = {};
+        if (algoConfigRes && algoConfigRes.rows) {
+          for (const row of algoConfigRes.rows) {
+            algoConfig[row.key] = row.value;
+          }
+        }
+
+        const ewmaEnabled = algoConfig.l25_ewma_enabled !== 'false';
+        const ewmaLambda = parseFloat(algoConfig.l25_ewma_lambda) || null;
+        const kellyMode = algoConfig.l25_kelly_mode || 'HALF';
+        const correlationEnabled = algoConfig.l25_correlation_enabled !== 'false';
+
         // Run L25 calibration
         let calResult;
         try {
@@ -292,11 +329,42 @@ async function run() {
             wfeScore,
             dirichletMultipliers,
             ceilingHitStreak,
-            engineUpgradeDate
+            engineUpgradeDate,
+            ewmaEnabled,
+            ewmaLambda,
+            kellyMode,
+            wfeCoefficient: wfeResult.data.wfeCoefficient || null
           });
         } catch (err) {
           log('ERROR', 'L25_CALIBRATION_FAILED', `Calibration failed for combination ${m} x ${r}`, { error: err.message });
           continue;
+        }
+
+        // Run Correlation Analysis (if enabled)
+        let correlationData = null;
+        if (correlationEnabled && combinationTrades.length >= 50) {
+          try {
+            const layerKeys = Object.keys(staticWeights).filter(k => k !== 'layer12_risk');
+            correlationData = buildCorrelationMatrix(combinationTrades, layerKeys, 200);
+            if (correlationData.pairs.length > 0) {
+              const penalties = computeRedundancyPenalties(correlationData, calResult.calibratedWeights);
+              log('INFO', 'CORRELATION_ANALYSIS_COMPLETE',
+                `Found ${correlationData.pairs.length} correlated layer pairs for ${m} x ${r}`, {
+                  mode: m, regime: r, pairs: correlationData.pairs.length
+                });
+            }
+          } catch (corrErr) {
+            log('WARN', 'CORRELATION_ANALYSIS_FAILED', `Correlation analysis failed for ${m} x ${r}`, { error: corrErr.message });
+          }
+        }
+
+        // Compute Context DCA for Oracle (pre-computed for real-time use)
+        let contextDCAData = null;
+        try {
+          const layerKeys = Object.keys(staticWeights).filter(k => k !== 'layer12_risk');
+          contextDCAData = computeAllContextDCA(combinationTrades, layerKeys, 30);
+        } catch (ctxErr) {
+          log('WARN', 'CONTEXT_DCA_COMPUTATION_FAILED', `Context DCA failed for ${m} x ${r}`, { error: ctxErr.message });
         }
 
         // Handle reset or rotation
@@ -307,18 +375,48 @@ async function run() {
           });
           await dbQuery(`CALL reset_weights_to_static()`);
         } else {
-          // Call stored procedure to rotate weights
-          await dbQuery(
-            `CALL rotate_active_weights($1, $2, $3, $4, $5, $6)`,
-            [
-              m,
-              r,
-              calResult.lambda,
-              wfeScore,
-              JSON.stringify(calResult.calibratedWeights),
-              JSON.stringify(calResult.newCeilingHitStreak)
-            ]
-          );
+          // Build diagnostics JSON for storage
+          const diagnosticsJson = {
+            ewmaDCA: calResult.diagnostics?.ewmaDCA || null,
+            profitWeightedDCA: calResult.diagnostics?.profitWeightedDCA || null,
+            effectiveDCA: calResult.diagnostics?.effectiveDCA || null,
+            kellyResult: calResult.diagnostics?.kellyResult || null,
+            klDivergence: calResult.diagnostics?.klDivergence || null,
+            correlationPairs: correlationData?.pairs || [],
+            contextDCA: contextDCAData || null,
+            algorithmStatus: calResult.diagnostics?.algorithmStatus || {},
+            bocdResult: wfeResult.data?.bocdResult || null
+          };
+
+          // Try v2 procedure first (with diagnostics), fall back to v1
+          try {
+            await dbQuery(
+              `CALL rotate_active_weights_v2($1, $2, $3, $4, $5, $6, $7)`,
+              [
+                m,
+                r,
+                calResult.lambda,
+                wfeScore,
+                JSON.stringify(calResult.calibratedWeights),
+                JSON.stringify(calResult.newCeilingHitStreak),
+                JSON.stringify(diagnosticsJson)
+              ]
+            );
+          } catch (v2Err) {
+            // Fall back to v1 procedure if v2 doesn't exist yet
+            log('WARN', 'ROTATE_WEIGHTS_V2_FALLBACK', 'Falling back to v1 rotate procedure', { error: v2Err.message });
+            await dbQuery(
+              `CALL rotate_active_weights($1, $2, $3, $4, $5, $6)`,
+              [
+                m,
+                r,
+                calResult.lambda,
+                wfeScore,
+                JSON.stringify(calResult.calibratedWeights),
+                JSON.stringify(calResult.newCeilingHitStreak)
+              ]
+            );
+          }
 
           log('INFO', 'WEIGHTS_ROTATED', `Active weights rotated for combination ${m} x ${r}`, {
             mode: m,
@@ -326,6 +424,29 @@ async function run() {
             lambda: calResult.lambda,
             wfe_score: wfeScore
           });
+
+          // Store advanced diagnostic metrics in system_config
+          if (calResult.diagnostics?.kellyResult) {
+            await dbQuery(
+              `INSERT INTO system_config (key, value) VALUES ($1, $2)
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+              [`kelly_lambda_${m}_${r}`, String(calResult.diagnostics.kellyResult.kellyLambda)]
+            );
+          }
+          if (calResult.diagnostics?.klDivergence) {
+            await dbQuery(
+              `INSERT INTO system_config (key, value) VALUES ($1, $2)
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+              [`kl_divergence_${m}_${r}`, String(calResult.diagnostics.klDivergence.klDivergence)]
+            );
+          }
+          if (wfeResult.data?.bocdResult) {
+            await dbQuery(
+              `INSERT INTO system_config (key, value) VALUES ($1, $2)
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+              [`bocd_changepoint_${m}`, String(wfeResult.data.bocdResult.changePointDetected)]
+            );
+          }
         }
       }
     }

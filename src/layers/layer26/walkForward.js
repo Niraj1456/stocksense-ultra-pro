@@ -9,7 +9,13 @@
 // strategy's out-of-sample edge degrades beyond recoverable thresholds.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { SHARPE_EPSILON } = require("../../config/mathConstants");
+const {
+  SHARPE_EPSILON,
+  WFE_SIGMOID_K,
+  WFE_SIGMOID_MIDPOINT,
+  SORTINO_EPSILON,
+  BOCD_HAZARD_RATE
+} = require("../../config/mathConstants");
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────
 /** Minimum closed trades required before walk-forward analysis activates */
@@ -137,6 +143,185 @@ function computeSharpe(returns, scaleFactor) {
   return rawSharpe * scaleFactor;
 }
 
+/**
+ * Computes annualized Sortino ratio for a series of returns.
+ * Sortino = mean(R) / (DownsideDeviation + ε) × ScaleFactor
+ * DownsideDeviation = sqrt(Σ min(R_i, 0)² / N)
+ * Only counts negative returns for the denominator.
+ *
+ * @param {number[]} returns
+ * @param {number} scaleFactor
+ * @returns {number}
+ */
+function computeSortino(returns, scaleFactor) {
+  if (!returns || returns.length === 0) return 0;
+  if (scaleFactor == null || scaleFactor <= 0) scaleFactor = 1;
+  
+  const meanR = mean(returns);
+  const downsideReturns = returns.filter(r => r < 0);
+  const downsideDev = downsideReturns.length > 0 
+    ? Math.sqrt(downsideReturns.reduce((sum, r) => sum + r * r, 0) / returns.length)
+    : 0;
+  
+  return (meanR / (downsideDev + SORTINO_EPSILON)) * scaleFactor;
+}
+
+/**
+ * Bayesian Online Changepoint Detection (Adams & MacKay, 2007).
+ * Detects the exact point where OOS return statistical properties change.
+ * Uses Gaussian likelihood with online sufficient statistics.
+ *
+ * @param {number[]} observations - OOS returns or OOS Sharpe values per window
+ * @param {number} hazardRate - Prior probability of changepoint per observation (default: 0.005)
+ * @returns {{ changePointDetected: boolean, changePointIndex: number|null, confidence: number, maxRunLength: number }}
+ */
+function bayesianChangePointDetection(observations, hazardRate) {
+  if (!observations || observations.length < 3) {
+    return { changePointDetected: false, changePointIndex: null, confidence: 0, maxRunLength: observations ? observations.length : 0 };
+  }
+  if (hazardRate == null || hazardRate <= 0) hazardRate = BOCD_HAZARD_RATE;
+  
+  const n = observations.length;
+  // Run-length probability vector: P(r_t | x_{1:t})
+  // r=0 means 'changepoint just happened', r=k means 'k observations since last changepoint'
+  let runLengthProbs = new Float64Array(n + 1);
+  runLengthProbs[0] = 1.0; // Start with run length 0
+  
+  // Sufficient statistics for Gaussian predictive likelihood
+  // For each possible run length, maintain (count, sum, sumSq)
+  let counts = new Float64Array(n + 1);
+  let sums = new Float64Array(n + 1);
+  let sumSqs = new Float64Array(n + 1);
+  
+  // Prior hyperparameters for Normal-Inverse-Gamma
+  const mu0 = 0;
+  const kappa0 = 1;
+  const alpha0 = 1;
+  const beta0 = 1;
+  
+  let bestChangePointIdx = null;
+  let bestChangePointConf = 0;
+  
+  for (let t = 0; t < n; t++) {
+    const x = observations[t];
+    const newRunLengthProbs = new Float64Array(n + 1);
+    const newCounts = new Float64Array(n + 1);
+    const newSums = new Float64Array(n + 1);
+    const newSumSqs = new Float64Array(n + 1);
+    
+    // Growth probabilities: P(r_t = r_{t-1} + 1 | ...)
+    let growthSum = 0;
+    for (let r = 0; r <= t; r++) {
+      // Compute predictive probability P(x_t | r, x_{r:t-1})
+      const count = counts[r];
+      const sum_r = sums[r];
+      const sumSq_r = sumSqs[r];
+      
+      const kn = kappa0 + count;
+      const mun = (kappa0 * mu0 + sum_r) / kn;
+      const an = alpha0 + count / 2;
+      const bn = beta0 + 0.5 * (sumSq_r - sum_r * sum_r / (count || 1)) + 
+                 (kappa0 * count * (sum_r / (count || 1) - mu0) * (sum_r / (count || 1) - mu0)) / (2 * kn);
+      
+      // Student-t predictive distribution
+      const predVar = (bn * (kn + 1)) / (an * kn);
+      const predStd = Math.sqrt(Math.max(predVar, 1e-10));
+      const z = (x - mun) / predStd;
+      // Use Gaussian approximation for computational efficiency
+      const logPred = -0.5 * Math.log(2 * Math.PI) - Math.log(predStd) - 0.5 * z * z;
+      const pred = Math.exp(logPred);
+      
+      // Growth: extend run length
+      const growthProb = runLengthProbs[r] * pred * (1 - hazardRate);
+      newRunLengthProbs[r + 1] = growthProb;
+      growthSum += growthProb;
+      
+      // Update sufficient statistics for grown run
+      newCounts[r + 1] = count + 1;
+      newSums[r + 1] = sum_r + x;
+      newSumSqs[r + 1] = sumSq_r + x * x;
+    }
+    
+    // Changepoint probability: P(r_t = 0 | ...)
+    let changepointProb = 0;
+    for (let r = 0; r <= t; r++) {
+      const count = counts[r];
+      const sum_r = sums[r];
+      const sumSq_r = sumSqs[r];
+      
+      const kn = kappa0 + count;
+      const mun = (kappa0 * mu0 + sum_r) / kn;
+      const an = alpha0 + count / 2;
+      const bn = beta0 + 0.5 * (sumSq_r - sum_r * sum_r / (count || 1)) + 
+                 (kappa0 * count * (sum_r / (count || 1) - mu0) * (sum_r / (count || 1) - mu0)) / (2 * kn);
+      
+      const predVar = (bn * (kn + 1)) / (an * kn);
+      const predStd = Math.sqrt(Math.max(predVar, 1e-10));
+      const z = (x - mun) / predStd;
+      const logPred = -0.5 * Math.log(2 * Math.PI) - Math.log(predStd) - 0.5 * z * z;
+      const pred = Math.exp(logPred);
+      
+      changepointProb += runLengthProbs[r] * pred * hazardRate;
+    }
+    
+    newRunLengthProbs[0] = changepointProb;
+    newCounts[0] = 0;
+    newSums[0] = 0;
+    newSumSqs[0] = 0;
+    
+    // Normalize
+    let totalProb = changepointProb + growthSum;
+    if (totalProb > 0) {
+      for (let r = 0; r <= t + 1; r++) {
+        newRunLengthProbs[r] /= totalProb;
+      }
+    }
+    
+    // Track if changepoint probability spikes
+    if (newRunLengthProbs[0] > 0.5 && t > 2) {
+      if (newRunLengthProbs[0] > bestChangePointConf) {
+        bestChangePointConf = newRunLengthProbs[0];
+        bestChangePointIdx = t;
+      }
+    }
+    
+    runLengthProbs = newRunLengthProbs;
+    counts = newCounts;
+    sums = newSums;
+    sumSqs = newSumSqs;
+  }
+  
+  // Find MAP (most probable) run length
+  let maxRunLength = 0;
+  let maxRunLengthProb = 0;
+  for (let r = 0; r <= n; r++) {
+    if (runLengthProbs[r] > maxRunLengthProb) {
+      maxRunLengthProb = runLengthProbs[r];
+      maxRunLength = r;
+    }
+  }
+  
+  const changePointDetected = bestChangePointConf > 0.80;
+  
+  return {
+    changePointDetected,
+    changePointIndex: changePointDetected ? bestChangePointIdx : null,
+    confidence: +bestChangePointConf.toFixed(4),
+    maxRunLength
+  };
+}
+
+/**
+ * Returns a regime stability coefficient for the Oracle confidence calculation.
+ * 1.0 = stable regime, 0.7 = changepoint detected recently.
+ * @param {{ changePointDetected: boolean }} bocdResult
+ * @returns {number}
+ */
+function getRegimeStabilityCoefficient(bocdResult) {
+  if (!bocdResult) return 1.0;
+  return bocdResult.changePointDetected ? 0.70 : 1.00;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MODULE 26.2 — WFE COEFFICIENT MAPPER
 // Maps raw Walk-Forward Efficiency ratio to a discrete coefficient
@@ -153,10 +338,12 @@ function computeSharpe(returns, scaleFactor) {
  * @returns {number} 1.0, 0.70, or 0.00
  */
 function computeWFECoefficient(wfe) {
-  if (wfe == null || typeof wfe !== "number" || isNaN(wfe)) return 0.0;
-  if (wfe > 0.70) return 1.0;
-  if (wfe >= 0.55) return 0.70;
-  return 0.0;
+  if (wfe == null || typeof wfe !== 'number' || isNaN(wfe)) return 0.0;
+  // Smooth sigmoid: 1 / (1 + exp(-k * (wfe - midpoint)))
+  // k=12, midpoint=0.55 gives:
+  //   WFE=0.40 → 0.03, WFE=0.50 → 0.23, WFE=0.55 → 0.50
+  //   WFE=0.60 → 0.73, WFE=0.70 → 0.95, WFE=0.80 → 0.99
+  return 1.0 / (1.0 + Math.exp(-WFE_SIGMOID_K * (wfe - WFE_SIGMOID_MIDPOINT)));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -209,6 +396,7 @@ function computeWalkForward({
         shouldHalt: false,
         alphaDecayVeto: false,
         windows: [],
+        bocdResult: { changePointDetected: false, changePointIndex: null, confidence: 0, maxRunLength: 0 },
       },
       meta: { fetchedAt: now.toISOString(), source: "calc:computeWalkForward" },
       logs,
@@ -248,6 +436,7 @@ function computeWalkForward({
         shouldHalt: false,
         alphaDecayVeto: false,
         windows: [],
+        bocdResult: { changePointDetected: false, changePointIndex: null, confidence: 0, maxRunLength: 0 },
       },
       meta: { fetchedAt: now.toISOString(), source: "calc:computeWalkForward" },
       logs,
@@ -291,8 +480,12 @@ function computeWalkForward({
     const isSharpe = computeSharpe(isReturns, scaleFactor);
     const oosSharpe = computeSharpe(oosReturns, scaleFactor);
 
+    const isSortino = computeSortino(isReturns, scaleFactor);
+    const oosSortino = computeSortino(oosReturns, scaleFactor);
+
     // ── WFE for this window ────────────────────────────────────────
     let windowWFE;
+    let windowSortinoWFE;
     let windowNote = null;
 
     if (isSharpe < 0 || oosSharpe < 0) {
@@ -315,6 +508,12 @@ function computeWalkForward({
       windowWFE = oosSharpe / isSharpe;
     }
 
+    if (isSortino <= 0 || oosSortino < 0) {
+      windowSortinoWFE = 0.0;
+    } else {
+      windowSortinoWFE = oosSortino / isSortino;
+    }
+
     windows.push({
       windowIndex: windows.length,
       startTradeIdx: startIdx,
@@ -322,7 +521,10 @@ function computeWalkForward({
       oosTradeCount: oosTrades.length,
       isSharpe: +isSharpe.toFixed(6),
       oosSharpe: +oosSharpe.toFixed(6),
+      isSortino: +isSortino.toFixed(6),
+      oosSortino: +oosSortino.toFixed(6),
       wfe: +windowWFE.toFixed(4),
+      sortinoWfe: +windowSortinoWFE.toFixed(4),
       stale: windowStale,
       note: windowNote,
     });
@@ -332,6 +534,7 @@ function computeWalkForward({
 
   // ── STEP 4: Aggregate WFE (use latest window as primary) ──────────
   let wfeScore = 0;
+  let sortinoWfeScore = 0;
   if (windows.length > 0) {
     // Use the most recent non-stale window; fallback to last window
     let latestValid = null;
@@ -344,9 +547,11 @@ function computeWalkForward({
 
     if (latestValid) {
       wfeScore = latestValid.wfe;
+      sortinoWfeScore = latestValid.sortinoWfe;
     } else {
       // All windows are stale → force static weight fallback
       wfeScore = 0;
+      sortinoWfeScore = 0;
       logs.push(
         logEntry("WFE_ALL_WINDOWS_STALE", "HIGH", `All ${windows.length} windows exceed ${maxWindowTimespanDays}-day timespan. Forcing static fallback.`, {
           windowCount: windows.length,
@@ -356,7 +561,8 @@ function computeWalkForward({
     }
   }
 
-  const wfeCoefficient = computeWFECoefficient(wfeScore);
+  const effectiveWfeScore = Math.min(wfeScore, sortinoWfeScore || wfeScore);
+  const wfeCoefficient = computeWFECoefficient(effectiveWfeScore);
 
   // ── STEP 5: Alpha decay detection ─────────────────────────────────
   // Compute DecayRate as slope of OOS Sharpe across windows
@@ -417,6 +623,8 @@ function computeWalkForward({
     }
   }
 
+  const bocdResult = bayesianChangePointDetection(windows.map(w => w.oosSharpe), BOCD_HAZARD_RATE);
+
   return {
     ok: true,
     data: {
@@ -427,6 +635,7 @@ function computeWalkForward({
       shouldHalt,
       alphaDecayVeto,
       windows,
+      bocdResult,
     },
     meta: {
       fetchedAt: now.toISOString(),
@@ -446,5 +655,8 @@ function computeWalkForward({
 module.exports = {
   computeWalkForward,
   computeSharpe,
+  computeSortino,
   computeWFECoefficient,
+  bayesianChangePointDetection,
+  getRegimeStabilityCoefficient,
 };
