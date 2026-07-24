@@ -447,15 +447,38 @@ const getShortTermData = (stock, numericPrice, realAtr, dayRange, marketStatus, 
     }
   }
 
-  const isVetoTriggered = (vetoFailCount >= 2) || trendVeto || oversoldOverride || shortNoVolume || longNoVolume || anyDirNoVolume || oversoldShort || trendingOverboughtShort || momDisagreeLong || momDisagreeShort || overboughtLong || oversoldTrendLong || candleVetoLong || candleVetoShort || fallingKnifeDailyVeto;
+  // Soft technical warnings classified as CAUTIONS (apply mild score adjustment, do not block trade)
+  const cautionVetoes = [];
+  if (trendVeto) cautionVetoes.push("UPTREND_COUNTER_BEAR");
+  if (oversoldOverride) cautionVetoes.push("OVERSOLD_BEAR_OVERRIDE");
+  if (shortNoVolume || longNoVolume || anyDirNoVolume) cautionVetoes.push("LOW_RELATIVE_VOLUME");
+  if (oversoldShort) cautionVetoes.push("OVERSOLD_SHORT_CAUTION");
+  if (trendingOverboughtShort) cautionVetoes.push("TRENDING_OVERBOUGHT_SHORT");
+  if (momDisagreeLong || momDisagreeShort) cautionVetoes.push("MOMENTUM_DISAGREEMENT");
+  if (overboughtLong) cautionVetoes.push("OVERBOUGHT_LONG_CAUTION");
+  if (oversoldTrendLong) cautionVetoes.push("OVERSOLD_TREND_LONG");
+  if (candleVetoLong || candleVetoShort) cautionVetoes.push("CANDLESTICK_STRUCTURE_CAUTION");
+
+  // FATAL VETOES (Only true critical safety risks block trade completely)
+  const isVetoTriggered = (vetoFailCount >= 3) || fallingKnifeDailyVeto;
+
+  // Apply mild score adjustment for caution warnings (-3 pts each, capped at -9 pts)
+  if (!isVetoTriggered && cautionVetoes.length > 0) {
+    const cautionPenalty = Math.min(9, cautionVetoes.length * 3);
+    if (finalScore >= 50) {
+      finalScore = Math.max(50, finalScore - cautionPenalty);
+    } else {
+      finalScore = Math.min(50, finalScore + cautionPenalty);
+    }
+  }
 
   // Compute aligned direction
   let direction = "NEUTRAL";
   if (isVetoTriggered) {
     direction = "NEUTRAL";
-  } else if (finalScore >= 58) {
+  } else if (finalScore >= 55) {
     direction = "UP";
-  } else if (finalScore < 38) {
+  } else if (finalScore <= 45) {
     direction = "DOWN";
   } else {
     direction = "NEUTRAL";

@@ -195,9 +195,9 @@ function verdictClassifierEngine({ total_score = 0, veto_data = { veto_triggered
     action = "AWAIT_BETTER_ENTRY";
     conviction_multiplier = 0.0;
   } else {
-    // Apply caution penalty: each CAUTION veto reduces conviction by 7% (30% reduction from 10%)
-    const cautionPenalty = Math.min(0.28, caution_count * 0.07);
-    conviction_multiplier = Math.max(0.53, 1.0 - cautionPenalty);
+    // Apply mild caution penalty: each CAUTION veto reduces conviction by 2% (capped at 8%)
+    const cautionPenalty = Math.min(0.08, caution_count * 0.02);
+    conviction_multiplier = Math.max(0.80, 1.0 - cautionPenalty);
     
     // Score based logic with conviction gating
     // User-defined tiers: 70-100 Strong Buy | 59-69.99 Buy | 55-58.99 Accumulate on Dips | 47-54.99 Neutral Watch | below 47 Avoid
