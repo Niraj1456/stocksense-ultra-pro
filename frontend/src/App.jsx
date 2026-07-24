@@ -1106,32 +1106,32 @@ const BASELINE_WEIGHTS = {
 };
 
 const LAYER_META = {
-  layer1_macro: { name: "L1: Macro Regime", source: "NSE/VIX" },
-  layer2_microstructure: { name: "L2: Order Book Imbalance", source: "NSE LIVE" },
-  layer3_technicals: { name: "L3: Momentum Technicals", source: "YAHOO LIVE" },
-  layer4_price_action: { name: "L4: Wyckoff & Elliott Waves", source: "ALGORITHMIC" },
-  layer5_volume_profile: { name: "L5: Volume Profile (POC)", source: "NSE LIVE" },
-  layer6_institutional: { name: "L6: Institutional FII/DII", source: "NSE LIVE" },
-  layer7_derivatives: { name: "L7: Put-Call Ratio (OI)", source: "NSE LIVE" },
-  layer8_fundamentals: { name: "L8: Fundamental Quality", source: "YAHOO LIVE" },
-  layer9_forensic: { name: "L9: Forensic & Governance", source: "AUDITED" },
-  layer10_valuation: { name: "L10: DCF Margin of Safety", source: "MODEL" },
-  layer11_predictive: { name: "L11: ML Predictive Signals", source: "PROBABILITY" },
-  layer12_risk: { name: "L12: Risk & Position Sizing", source: "SYSTEM" },
-  layer13_veto: { name: "L13: System Veto Filters", source: "VETO ENGINE" },
-  layer14_consensus: { name: "L14: AI Orchestrator Consensus", source: "PROMPT ORCHESTRATOR" },
-  layer15_sentiment: { name: "L15: FinBERT News Sentiment", source: "NLP NEWS" },
-  layer16_integrity: { name: "L16: Dynamic Integrity Guard", source: "INTEGRITY GUARD" },
-  layer17_backtest: { name: "L17: Multi-Year Backtesting & ORB", source: "BACKTEST DB" },
-  layer18_volatility: { name: "L18: Volatility (ATR) Predictor", source: "YAHOO LIVE" },
-  layer19_promoter_pledge: { name: "L19: Promoter Pledge Tracker", source: "GOVERNANCE" },
-  layer20_earnings_quality: { name: "L20: Sloan Accruals & CCC", source: "ACCOUNTING" },
-  layer21_rs_rating: { name: "L21: Relative Strength (IBD)", source: "CALCULATED" },
-  layer22_mtf_coherence: { name: "L22: Multi-TF Trend Alignment", source: "MULTIPLE TF" },
-  layer23_peer_percentile: { name: "L23: Peer Percentile Ranking", source: "INDUSTRY" },
-  layer24_mgmt_quality: { name: "L24: Capital Allocation Quality", source: "GOVERNANCE" },
-  layer25_ensemble: { name: "L25: Ensemble Weights Calibration", source: "BACKGROUND CALIBRATOR" },
-  layer26_walk_forward: { name: "L26: Walk Forward Optimizer", source: "WALK FORWARD SHARPE" }
+  layer1_macro: { name: "L1: Overall Market Direction", source: "NSE/VIX Market Index" },
+  layer2_microstructure: { name: "L2: Buyer vs Seller Strength", source: "NSE Live Order Book" },
+  layer3_technicals: { name: "L3: Price Trend & Momentum", source: "Technical Indicators" },
+  layer4_price_action: { name: "L4: Chart Patterns & Candlesticks", source: "Chart Analysis" },
+  layer5_volume_profile: { name: "L5: Buying Volume & Activity", source: "NSE Volume Profile" },
+  layer6_institutional: { name: "L6: Big Funds & FII/DII Buying", source: "FII/DII Live Data" },
+  layer7_derivatives: { name: "L7: F&O Options Sentiment (PCR)", source: "NSE Options Chain" },
+  layer8_fundamentals: { name: "L8: Company Financial Health", source: "Financial Reports" },
+  layer9_forensic: { name: "L9: Fraud & Accounting Check", source: "Audited Filings" },
+  layer10_valuation: { name: "L10: Stock Price Fairness (Cheap vs Expensive)", source: "Valuation Model" },
+  layer11_predictive: { name: "L11: AI Pattern Predictor", source: "AI Model" },
+  layer12_risk: { name: "L12: Stop-Loss & Risk Calculator", source: "Risk Engine" },
+  layer13_veto: { name: "L13: Trade Safety Filters", source: "Safety Engine" },
+  layer14_consensus: { name: "L14: Analyst Ratings & Price Targets", source: "Analyst Consensus" },
+  layer15_sentiment: { name: "L15: News & Social Sentiment", source: "Live News Monitor" },
+  layer16_integrity: { name: "L16: Data Quality & Safety Guard", source: "Quality Monitor" },
+  layer17_backtest: { name: "L17: Historical Win Rate & Success", source: "Backtest History" },
+  layer18_volatility: { name: "L18: Expected Move Range (ATR)", source: "Volatility Calculator" },
+  layer19_promoter_pledge: { name: "L19: Promoter Share Pledging & Debt", source: "Governance Tracker" },
+  layer20_earnings_quality: { name: "L20: Real Cash Profit Quality", source: "Cash Flow Audit" },
+  layer21_rs_rating: { name: "L21: Stock Strength vs Nifty Index", source: "Relative Strength" },
+  layer22_mtf_coherence: { name: "L22: Daily & Weekly Trend Alignment", source: "Multi-Timeframe" },
+  layer23_peer_percentile: { name: "L23: Industry Competitors Comparison", source: "Peer Analysis" },
+  layer24_mgmt_quality: { name: "L24: Management Track Record", source: "Management Check" },
+  layer25_ensemble: { name: "L25: AI Self-Learning Engine", source: "Auto-Learning AI" },
+  layer26_walk_forward: { name: "L26: Accuracy Guard & Optimizer", source: "Walk-Forward Engine" }
 };
 
 // Deterministic hash-based variation to ensure no layer score stays at exactly 50
@@ -1388,7 +1388,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
 
   const list = [
     { 
-      title: "Layer 1: Macro Regime Filter", 
+      title: "Layer 1: Overall Market Direction", 
       badge: l1.data?.inputs?.market_regime || "NORMAL", 
       class: l1.data?.inputs?.market_regime === "BEAR" ? "badge-negative" : "badge-positive", 
       data: [
@@ -1398,7 +1398,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 2: L2 Order Book / Tape", 
+      title: "Layer 2: Buyer vs Seller Strength", 
       badge: l2Imbalance > 0 ? "BUY WALLS" : l2Imbalance < 0 ? "SELL WALLS" : "NEUTRAL", 
       class: l2Imbalance > 0 ? "badge-positive" : l2Imbalance < 0 ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1409,7 +1409,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 3: Momentum Technicals", 
+      title: "Layer 3: Price Trend & Momentum", 
       badge: (l3.data?.indicators?.rsiDetails?.zone) || ((l3.data?.indicators?.rsi14 > 70) ? "OVERBOUGHT" : (l3.data?.indicators?.rsi14 < 30) ? "OVERSOLD" : "NEUTRAL"), 
       class: (l3.data?.indicators?.rsiDetails?.zone?.includes("OVERBOUGHT") || l3.data?.indicators?.rsi14 > 70) ? "badge-negative" : (l3.data?.indicators?.rsiDetails?.zone?.includes("OVERSOLD") || l3.data?.indicators?.rsi14 < 30) ? "badge-positive" : "badge-neutral", 
       data: [
@@ -1420,7 +1420,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 4: Wyckoff & Elliott Waves", 
+      title: "Layer 4: Chart Patterns & Candlesticks", 
       badge: l4.wyckoffOut?.data?.phase || "NEUTRAL", 
       class: "badge-positive", 
       data: [
@@ -1430,7 +1430,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 5: Volume Profile (POC)", 
+      title: "Layer 5: Buying Volume & Activity", 
       badge: l5.vpDetails?.dpoc_migration_trend ? `dPOC: ${l5.vpDetails.dpoc_migration_trend}` : (l5.vpDetails?.rvol > 1.5 ? "HIGH VOLUME" : "CONGESTION"), 
       class: l5.vpDetails?.dpoc_migration_trend === "UPWARD" || l5.vpDetails?.rvol > 1.5 ? "badge-positive" : l5.vpDetails?.dpoc_migration_trend === "DOWNWARD" ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1441,7 +1441,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 6: Institutional Flow", 
+      title: "Layer 6: Big Funds & FII/DII Buying", 
       badge: l6.fiiDiiRes?.fiiNetValue > 0 ? "ACCUMULATION" : l6.fiiDiiRes?.fiiNetValue < 0 ? "DISTRIBUTION" : "NEUTRAL", 
       class: l6.fiiDiiRes?.fiiNetValue > 0 ? "badge-positive" : l6.fiiDiiRes?.fiiNetValue < 0 ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1451,7 +1451,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 7: Options Derivatives", 
+      title: "Layer 7: F&O Options Sentiment (PCR)", 
       badge: l7.gexOut?.data?.gamma_regime ? `GEX: ${l7.gexOut.data.gamma_regime}` : (pcr > 1.0 ? "BULLISH" : pcr < 0.7 ? "BEARISH" : "NEUTRAL"), 
       class: l7.gexOut?.data?.gamma_regime === "POSITIVE" || pcr > 1.0 ? "badge-positive" : l7.gexOut?.data?.gamma_regime === "NEGATIVE" || pcr < 0.7 ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1462,7 +1462,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 8: Fundamental Quality", 
+      title: "Layer 8: Company Financial Health", 
       badge: l8.merged?.roe > 15 ? "STRONG" : "NEUTRAL", 
       class: l8.merged?.roe > 15 ? "badge-positive" : "badge-neutral", 
       data: [
@@ -1472,7 +1472,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 9: Forensic & Governance", 
+      title: "Layer 9: Fraud & Accounting Check", 
       badge: l9.forensicOut?.data?.health_score > 0 ? "CLEAN" : "WARNING", 
       class: l9.forensicOut?.data?.health_score > 0 ? "badge-positive" : "badge-negative", 
       data: [
@@ -1482,7 +1482,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 10: Valuation / DCF", 
+      title: "Layer 10: Stock Price Fairness (Cheap vs Expensive)", 
       badge: l10.dcfOut?.data?.margin_of_safety_pct > 20 ? "UNDERVALUED" : "PREMIUM", 
       class: l10.dcfOut?.data?.margin_of_safety_pct > 20 ? "badge-positive" : "badge-negative", 
       data: [
@@ -1492,7 +1492,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 11: ML Predictive Signals", 
+      title: "Layer 11: AI Pattern Predictor", 
       badge: l11.data?.score > 55 ? "BULL SETUP" : l11.data?.score < 45 ? "BEAR SETUP" : "RANGE", 
       class: l11.data?.score > 55 ? "badge-positive" : l11.data?.score < 45 ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1502,7 +1502,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 12: Risk & Sizing", 
+      title: "Layer 12: Stop-Loss & Risk Calculator", 
       badge: l12.rrOut?.data?.valid ? "PASS" : "FAIL", 
       class: l12.rrOut?.data?.valid ? "badge-positive" : "badge-negative", 
       data: [
@@ -1512,7 +1512,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 13: System Veto Filters", 
+      title: "Layer 13: Trade Safety Filters", 
       badge: isVetoed ? "TRADE BLOCKED" : "ALL CLEAR", 
       class: isVetoed ? "badge-negative" : "badge-positive", 
       data: [
@@ -1523,7 +1523,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 14: AI Orchestrator Consensus", 
+      title: "Layer 14: Analyst Ratings & Price Targets", 
       badge: res.final?.verdict || "NEUTRAL", 
       class: res.final?.verdict === "BUY" ? "badge-positive" : res.final?.verdict === "SHORT" ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1533,7 +1533,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 15: FinBERT NLP Sentiment", 
+      title: "Layer 15: News & Social Sentiment", 
       badge: l15.sentiment?.data?.score > 55 ? "EUPHORIA" : l15.sentiment?.data?.score < 45 ? "FEAR" : "NEUTRAL", 
       class: l15.sentiment?.data?.score > 55 ? "badge-positive" : l15.sentiment?.data?.score < 45 ? "badge-negative" : "badge-neutral", 
       data: [
@@ -1543,7 +1543,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 16: Dynamic Integrity Guard", 
+      title: "Layer 16: Data Quality & Safety Guard", 
       badge: l16.circuitBreaker?.circuit_broken ? "TRIPPED" : "HEALTHY", 
       class: l16.circuitBreaker?.circuit_broken ? "badge-negative" : "badge-positive", 
       data: [
@@ -1553,7 +1553,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 17: Backtesting & ORB", 
+      title: "Layer 17: Historical Win Rate & Success", 
       badge: l17.performanceGrade || "A", 
       class: (l17.performanceGrade === "A+" || l17.performanceGrade === "A") ? "badge-positive" : "badge-neutral", 
       data: [
@@ -1564,7 +1564,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     { 
-      title: "Layer 18: Volatility (ATR)", 
+      title: "Layer 18: Expected Move Range (ATR)", 
       badge: volRegime, 
       class: volRegime === "EXPANSION" ? "badge-negative" : "badge-positive", 
       data: [
@@ -1573,7 +1573,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ] 
     },
     {
-      title: "Layer 19: Promoter Pledge Tracker",
+      title: "Layer 19: Promoter Share Pledging & Debt",
       badge: l19.data?.vetoTriggered ? "VETOED" : (l19.data?.pledgePct > 15 ? "WARNING" : "HEALTHY"),
       class: l19.data?.vetoTriggered ? "badge-negative" : (l19.data?.pledgePct > 15 ? "badge-neutral" : "badge-positive"),
       data: [
@@ -1583,7 +1583,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 20: Earnings Quality & Sloan",
+      title: "Layer 20: Real Cash Profit Quality",
       badge: l20.data?.cautionTriggered ? "CAUTION" : "NORMAL",
       class: l20.data?.cautionTriggered ? "badge-negative" : "badge-positive",
       data: [
@@ -1593,7 +1593,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 21: Relative Strength (IBD)",
+      title: "Layer 21: Stock Strength vs Nifty Index",
       badge: l21.data?.isConfirmedUptrend ? "UPTREND" : "RANGE",
       class: l21.data?.isConfirmedUptrend ? "badge-positive" : "badge-neutral",
       data: [
@@ -1603,7 +1603,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 22: Multi-TF Coherence",
+      title: "Layer 22: Daily & Weekly Trend Alignment",
       badge: l22.data?.alignment || "NEUTRAL",
       class: l22.data?.alignment === "FULL_BULLISH" ? "badge-positive" : l22.data?.alignment === "MISALIGNED" ? "badge-negative" : "badge-neutral",
       data: [
@@ -1614,7 +1614,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 23: Peer Percentile Ranking",
+      title: "Layer 23: Industry Competitors Comparison",
       badge: l23.data?.isFallback ? "FALLBACK" : "ACTIVE",
       class: l23.data?.isFallback ? "badge-neutral" : "badge-positive",
       data: [
@@ -1625,7 +1625,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 24: Management Quality",
+      title: "Layer 24: Management Track Record",
       badge: l24.data?.executiveTurnover ? "TURNOVER ALERT ⚠️" : (l24.data?.roceSlope > 0 ? "GROWING" : "STABLE"),
       class: l24.data?.executiveTurnover ? "badge-negative" : (l24.data?.roceSlope > 0 ? "badge-positive" : "badge-neutral"),
       data: [
@@ -1636,7 +1636,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 25: Ensemble Weights Calibration",
+      title: "Layer 25: AI Self-Learning Engine",
       badge: "CALIBRATED",
       class: "badge-positive",
       data: [
@@ -1646,7 +1646,7 @@ const getDynamicLayersList = (res, liveAtr, realData, displayMaxPain, displayBuy
       ]
     },
     {
-      title: "Layer 26: Walk Forward Optimizer",
+      title: "Layer 26: Accuracy Guard & Optimizer",
       badge: "OPTIMIZED",
       class: "badge-positive",
       data: [
@@ -4030,17 +4030,17 @@ export default function App() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
                               <span style={{ fontSize: '1.3rem' }}>🧠</span>
                               <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '0.3px' }}>
-                                Self-Learning AI Calibration & Diagnostics
+                                AI Self-Learning & Health Center
                               </h2>
                             </div>
                             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '720px', lineHeight: '1.45' }}>
-                              StockSense Ultra Pro automatically tracks every closed trade. The AI learns which indicators (technicals, fundamentals, volume profile) performed best in recent market conditions, boosting accurate layers while dampening noisy ones.
+                              StockSense Ultra Pro automatically tracks past trades. The AI continuously learns which indicators (price patterns, volume, fundamentals) are working best in current market conditions, automatically increasing the weight of winning signals and dampening noisy ones.
                             </p>
                           </div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
                             <span className={isDegraded ? "badge-negative" : "badge-positive"} style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: '6px', fontWeight: 800, letterSpacing: '0.5px' }}>
-                              {isDegraded ? "⚠️ SYSTEM ATTENTION" : "🟢 AI FULLY OPERATIONAL"}
+                              {isDegraded ? "⚠️ ATTENTION NEEDED" : "🟢 AI FULLY OPERATIONAL"}
                             </span>
                             <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                               Synced: {new Date(activeHealth.timestamp).toLocaleTimeString()}
@@ -4051,30 +4051,30 @@ export default function App() {
                         {/* Top KPI Metrics Row */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginTop: '1.25rem' }}>
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Learning Engine</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>AI Self-Learning</span>
                             <strong style={{ fontSize: '0.95rem', color: calib.enabled ? 'var(--accent)' : 'var(--warning)' }}>
-                              {calib.enabled ? 'Active (Auto-Tuning)' : 'Static Baseline'}
+                              {calib.enabled ? 'Active (Auto-Adjusting)' : 'Default Baseline'}
                             </strong>
                           </div>
 
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Walk-Forward Efficiency</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>AI Accuracy Test Score</span>
                             <strong style={{ fontSize: '0.95rem', color: (wf.INTRADAY?.wfe_score ?? 0.7) >= 0.55 ? 'var(--accent)' : 'var(--danger)' }}>
                               {wf.INTRADAY?.wfe_score != null ? `${(wf.INTRADAY.wfe_score * 100).toFixed(0)}% (Robust)` : '99.4% (Optimal)'}
                             </strong>
                           </div>
 
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Oracle Score Protection</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>AI Trade Risk Guard</span>
                             <strong style={{ fontSize: '0.95rem', color: 'var(--accent)' }}>
                               {oracle.enabled !== false ? 'Active (Real-Time)' : 'Cold Start'}
                             </strong>
                           </div>
 
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Regime Watch (BOCD)</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.2rem' }}>Market Risk Watch</span>
                             <strong style={{ fontSize: '0.95rem', color: metrics.bocd_changepoint_INTRADAY ? 'var(--warning)' : 'var(--text-primary)' }}>
-                              {metrics.bocd_changepoint_INTRADAY ? '⚠️ Shift Detected' : '🟢 Market Stable'}
+                              {metrics.bocd_changepoint_INTRADAY ? '⚠️ Risk Shift Detected' : '🟢 Market Stable'}
                             </strong>
                           </div>
                         </div>
@@ -4097,20 +4097,20 @@ export default function App() {
                         <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                           <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>🔮 Real-Time Oracle Conviction Guard</span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Protects score accuracy by validating signals against historical trade outcomes</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>🔮 AI Trade Protection Guard</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Protects your trades by verifying if past signals were accurate</span>
                             </div>
                           </div>
 
                           <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>7-Day Average Multiplier</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>7-Day Accuracy Multiplier</span>
                               <strong style={{ fontSize: '1.1rem', color: (stats.avg_multiplier || 1.0) >= 1.0 ? 'var(--accent)' : 'var(--warning)' }}>
                                 {stats.avg_multiplier != null ? stats.avg_multiplier.toFixed(4) + 'x' : '1.0000x'}
                               </strong>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>Oracle Conviction Strength</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block' }}>AI Protection Confidence</span>
                               <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>
                                 {stats.avg_confidence != null ? (stats.avg_confidence * 100).toFixed(1) + '%' : '0.0%'}
                               </strong>
@@ -4122,11 +4122,11 @@ export default function App() {
                               <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>7-Day Score Adjustments ({stats.total_adjustments || 0} analyses)</span>
                             </div>
                             <div style={{ display: 'flex', gap: '3px', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
-                              <div style={{ width: `${(stats.strong_dampening || 0) / (stats.total_adjustments || 1) * 100}%`, background: 'var(--danger)' }} title="Strong Dampening (<0.85)" />
-                              <div style={{ width: `${(stats.mild_dampening || 0) / (stats.total_adjustments || 1) * 100}%`, background: '#f59e0b' }} title="Mild Dampening (0.85-0.95)" />
+                              <div style={{ width: `${(stats.strong_dampening || 0) / (stats.total_adjustments || 1) * 100}%`, background: 'var(--danger)' }} title="Strong Risk Dampening (<0.85)" />
+                              <div style={{ width: `${(stats.mild_dampening || 0) / (stats.total_adjustments || 1) * 100}%`, background: '#f59e0b' }} title="Mild Risk Dampening (0.85-0.95)" />
                               <div style={{ width: `${(stats.neutral || 0) / (stats.total_adjustments || 1) * 100}%`, background: 'var(--text-muted)' }} title="Validated Neutral (0.95-1.05)" />
-                              <div style={{ width: `${(stats.mild_amplification || 0) / (stats.total_adjustments || 1) * 100}%`, background: '#3b82f6' }} title="Mild Amplification (1.05-1.15)" />
-                              <div style={{ width: `${(stats.strong_amplification || 0) / (stats.total_adjustments || 1) * 100}%`, background: 'var(--accent)' }} title="Strong Amplification (>1.15)" />
+                              <div style={{ width: `${(stats.mild_amplification || 0) / (stats.total_adjustments || 1) * 100}%`, background: '#3b82f6' }} title="Mild Conviction Boost (1.05-1.15)" />
+                              <div style={{ width: `${(stats.strong_amplification || 0) / (stats.total_adjustments || 1) * 100}%`, background: 'var(--accent)' }} title="Strong Conviction Boost (>1.15)" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.3rem', marginTop: '0.5rem', fontSize: '0.65rem', textAlign: 'center' }}>
                               <div style={{ background: 'rgba(244,63,94,0.08)', padding: '0.3rem', borderRadius: '4px', color: 'var(--danger)' }}>
@@ -4136,7 +4136,7 @@ export default function App() {
                                 ⚖️ Validated: {stats.neutral || 0}
                               </div>
                               <div style={{ background: 'rgba(16,185,129,0.08)', padding: '0.3rem', borderRadius: '4px', color: 'var(--accent)' }}>
-                                🔺 Amplified: {(stats.mild_amplification || 0) + (stats.strong_amplification || 0)}
+                                🔺 Boosted: {(stats.mild_amplification || 0) + (stats.strong_amplification || 0)}
                               </div>
                             </div>
                           </div>
@@ -4146,15 +4146,15 @@ export default function App() {
                         <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                           <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>⚡ Self-Learning Quant Engines</span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>6 state-of-the-art algorithms optimizing performance</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>⚡ AI Self-Learning Modules</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>6 automated modules continuously tuning your score accuracy</span>
                             </div>
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.7rem' }}>
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>EWMA DCA</span>
+                                <span style={{ fontWeight: 700 }}>Recent Trades</span>
                                 <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>ACTIVE</span>
                               </div>
                               <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Recency-weighted accuracy</span>
@@ -4162,7 +4162,7 @@ export default function App() {
 
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>Profit-Weighted DCA</span>
+                                <span style={{ fontWeight: 700 }}>Big Move Gain</span>
                                 <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>ACTIVE</span>
                               </div>
                               <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Return magnitude weighting</span>
@@ -4170,15 +4170,15 @@ export default function App() {
 
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>Kelly Criterion</span>
-                                <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>HALF-KELLY</span>
+                                <span style={{ fontWeight: 700 }}>Learning Speed</span>
+                                <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>OPTIMAL</span>
                               </div>
-                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Optimal learning rate</span>
+                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Safe & steady adaptation</span>
                             </div>
 
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>BOCD Detector</span>
+                                <span style={{ fontWeight: 700 }}>Market Shift Tracker</span>
                                 <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>STABLE</span>
                               </div>
                               <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Bayesian regime tracking</span>
@@ -4186,15 +4186,15 @@ export default function App() {
 
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>KL-Divergence</span>
+                                <span style={{ fontWeight: 700 }}>Drift Guard</span>
                                 <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 5px' }}>MONITORING</span>
                               </div>
-                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Weight drift safety guard</span>
+                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Weight safety monitor</span>
                             </div>
 
                             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                <span style={{ fontWeight: 700 }}>Correlation Map</span>
+                                <span style={{ fontWeight: 700 }}>Signal Overlap</span>
                                 <span className="badge-positive" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>ACTIVE</span>
                               </div>
                               <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block' }}>Redundant signal penalty</span>
@@ -4208,11 +4208,11 @@ export default function App() {
                       <div className="glass-panel-premium" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>📊 Active AI Weight Adjustments (Layer 1 – Layer 26)</span>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Shows how the AI has reallocated layer importance based on recent trade outcomes</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 800, display: 'block' }}>📊 AI Indicator Importance (Layer 1 – Layer 26)</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Shows how the AI gives more weight to indicators that are working best right now</span>
                           </div>
                           <span className={calib.enabled ? "data-source-live" : "data-source-estimated"} style={{ fontSize: '0.55rem' }}>
-                            {calib.enabled ? "AUTO-TUNED WEIGHTS" : "STATIC BASELINE"}
+                            {calib.enabled ? "AUTO-TUNED WEIGHTS" : "DEFAULT BASELINE"}
                           </span>
                         </div>
 
@@ -4220,11 +4220,11 @@ export default function App() {
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem', textAlign: 'left' }}>
                             <thead>
                               <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.62rem' }}>
-                                <th style={{ padding: '8px 10px' }}>Layer Name</th>
-                                <th style={{ padding: '8px 10px', width: '35%' }}>AI Weight Allocation</th>
-                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Active Weight</th>
-                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Static Baseline</th>
-                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>AI Shift</th>
+                                <th style={{ padding: '8px 10px' }}>Indicator Name</th>
+                                <th style={{ padding: '8px 10px', width: '35%' }}>AI Importance Bar</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Current Importance</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>Default Importance</th>
+                                <th style={{ padding: '8px 10px', textAlign: 'right' }}>AI Change</th>
                               </tr>
                             </thead>
                             <tbody>
